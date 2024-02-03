@@ -1,17 +1,17 @@
-#include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <util.h>
+#include <events.h>
 #include <../config.h>
 
-typedef struct {
-  Display* dpy;
-  int scrn;
-  Window root;
-  pair_t dpysize;
-  int modmask;
-} X_t;
+static const char* WMNAME = "cwm2";
+static const char* WMVER = "-0.0";
+volatile sig_atomic_t sig_status;
+
+static void sighandler(int sig) {
+  sig_status = 1;
+  fprintf(stdout, "%s exit\n", WMNAME);
+}
 
 static bool xerror;
 static const int ROOTMASK = { 
@@ -24,10 +24,6 @@ static const int ROOTMASK = {
   StructureNotifyMask |
   PropertyChangeMask
 };
-
-static void events(const X_t* X) {
-
-}
 
 static int XError(Display*, XErrorEvent* xev) {
   xerror = xev->error_code == BadAccess;
@@ -70,8 +66,11 @@ int main(const int ARGC, const char* ARGV[]) {
       true, GrabModeAsync, GrabModeAsync);
   }
     
-  const X_t X = { dpy, SCRN, ROOT, DPYSIZE, MODMASK };
-  events(&X);
+  const X_t X = { dpy, SCRN, ROOT, DPYSIZE, MODMASK, 0 };
+  if (signal(SIGINT, sighandler) == SIG_ERR)
+    sig_status = 1;
+
+  events(&X, &sig_status);
   // Cleanup
   for (int i = 0; i < LEN(INPUT); i++) {
     const int MOD = INPUT[i].mod, KEY = INPUT[i].key;

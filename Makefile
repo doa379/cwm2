@@ -35,7 +35,7 @@ DBG_EXEC = cwm2~dbg.bin
   EXEC = $(DBG_EXEC)
 .endif
 
-SRC = src/msg.c src/wm.c
+SRC = src/msg.c src/wm.c src/events.c
 OBJ = $(SRC:.c=.o)
 
 .POSIX:

@@ -3,4 +3,4 @@
 #include <signal.h>
 #include <x.h>
 
-void events(const X_t*, sig_atomic_t*);
+void events(const X_t*, volatile sig_atomic_t*);

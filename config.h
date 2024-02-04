@@ -4,7 +4,7 @@
 #include <palette.h>
 
 /*
-Some ::KeySym {
+Some KeySym {
   XK_Escape,
   XK_F1,
   XK_F2,

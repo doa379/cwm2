@@ -1,26 +1,40 @@
+#include <X11/Xlib.h>
 #include <lib.h>
 
-void init_clients(const X_t* X) {
-  unsigned n;
-  Window rootw, parw;
-  Window* w;
-  if (XQueryTree(X->dpy, X->root, &rootw, &parw, &w, &n)) {
-    for (int i = 0; i < n; i++) {
-      XWindowAttributes wa;
-      if (XGetWindowAttributes(X->dpy, w[i], &wa) && 
-          wa.map_state == IsViewable) {
-        XEvent xev = { MapRequest };
-        xev.xmaprequest.send_event = true,
-        xev.xmaprequest.parent = X->root;
-        xev.xmaprequest.window = w[i];
-        XSendEvent(X->dpy, X->root, true, ROOTMASK, &xev);
-      }
-    }
+bool init_window(Display* dpy, const Window W) {
+  static XWindowAttributes wa;
+  if (XGetWindowAttributes(dpy, W, &wa) == 0 || wa.override_redirect)
+    return false;
+  
+  static const int WMASK = EnterWindowMask | 
+    FocusChangeMask |
+    PropertyChangeMask | 
+    StructureNotifyMask;
+  XSelectInput(dpy, W, WMASK);
+  //XChangeProperty(X->dpy, X->root, root.atom.CLIENT_LIST, XA_WINDOW, 32, 
+      //PropModeAppend, (unsigned char*) &W, 1);
 
-    if (w)
-      XFree(w);
-  }
-
-  XSync(X->dpy, false);
+  return true;
 }
 
+/*
+  proc: position --> map --> focus
+
+  if (T.size()) {
+    const auto POS { arrange(wa.width, wa.height) };
+    wa.x = std::get<0>(POS);
+    wa.y = std::get<1>(POS);
+  }
+
+  wa.y = wa.y < BARH ? BARH : wa.y;
+  XMoveWindow(root.dpy, W, wa.x, wa.y);
+  XMapWindow(root.dpy, W);
+  
+  prev = curr;
+  if (T.size())
+    set_inact(curr->w);
+  T.emplace_back(Client { 
+    W, p.new_gc(), { wa.x, wa.y }, { wa.width, wa.height } });
+  curr = T.cend() - 1;
+  set_act(curr->w);
+*/

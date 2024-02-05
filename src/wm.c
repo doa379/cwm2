@@ -1,79 +1,73 @@
-#include <X11/Xutil.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
-#include <lib.h>
-#include <events.h>
-#include <panel.h>
+#include <wm.h>
 #include <../config.h>
 
-static const char* WMNAME = "cwm2";
-static const char* WMVER = "-0.0";
-volatile sig_atomic_t sig_status;
-static bool xerror;
+typedef struct {
+  Atom PROTO;
+  Atom NAME;
+  Atom DELETE_WINDOW;
+  Atom STATE;
+  Atom TAKE_FOCUS;
+  Atom SUPPORTED;
+  Atom WM_STATE;
+  Atom WM_NAME;
+  Atom ACTIVE_WINDOW;
+  Atom WM_STATE_FULLSCREEN;
+  Atom WM_WINDOW_TYPE;
+  Atom WM_WINDOW_TYPE_DIALOG;
+  Atom CLIENT_LIST;
+  Atom NUMBER_OF_DESKTOPS;
+  Atom WM_DESKTOP;
+  Atom CURRENT_DESKTOP;
+  Atom SHOWING_DESKTOP;
+} atom_t;
 
-static void sighandler(int sig) {
-  sig_status = 1;
-  fprintf(stdout, "\n%s exit\n", WMNAME);
+static atom_t atom;
+
+void init_atoms(Display* dpy) {
+  atom_t atom_ = {
+    XInternAtom(dpy, "WM_PROTOCOLS", false),
+    XInternAtom(dpy, "WM_NAME", false),
+    XInternAtom(dpy, "WM_DELETE_WINDOW", false),
+    XInternAtom(dpy, "WM_STATE", false),
+    XInternAtom(dpy, "WM_TAKE_FOCUS", false),
+    XInternAtom(dpy, "_NET_SUPPORTED", false),
+    XInternAtom(dpy, "_NET_WM_STATE", false),
+    XInternAtom(dpy, "_NET_WM_NAME", false),
+    XInternAtom(dpy, "_NET_ACTIVE_WINDOW", false),
+    XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", false),
+    XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", false),
+    XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", false),
+    XInternAtom(dpy, "_NET_CLIENT_LIST", false),
+    XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", false),
+    XInternAtom(dpy, "_NET_WM_DESKTOP", false),
+    XInternAtom(dpy, "_NET_CURRENT_DESKTOP", false),
+    XInternAtom(dpy, "_NET_SHOWING_DESKTOP", false)
+  };
+
+  atom = atom_;
 }
 
-static int XError(Display*, XErrorEvent* xev) {
-  xerror = xev->error_code == BadAccess;
-  return 0;
+void init_clients(Display* dpy, const Window root) {
+  unsigned n;
+  Window rootw, parw;
+  Window* w;
+  if (XQueryTree(dpy, root, &rootw, &parw, &w, &n)) {
+    for (int i = 0; i < n; i++) {
+      XWindowAttributes wa;
+      if (XGetWindowAttributes(dpy, w[i], &wa) && 
+          wa.map_state == IsViewable) {
+        XEvent xev = { MapRequest };
+        xev.xmaprequest.send_event = true,
+        xev.xmaprequest.parent = root;
+        xev.xmaprequest.window = w[i];
+        XSendEvent(dpy, root, true, ROOTMASK, &xev);
+      }
+    }
+
+    if (w)
+      XFree(w);
+  }
+
+  XSync(dpy, false);
 }
 
-int main(const int ARGC, const char* ARGV[]) {
-  Display* dpy = XOpenDisplay(NULL);
-  if (dpy == NULL) {
-    fprintf(stderr, "Failed to open display\n");
-    return -1;
-  }
-  
-  const int SCRN = DefaultScreen(dpy);
-  const Window ROOT = XRootWindow(dpy, SCRN);
-  XSetErrorHandler(XError);
-  XSelectInput(dpy, ROOT, ROOTMASK);
-  if (xerror) {
-    XCloseDisplay(dpy);
-    fprintf(stderr, "Initialization error (another wm running?)");
-    return -1;
-  }
-
-  const pair_t DPYSIZE = { DisplayWidth(dpy, SCRN), DisplayHeight(dpy, SCRN) };
-  XUngrabKey(dpy, AnyKey, AnyModifier, ROOT);
-  XModifierKeymap* modmap = XGetModifierMapping(dpy);
-  unsigned numlockmask = { 0 };
-  for (int k = 0; k < 8; k++)
-    for (int j = 0; j < modmap->max_keypermod; j++)
-      if (modmap->modifiermap[modmap->max_keypermod * k + j] == 
-        XKeysymToKeycode(dpy, XK_Num_Lock))
-        numlockmask = (1 << k);
-  
-  XFreeModifiermap(modmap);
-  const int MODMASK = ~(numlockmask | LockMask);
-
-  for (int i = 0; i < LEN(INPUT); i++) {
-    const int MOD = INPUT[i].mod, KEY = INPUT[i].key;
-    XGrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOT, 
-      true, GrabModeAsync, GrabModeAsync);
-  }
-    
-  const X_t X = { dpy, SCRN, ROOT, DPYSIZE, MODMASK };
-  if (signal(SIGINT, sighandler) == SIG_ERR)
-    sig_status = 1;
-
-  init_clients(&X);
-  init_panel(&X, BARH);
-  draw_root(&X, WMNAME, strlen(WMNAME), TITLEFG, TITLEBG);
-  events(&X, &sig_status);
-  // Cleanup
-  deinit_panel(&X);
-  for (int i = 0; i < LEN(INPUT); i++) {
-    const int MOD = INPUT[i].mod, KEY = INPUT[i].key;
-    XUngrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOT);
-  }
-
-  XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
-  XCloseDisplay(dpy);
-  return 0;
-}

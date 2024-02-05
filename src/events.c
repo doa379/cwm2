@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <events.h>
-#include <lib.h>
+//#include <lib.h>
 
 static XEvent xev;
 
@@ -54,15 +54,15 @@ static void motionnotify(const X_t* X) {
 
 static void keypress(const X_t* X) {
   fprintf(stdout, "EV: Key Press\n");
-  const int KEY_STATE = xev.xkey.state,
-    KEY_CODE = xev.xkey.keycode;
+  const int STATE = xev.xkey.state;
+  const int CODE = xev.xkey.keycode;
 
 }
 
 static void btnpress(const X_t* X) {
   fprintf(stdout, "EV: Btn Press\n");
-  const int BTN_STATE = xev.xbutton.state,
-    BTN_CODE = xev.xbutton.button;
+  const int STATE = xev.xbutton.state;
+  const int CODE = xev.xbutton.button;
   const Window W = xev.xbutton.window;
 
 }

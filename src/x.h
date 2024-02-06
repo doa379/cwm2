@@ -8,5 +8,4 @@ typedef struct {
   int scrn;
   Window root;
   pair_t dpysize;
-  int modmask;
 } X_t;

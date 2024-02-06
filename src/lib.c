@@ -1,4 +1,4 @@
-#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <lib.h>
 
 bool init_window(Display* dpy, const Window W) {
@@ -38,3 +38,16 @@ bool init_window(Display* dpy, const Window W) {
   curr = T.cend() - 1;
   set_act(curr->w);
 */
+  
+int modmask(Display* dpy) {
+  XModifierKeymap* modmap = XGetModifierMapping(dpy);
+  unsigned numlockmask = { 0 };
+  for (int k = 0; k < 8; k++)
+    for (int j = 0; j < modmap->max_keypermod; j++)
+      if (modmap->modifiermap[modmap->max_keypermod * k + j] == 
+        XKeysymToKeycode(dpy, XK_Num_Lock))
+        numlockmask = (1 << k);
+  
+  XFreeModifiermap(modmap);
+  return ~(numlockmask | LockMask);
+}

@@ -39,36 +39,34 @@ int main(const int ARGC, const char* ARGV[]) {
     return -1;
   }
 
-  const pair_t DPYSIZE = { DisplayWidth(dpy, SCRN), DisplayHeight(dpy, SCRN) };
-  XUngrabKey(dpy, AnyKey, AnyModifier, ROOT);
-  XModifierKeymap* modmap = XGetModifierMapping(dpy);
-  unsigned numlockmask = { 0 };
-  for (int k = 0; k < 8; k++)
-    for (int j = 0; j < modmap->max_keypermod; j++)
-      if (modmap->modifiermap[modmap->max_keypermod * k + j] == 
-        XKeysymToKeycode(dpy, XK_Num_Lock))
-        numlockmask = (1 << k);
-  
-  XFreeModifiermap(modmap);
-  const int MODMASK = ~(numlockmask | LockMask);
+  if (!init_clients()) {
+    XCloseDisplay(dpy);
+    fprintf(stderr, "Initialization error (Failed to alloc for clients)");
+    return -1;
+  }
 
+  init_atoms(dpy);
+  init_windows(dpy, ROOT);
+  const pair_t DPYSIZE = { DisplayWidth(dpy, SCRN), DisplayHeight(dpy, SCRN) };
+  const X_t X = { dpy, SCRN, ROOT, DPYSIZE };
+  init_panel(&X, BARH);
+  draw_root(&X, WMNAME, strlen(WMNAME), TITLEFG, TITLEBG);
+
+  XUngrabKey(dpy, AnyKey, AnyModifier, ROOT);
+  const int MODMASK = modmask(dpy);
   for (int i = 0; i < LEN(INPUT); i++) {
     const int MOD = INPUT[i].mod, KEY = INPUT[i].key;
     XGrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOT, 
       true, GrabModeAsync, GrabModeAsync);
   }
-    
-  init_atoms(dpy);
-  init_clients(dpy, ROOT);
-  const X_t X = { dpy, SCRN, ROOT, DPYSIZE, MODMASK };
-  init_panel(&X, BARH);
-  draw_root(&X, WMNAME, strlen(WMNAME), TITLEFG, TITLEBG);
+
   if (signal(SIGINT, sighandler) == SIG_ERR)
     sig_status = 1;
   
   events(&X, &sig_status);
   // Cleanup
   deinit_panel(&X);
+  deinit_clients();
   for (int i = 0; i < LEN(INPUT); i++) {
     const int MOD = INPUT[i].mod, KEY = INPUT[i].key;
     XUngrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOT);

@@ -53,11 +53,14 @@ int main(const int ARGC, const char* ARGV[]) {
   draw_root(&X, WMNAME, strlen(WMNAME), TITLEFG, TITLEBG);
 
   XUngrabKey(dpy, AnyKey, AnyModifier, ROOT);
-  const int MODMASK = modmask(dpy);
-  for (int i = 0; i < LEN(INPUT); i++) {
-    const int MOD = INPUT[i].mod, KEY = INPUT[i].key;
-    XGrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOT, 
-      true, GrabModeAsync, GrabModeAsync);
+  {
+    const int MODMASK = modmask(dpy);
+    for (int i = 0; i < LEN(KBD); i++) {
+      const int MOD = KBD[i].mod;
+      const int KEY = KBD[i].key;
+      XGrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOT, 
+        true, GrabModeAsync, GrabModeAsync);
+    }
   }
 
   if (signal(SIGINT, sighandler) == SIG_ERR)
@@ -67,9 +70,13 @@ int main(const int ARGC, const char* ARGV[]) {
   // Cleanup
   deinit_panel(&X);
   deinit_clients();
-  for (int i = 0; i < LEN(INPUT); i++) {
-    const int MOD = INPUT[i].mod, KEY = INPUT[i].key;
-    XUngrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOT);
+  {
+    const int MODMASK = modmask(dpy);
+    for (int i = 0; i < LEN(KBD); i++) {
+      const int MOD = KBD[i].mod;
+      const int KEY = KBD[i].key;
+      XUngrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOT);
+    }
   }
 
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);

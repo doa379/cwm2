@@ -1,7 +1,12 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
 #include <wm.h>
+#include <lib.h>
 #include <util.h>
+#include <X11/XKBlib.h>
 #include <../config.h>
 
 typedef struct {
@@ -42,10 +47,43 @@ typedef struct {
 
 static atom_t atom;
 static C_t C;
+static void (*CALLFN[128])(Display*, const Window) = {
+  [QUIT] = quit,
+  [KILL] = kill
+};
+
+static bool init_client(const client_t* client) {
+  if (C.size < C.reserve) {
+    memcpy((client_t*) C.clients + C.size, client, sizeof(client_t));
+    C.size++;
+    return true;
+  } else {
+    void* clients = realloc(C.clients, (C.size + C.reserve) * sizeof(client_t));
+    if (clients) {
+      C.clients = clients;
+      memcpy((client_t*) C.clients + C.size, client, sizeof(client_t));
+      C.reserve += C.size;
+      C.size++;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static void deinit_client(client_t* client) {
+  // Patt: move post segment
+  int n = 0;
+  for (; n < C.size && ((client_t*) C.clients + n)->w != client->w ; n++);
+  memcpy((client_t*) C.clients + n, (client_t*) C.clients + (n + 1),
+    (C.size - n - 1) * sizeof(client_t));
+  C.size--;
+}
 
 bool init_clients() {
-  if ((C.clients = malloc(100 * sizeof(client_t)))) {
-    C.reserve = 100;
+  static const int MAXNCLI = 4;
+  if ((C.clients = malloc(MAXNCLI * sizeof(client_t)))) {
+    C.reserve = MAXNCLI;
     C.size = 0;
     return true;
   }
@@ -107,28 +145,44 @@ void init_windows(Display* dpy, const Window root) {
   XSync(dpy, false);
 }
 
-bool init_client(const client_t* client) {
-  if (C.size < C.reserve) {
-    memcpy((client_t*) C.clients + C.size, client, sizeof(client_t));
-    C.size++;
-    return true;
-  }
-
-  else if ((C.clients = realloc(C.clients, (C.size + C.reserve) * sizeof(client_t)))) {
-    memcpy((client_t*) C.clients + C.size, client, sizeof(client_t));
-    C.reserve += C.size;
-    C.size++;
-    return true;
-  }
-
-  return false;
+void key(Display* dpy, const Window root, const int STATE, const int CODE) {
+  const int KMOD = STATE & modmask(dpy);
+  const int KSYM = XkbKeycodeToKeysym(dpy, CODE, 0, 0);
+  for (int i = 0; i < LEN(KBD); i++)
+    if (KBD[i].mod == KMOD && KBD[i].key == KSYM) {
+      if (KBD[i].call < 128) {
+        CALLFN[KBD[i].call](dpy, root);
+      } else if (KBD[i].cmd) {
+        fprintf(stdout, "spawn %s\n", KBD[i].cmd);
+        if (fork() == 0) {
+          close(ConnectionNumber(dpy));
+          setsid();
+          system(KBD[i].cmd);
+        }
+      }
+    }
 }
 
-void deinit_client(client_t* client) {
-  // Patt: move post segment
-  int n = 0;
-  for (; n < C.size && ((client_t*) C.clients + n)->w != client->w ; n++);
-  memcpy((client_t*) C.clients + n, (client_t*) C.clients + (n + 1),
-    (C.size - n - 1) * sizeof(client_t));
-  C.size--;
+void map(Display* dpy, const Window root, const Window W) {
+  const pair_t SIZE = init_window(dpy, W);
+  if (SIZE.x && SIZE.y) {
+    append_window(dpy, root, W, atom.CLIENT_LIST);
+    client_t* prev = (client_t*) C.clients + C.size;
+    const pair_t POS = { prev ? prev->pos.x + BARH : 0, 
+      prev ? prev->pos.y + BARH : BARH };
+    XMoveWindow(dpy, W, POS.x, POS.y);
+    XMapWindow(dpy, W);
+    client_t client = { W, POS, SIZE };
+    init_client(&client);
+    // set focus
+  }
+}
+
+static void quit(Display* dpy, const Window root) {
+  fprintf(stdout, "Quit\n");
+  raise(SIGINT);
+}
+
+static void kill(Display* dpy, const Window root) {
+  fprintf(stdout, "Kill\n");
 }

@@ -139,7 +139,7 @@ typedef struct {
   };
 } input_t;
 
-static const input_t INPUT[] = {
+static const input_t KBD[] = {
   { Mod4Mask, XK_u, { UNMAPALL } },
   { Mod4Mask, XK_v, { REMAPALL } },
   { Mod4Mask, XK_Tab, { SWFOCUS } },
@@ -157,9 +157,6 @@ static const input_t INPUT[] = {
   { Mod4Mask | ControlMask, XK_Left, { RESIZEHDEC } },
   { Mod4Mask | ControlMask, XK_Right, { RESIZEHINC } },
   { Mod4Mask | ShiftMask | ControlMask, XK_q, { QUIT } },
-  // Mouse Bindings
-  { 0, Button1, { SELECT } },
-  { Mod4Mask, Button3, { RESIZE } },
   // Shell Bindings
   { Mod4Mask, XK_n, { .cmd = "notify-send \"Test Key\"" } },
   { Mod4Mask, XK_Escape, { .cmd = "dmenu_run" } },
@@ -168,4 +165,10 @@ static const input_t INPUT[] = {
   { Mod4Mask, XK_c, { .cmd = "xconsole" } },
   { Mod4Mask, XK_d, { .cmd = "xclock" } },
   { Mod4Mask, XK_Return, { .cmd = "xterm" } },
+};
+
+static const input_t BTN[] = {
+  // Mouse Bindings
+  { 0, Button1, { SELECT } },
+  { Mod4Mask, Button3, { RESIZE } },
 };

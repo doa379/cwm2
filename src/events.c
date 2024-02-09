@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <events.h>
-//#include <lib.h>
+#include <wm.h>
 
 static XEvent xev;
 
@@ -34,7 +34,7 @@ static void configurenotify(const X_t* X) {
 static void maprequest(const X_t* X) {
   fprintf(stdout, "EV: Map Request\n");
   const Window W = xev.xmaprequest.window;
-
+  map(X->dpy, X->root, W);
 }
 
 static void configurerequest(const X_t* X) {
@@ -56,7 +56,7 @@ static void keypress(const X_t* X) {
   fprintf(stdout, "EV: Key Press\n");
   const int STATE = xev.xkey.state;
   const int CODE = xev.xkey.keycode;
-
+  key(X->dpy, X->root, STATE, CODE);
 }
 
 static void btnpress(const X_t* X) {
@@ -74,7 +74,7 @@ static void enternotify(const X_t* X) {
 }
 
 static void propertynotify(const X_t* X) {
-  fprintf(stdout, "EV: Porp Notify\n");
+  fprintf(stdout, "EV: Prop Notify\n");
   const Window W = xev.xproperty.window;
 
 }

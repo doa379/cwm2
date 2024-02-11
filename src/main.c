@@ -39,18 +39,14 @@ int main(const int ARGC, const char* ARGV[]) {
     return -1;
   }
 
-  if (!init_clients()) {
+  if (!init_wm(dpy, ROOT)) {
     XCloseDisplay(dpy);
     fprintf(stderr, "Initialization error (Failed to alloc for clients)");
     return -1;
   }
 
-  init_atoms(dpy);
-  init_windows(dpy, ROOT);
-  const pair_t DPYSIZE = { DisplayWidth(dpy, SCRN), DisplayHeight(dpy, SCRN) };
-  const X_t X = { dpy, SCRN, ROOT, DPYSIZE };
-  init_panel(&X, BARH);
-  draw_root(&X, WMNAME, strlen(WMNAME), TITLEFG, TITLEBG);
+  init_panel(dpy, SCRN, ROOT, BARH);
+  draw_root(dpy, ROOT, WMNAME, strlen(WMNAME), TITLEFG, TITLEBG);
 
   XUngrabKey(dpy, AnyKey, AnyModifier, ROOT);
   {
@@ -66,10 +62,10 @@ int main(const int ARGC, const char* ARGV[]) {
   if (signal(SIGINT, sighandler) == SIG_ERR)
     sig_status = 1;
   
-  events(&X, &sig_status);
+  events(dpy, ROOT, &sig_status);
   // Cleanup
-  deinit_panel(&X);
-  deinit_clients();
+  deinit_panel(dpy);
+  deinit_wm();
   {
     const int MODMASK = modmask(dpy);
     for (int i = 0; i < LEN(KBD); i++) {

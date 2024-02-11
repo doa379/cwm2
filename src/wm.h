@@ -13,11 +13,10 @@ static const int ROOTMASK = {
   PropertyChangeMask
 };
 
-bool init_clients();
-void deinit_clients();
-void init_atoms(Display*);
-void init_windows(Display*, const Window);
+bool init_wm(Display*, const Window);
+void deinit_wm();
 void key(Display*, const Window, const int, const int);
 void map(Display*, const Window, const Window);
+static void init_windows(Display*, const Window);
 static void quit(Display*, const Window);
 static void kill(Display*, const Window);

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <x.h>
+#include <X11/Xlib.h>
 
-void init_panel(const X_t*, const unsigned);
-void deinit_panel(const X_t*);
-GC init_gc(const X_t*);
-void deinit_gc(const GC, const X_t*);
-void draw_root(const X_t*, const char*, const size_t, const int, const int);
+void init_panel(Display*, const int, const Window, const unsigned);
+void deinit_panel(Display*);
+GC init_gc(Display*, const Window);
+void deinit_gc(Display*, const GC);
+void draw_root(Display*, const Window, const char*, const size_t, const int, const int);

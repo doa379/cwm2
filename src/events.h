@@ -1,6 +1,6 @@
 #pragma once
 
+#include <X11/Xlib.h>
 #include <signal.h>
-#include <x.h>
 
-void events(const X_t*, volatile sig_atomic_t*);
+void events(Display*, const Window, volatile sig_atomic_t*);

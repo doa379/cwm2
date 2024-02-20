@@ -4,7 +4,6 @@
 
 static XEvent xev;
 static Display* dpy;
-static Window root;
 
 static void noop() {
   fprintf(stdout, "EV: Unregistered\n");
@@ -36,7 +35,7 @@ static void configurenotify() {
 static void maprequest() {
   fprintf(stdout, "EV: Map Request\n");
   const Window W = xev.xmaprequest.window;
-  map(dpy, root, W);
+  map(W);
 }
 
 static void configurerequest() {
@@ -58,7 +57,7 @@ static void keypress() {
   fprintf(stdout, "EV: Key Press\n");
   const int STATE = xev.xkey.state;
   const int CODE = xev.xkey.keycode;
-  key(dpy, root, STATE, CODE);
+  key(STATE, CODE);
 }
 
 static void btnpress() {
@@ -81,9 +80,8 @@ static void propertynotify() {
 
 }
 
-void events(Display* dpy_, const Window ROOT, volatile sig_atomic_t* sig_status) {
+void events(Display* dpy_, volatile sig_atomic_t* sig_status) {
   dpy = dpy_;
-  root = ROOT;
   void (*EVFN[LASTEvent])();
   for (int i = 0; i < LASTEvent; i++)
     EVFN[i] = noop;

@@ -1,7 +1,17 @@
 #pragma once
 
 #include <X11/Xlib.h>
-#include <util.h>
+
+static const int ROOTMASK = { 
+  SubstructureRedirectMask | 
+  SubstructureNotifyMask | 
+  ButtonPressMask |
+  PointerMotionMask |
+  EnterWindowMask |
+  LeaveWindowMask |
+  StructureNotifyMask |
+  PropertyChangeMask
+};
 
 typedef struct {
   Atom PROTO;
@@ -24,6 +34,4 @@ typedef struct {
 } atom_t;
 
 atom_t init_atoms(Display*);
-pair_t init_window(Display*, const Window);
-void append_window(Display*, const Window, const Window, const Atom);
 int modmask(Display*);

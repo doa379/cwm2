@@ -1,22 +1,23 @@
 #pragma once
 
 #include <X11/Xlib.h>
+#include <util.h>
 
-static const int ROOTMASK = { 
-  SubstructureRedirectMask | 
-  SubstructureNotifyMask | 
-  ButtonPressMask |
-  PointerMotionMask |
-  EnterWindowMask |
-  LeaveWindowMask |
-  StructureNotifyMask |
-  PropertyChangeMask
-};
+typedef struct {
+  Window w;
+  pair_t pos;
+  pair_t size;
+  GC gc;
+  int sel;
+  int ft;
+  int misc;
+} client_t;
 
 bool init_wm(Display*, const Window);
 void deinit_wm();
-void key(Display*, const Window, const int, const int);
-void map(Display*, const Window, const Window);
-static void init_windows(Display*, const Window);
-static void quit(Display*, const Window);
-static void kill(Display*, const Window);
+void key(const int, const int);
+void map(const Window);
+static void init_windows();
+static void focus(client_t*);
+static void quit();
+static void kill();

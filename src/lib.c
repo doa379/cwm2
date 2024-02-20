@@ -1,5 +1,4 @@
 #include <X11/Xutil.h>
-#include <X11/Xatom.h>
 #include <lib.h>
 
 atom_t init_atoms(Display* dpy) {
@@ -22,24 +21,6 @@ atom_t init_atoms(Display* dpy) {
     XInternAtom(dpy, "_NET_CURRENT_DESKTOP", false),
     XInternAtom(dpy, "_NET_SHOWING_DESKTOP", false)
   };
-}
-
-pair_t init_window(Display* dpy, const Window W) {
-  static XWindowAttributes wa;
-  if (XGetWindowAttributes(dpy, W, &wa) == 0 || wa.override_redirect)
-    return (pair_t) { 0 };
-  
-  static const int WMASK = EnterWindowMask | 
-    FocusChangeMask |
-    PropertyChangeMask | 
-    StructureNotifyMask;
-  XSelectInput(dpy, W, WMASK);
-  return (pair_t) { wa.width, wa.height };
-}
-
-void append_window(Display* dpy, const Window root, const Window W, const Atom PROP) {
-  XChangeProperty(dpy, root, PROP, XA_WINDOW, 32, PropModeAppend,
-    (unsigned char*) &W, 1);
 }
 
 int modmask(Display* dpy) {

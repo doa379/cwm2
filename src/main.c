@@ -29,32 +29,30 @@ int main(const int ARGC, const char* ARGV[]) {
     return -1;
   }
   
-  const int SCRN = DefaultScreen(dpy);
-  const Window ROOT = XRootWindow(dpy, SCRN);
+  const Window ROOTW = XRootWindow(dpy, DefaultScreen(dpy));
   XSetErrorHandler(XError);
-  XSelectInput(dpy, ROOT, ROOTMASK);
+  XSelectInput(dpy, ROOTW, ROOTMASK);
   if (xerror) {
     XCloseDisplay(dpy);
     fprintf(stderr, "Initialization error (another wm running?)");
     return -1;
   }
 
-  if (!init_wm(dpy, ROOT)) {
+  if (!init_wm(dpy, ROOTW)) {
     XCloseDisplay(dpy);
     fprintf(stderr, "Initialization error (Failed to alloc for clients)");
     return -1;
   }
 
-  init_panel(dpy, SCRN, ROOT, BARH);
-  draw_root(dpy, ROOT, WMNAME, strlen(WMNAME), TITLEFG, TITLEBG);
-
-  XUngrabKey(dpy, AnyKey, AnyModifier, ROOT);
+  init_panel(dpy, BARH);
+  draw_root(dpy, WMNAME, strlen(WMNAME), TITLEFG, TITLEBG);
+  XUngrabKey(dpy, AnyKey, AnyModifier, ROOTW);
   {
     const int MODMASK = modmask(dpy);
-    for (int i = 0; i < LEN(KBD); i++) {
+    for (size_t i = 0; i < LEN(KBD); i++) {
       const int MOD = KBD[i].mod;
       const int KEY = KBD[i].key;
-      XGrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOT, 
+      XGrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOTW, 
         true, GrabModeAsync, GrabModeAsync);
     }
   }
@@ -62,16 +60,16 @@ int main(const int ARGC, const char* ARGV[]) {
   if (signal(SIGINT, sighandler) == SIG_ERR)
     sig_status = 1;
   
-  events(dpy, ROOT, &sig_status);
+  events(dpy, &sig_status);
   // Cleanup
   deinit_panel(dpy);
   deinit_wm();
   {
     const int MODMASK = modmask(dpy);
-    for (int i = 0; i < LEN(KBD); i++) {
+    for (size_t i = 0; i < LEN(KBD); i++) {
       const int MOD = KBD[i].mod;
       const int KEY = KBD[i].key;
-      XUngrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOT);
+      XUngrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOTW);
     }
   }
 

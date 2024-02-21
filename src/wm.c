@@ -11,33 +11,53 @@
 
 typedef struct {
   void* clients;
+  size_t unit;
   size_t reserve;
   size_t size;
   client_t* prev;
   client_t* curr;
 } C_t;
 
-static Display* dpy;
-static Window rootw;
 static atom_t atom;
 static C_t C;
-static void (*CALLFN[])() = {
+static void (*CALLFN[])(Display*, const Window) = {
   [QUIT] = quit,
-  [KILL] = kill
+  [KILL] = kill,
+  [PREVCLI] = prev,
+  [NEXTCLI] = next
 };
+
+static bool init_clients() {
+  static const int MAXNCLI = 2;
+  if ((C.clients = calloc(MAXNCLI, sizeof(client_t)))) {
+    C.unit = sizeof(client_t);
+    C.reserve = MAXNCLI;
+    C.size = 0;
+    C.prev = C.curr = C.clients;
+    return true;
+  }
+
+  return false;
+}
+
+static void deinit_clients() {
+  free(C.clients);
+  C.unit = C.reserve = C.size = 0;
+  C.prev = C.curr = NULL;
+}
 
 static client_t* init_client(const client_t* client) {
   // Return address of client
   if (C.size < C.reserve) {
-    memcpy((client_t*) C.clients + C.size, client, sizeof(client_t));
+    memcpy((client_t*) C.clients + C.size, client, C.unit);
     C.size++;
     return (client_t*) C.clients + C.size - 1;
   } else {
-    void* clients = realloc(C.clients, (C.size + C.reserve) * sizeof(client_t));
+    void* clients = realloc(C.clients, (C.size + C.reserve) * C.unit);
     if (clients) {
       C.clients = clients;
-      memcpy((client_t*) C.clients + C.size, client, sizeof(client_t));
       C.reserve += C.size;
+      memcpy((client_t*) C.clients + C.size, client, C.unit);
       C.size++;
       return (client_t*) C.clients + C.size - 1;
     }
@@ -51,51 +71,46 @@ static void deinit_client(client_t* client) {
   int n = 0;
   for (; n < C.size && ((client_t*) C.clients + n)->w != client->w; n++);
   memcpy((client_t*) C.clients + n, (client_t*) C.clients + n + 1,
-    (C.size - n - 1) * sizeof(client_t));
+    (C.size - n - 1) * C.unit);
   C.size--;
 }
 
-static bool init_clients() {
-  static const int MAXNCLI = 2;
-  if ((C.clients = calloc(MAXNCLI, sizeof(client_t)))) {
-    C.reserve = MAXNCLI;
-    C.size = 0;
-    C.prev = C.curr = C.clients;
-    return true;
-  }
-
-  return false;
-}
-
-static void deinit_clients() {
-  free(C.clients);
-  C.reserve = C.size = 0;
-  C.prev = C.curr = NULL;
-}
-
-bool init_wm(Display* dpy_, const Window W) {
+bool init_wm(Display* dpy, const Window W) {
   if (init_clients()) {
-    dpy = dpy_;
-    rootw = W;
+    XUngrabKey(dpy, AnyKey, AnyModifier, W);
+    const int MODMASK = modmask(dpy);
+    for (size_t i = 0; i < LEN(KBD); i++) {
+      const int MOD = KBD[i].mod;
+      const int KEY = KBD[i].key;
+      XGrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, W, 
+        true, GrabModeAsync, GrabModeAsync);
+    }
+
     atom = init_atoms(dpy);
-    init_windows();
+    init_windows(dpy, W);
     return true;
   }
 
   return false;
 }
 
-void deinit_wm() {
+void deinit_wm(Display* dpy, const Window W) {
   deinit_clients();
+  const int MODMASK = modmask(dpy);
+  for (size_t i = 0; i < LEN(KBD); i++) {
+    const int MOD = KBD[i].mod;
+    const int KEY = KBD[i].key;
+    XUngrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, W);
+  }
 }
 
-void key(const int STATE, const int CODE) {
+void key(Display* dpy, const Window W, const int STATE, const int CODE) {
   const int KMOD = STATE & modmask(dpy);
   const int KSYM = XkbKeycodeToKeysym(dpy, CODE, 0, 0);
   for (size_t i = 0; i < LEN(KBD); i++)
     if (KBD[i].mod == KMOD && KBD[i].key == KSYM) {
       if (KBD[i].call < 128) {
-        CALLFN[KBD[i].call]();
+        CALLFN[KBD[i].call](dpy, W);
       } else if (KBD[i].cmd) {
         fprintf(stdout, "spawn %s\n", KBD[i].cmd);
         if (fork() == 0) {
@@ -107,7 +122,7 @@ void key(const int STATE, const int CODE) {
     }
 }
 
-void map(const Window W) {
+void map(Display* dpy, const Window ROOTW, const Window W) {
   static XWindowAttributes wa;
   if (XGetWindowAttributes(dpy, W, &wa) == 0 || wa.override_redirect)
     return;
@@ -118,7 +133,7 @@ void map(const Window W) {
     StructureNotifyMask;
   XSelectInput(dpy, W, WMASK);
   XMapWindow(dpy, W);
-  XChangeProperty(dpy, rootw, atom.CLIENT_LIST, XA_WINDOW, 32, 
+  XChangeProperty(dpy, ROOTW, atom.CLIENT_LIST, XA_WINDOW, 32, 
     PropModeAppend, (unsigned char*) &W, 1);
   const pair_t POS = { C.size ? C.curr->pos.x + BARH : 0, 
     C.size ? C.curr->pos.y + BARH : BARH };
@@ -126,42 +141,18 @@ void map(const Window W) {
   client_t client = { W, POS, SIZE };
   client_t* curr = init_client(&client);
   if (curr) {
-    focus(curr);
+    focus(dpy, ROOTW, curr);
     XMoveWindow(dpy, W, POS.x, POS.y);
   }
 }
 
-static void init_windows() {
-  Window root;
-  Window par;
-  Window* w;
-  unsigned n;
-  if (XQueryTree(dpy, rootw, &root, &par, &w, &n)) {
-    for (int i = 0; i < n; i++) {
-      XWindowAttributes wa;
-      if (XGetWindowAttributes(dpy, w[i], &wa) && wa.map_state == IsViewable) {
-        XEvent xev = { MapRequest };
-        xev.xmaprequest.send_event = true,
-        xev.xmaprequest.parent = rootw;
-        xev.xmaprequest.window = w[i];
-        XSendEvent(dpy, rootw, true, ROOTMASK, &xev);
-      }
-    }
-
-    if (w)
-      XFree(w);
-  }
-
-  XSync(dpy, false);
-}
-
-static void focus(client_t* client) {
+static void focus(Display* dpy, const Window ROOTW, client_t* client) {
   const int MODMASK = modmask(dpy);
   // Deactivates
   for (size_t i = 0; i < LEN(BTN); i++) {
     const int MOD = BTN[i].mod;
     const int KEY = BTN[i].key;
-    XUngrabButton(dpy, KEY, MOD & MODMASK, rootw);
+    XUngrabButton(dpy, KEY, MOD & MODMASK, ROOTW);
   }
   
   XDeleteProperty(dpy, C.curr->w, atom.ACTIVE_WINDOW);
@@ -171,7 +162,7 @@ static void focus(client_t* client) {
   XSetWindowBorder(dpy, client->w, (size_t) ACTBDR);
   XSetWindowBorderWidth(dpy, client->w, BDRW);
   XSetInputFocus(dpy, client->w, RevertToPointerRoot, CurrentTime);
-  XChangeProperty(dpy, rootw, atom.WM_STATE, XA_WINDOW, 32, 
+  XChangeProperty(dpy, ROOTW, atom.WM_STATE, XA_WINDOW, 32, 
     PropModeReplace, (const unsigned char*) &client->w, 1);
   XChangeProperty(dpy, client->w, atom.ACTIVE_WINDOW, XA_WINDOW, 32, 
     PropModeReplace, (const unsigned char*) &client->w, 1);
@@ -188,11 +179,29 @@ static void focus(client_t* client) {
   C.curr = client;
 }
 
-static void quit() {
+static void quit(Display*, const Window) {
   fprintf(stdout, "Quit\n");
   raise(SIGINT);
 }
 
-static void kill() {
+static void kill(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "Kill\n");
+}
+
+static void prev(Display* dpy, const Window ROOTW) {
+  fprintf(stdout, "Prev\n");
+  if (C.size > 1) {
+    client_t* client = C.curr == (client_t*) C.clients ? 
+      (client_t*) C.clients + C.size - 1 : C.curr - 1;
+    focus(dpy, ROOTW, client);
+  }
+}
+
+static void next(Display* dpy, const Window ROOTW) {
+  fprintf(stdout, "Next\n");
+  if (C.size > 1) {
+    client_t* client = C.curr == (client_t*) C.clients + C.size - 1 ? 
+      (client_t*) C.clients : C.curr + 1;
+    focus(dpy, ROOTW, client);
+  }
 }

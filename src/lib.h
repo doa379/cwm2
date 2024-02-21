@@ -35,3 +35,4 @@ typedef struct {
 
 atom_t init_atoms(Display*);
 int modmask(Display*);
+void init_windows(Display*, const Window);

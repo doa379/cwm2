@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <stdbool.h>
-#include <string.h>
 #include <wm.h>
 #include <lib.h>
 #include <events.h>
 #include <panel.h>
-#include <../config.h>
 
 static const char* WMNAME = "cwm2";
 static const char* WMVER = "-0.0";
@@ -44,35 +42,15 @@ int main(const int ARGC, const char* ARGV[]) {
     return -1;
   }
 
-  init_panel(dpy, BARH);
-  draw_root(dpy, WMNAME, strlen(WMNAME), TITLEFG, TITLEBG);
-  XUngrabKey(dpy, AnyKey, AnyModifier, ROOTW);
-  {
-    const int MODMASK = modmask(dpy);
-    for (size_t i = 0; i < LEN(KBD); i++) {
-      const int MOD = KBD[i].mod;
-      const int KEY = KBD[i].key;
-      XGrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOTW, 
-        true, GrabModeAsync, GrabModeAsync);
-    }
-  }
-
+  init_panel(dpy, ROOTW);
+  draw_root(dpy, ROOTW, WMNAME);
   if (signal(SIGINT, sighandler) == SIG_ERR)
     sig_status = 1;
   
-  events(dpy, &sig_status);
+  events(dpy, ROOTW, &sig_status);
   // Cleanup
   deinit_panel(dpy);
-  deinit_wm();
-  {
-    const int MODMASK = modmask(dpy);
-    for (size_t i = 0; i < LEN(KBD); i++) {
-      const int MOD = KBD[i].mod;
-      const int KEY = KBD[i].key;
-      XUngrabKey(dpy, XKeysymToKeycode(dpy, KEY), MOD & MODMASK, ROOTW);
-    }
-  }
-
+  deinit_wm(dpy, ROOTW);
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
   XCloseDisplay(dpy);
   return 0;

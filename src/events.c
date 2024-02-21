@@ -3,42 +3,41 @@
 #include <wm.h>
 
 static XEvent xev;
-static Display* dpy;
 
-static void noop() {
+static void noop(Display*, const Window) {
   fprintf(stdout, "EV: Unregistered\n");
 }
 
-static void mapnotify() {
+static void mapnotify(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Mapnotify\n");
 
 }
 
-static void unmapnotify() {
+static void unmapnotify(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Unmapnotify\n");
   const Window W = xev.xunmap.window;
 
 }
 
-static void clientmessage() {
+static void clientmessage(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Client Message\n");
   const Window W = xev.xclient.window;
 
 }
 
-static void configurenotify() {
+static void configurenotify(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Configure Notify\n");
   (void) xev.xconfigure;
 
 }
 
-static void maprequest() {
+static void maprequest(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Map Request\n");
   const Window W = xev.xmaprequest.window;
-  map(W);
+  map(dpy, ROOTW, W);
 }
 
-static void configurerequest() {
+static void configurerequest(Display* dpy, const Window) {
   fprintf(stdout, "EV: Config Request\n");
   const XConfigureRequestEvent* CONF = &xev.xconfigurerequest;
   XWindowChanges wc = {
@@ -47,20 +46,20 @@ static void configurerequest() {
   XConfigureWindow(dpy, CONF->window, CONF->value_mask, &wc);
 }
 
-static void motionnotify() {
+static void motionnotify(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Motion Notify\n");
   const Window W = xev.xmotion.window;
 
 }
 
-static void keypress() {
+static void keypress(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Key Press\n");
   const int STATE = xev.xkey.state;
   const int CODE = xev.xkey.keycode;
-  key(STATE, CODE);
+  key(dpy, ROOTW, STATE, CODE);
 }
 
-static void btnpress() {
+static void btnpress(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Btn Press\n");
   const int STATE = xev.xbutton.state;
   const int CODE = xev.xbutton.button;
@@ -68,21 +67,20 @@ static void btnpress() {
 
 }
 
-static void enternotify() {
+static void enternotify(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Enter Notify\n");
   const Window W = xev.xcrossing.window;
 
 }
 
-static void propertynotify() {
+static void propertynotify(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Prop Notify\n");
   const Window W = xev.xproperty.window;
 
 }
 
-void events(Display* dpy_, volatile sig_atomic_t* sig_status) {
-  dpy = dpy_;
-  void (*EVFN[LASTEvent])();
+void events(Display* dpy, const Window W, volatile sig_atomic_t* sig_status) {
+  void (*EVFN[LASTEvent])(Display*, const Window);
   for (int i = 0; i < LASTEvent; i++)
     EVFN[i] = noop;
 
@@ -99,7 +97,7 @@ void events(Display* dpy_, volatile sig_atomic_t* sig_status) {
   EVFN[PropertyNotify] = propertynotify;
 
   while (*sig_status == 0 && XNextEvent(dpy, &xev) == 0) {
-    EVFN[xev.type]();
+    EVFN[xev.type](dpy, W);
     XSync(dpy, false);
   }
 }

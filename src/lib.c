@@ -35,3 +35,27 @@ int modmask(Display* dpy) {
   XFreeModifiermap(modmap);
   return ~(numlockmask | LockMask);
 }
+
+void init_windows(Display* dpy, const Window W) {
+  Window root;
+  Window par;
+  Window* w;
+  unsigned n;
+  if (XQueryTree(dpy, W, &root, &par, &w, &n)) {
+    for (unsigned i = 0; i < n; i++) {
+      XWindowAttributes wa;
+      if (XGetWindowAttributes(dpy, w[i], &wa) && wa.map_state == IsViewable) {
+        XEvent xev = { MapRequest };
+        xev.xmaprequest.send_event = true,
+        xev.xmaprequest.parent = W;
+        xev.xmaprequest.window = w[i];
+        XSendEvent(dpy, W, true, ROOTMASK, &xev);
+      }
+    }
+
+    if (w)
+      XFree(w);
+  }
+
+  XSync(dpy, false);
+}

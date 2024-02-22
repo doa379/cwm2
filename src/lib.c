@@ -1,5 +1,46 @@
+#include <stdlib.h>
+#include <string.h>
 #include <X11/Xutil.h>
 #include <lib.h>
+
+blk_t init_blk(const size_t SIZE, const size_t RESERVE) {
+  void* blk = calloc(RESERVE, SIZE);
+  return (blk_t) { blk, blk, blk, SIZE, RESERVE, 0 };
+}
+
+void deinit_blk(blk_t* blk) {
+  free(blk->blk);
+  *blk = (blk_t) { 0 };
+}
+
+void* init_dev(blk_t* blk, const void* dev) {
+  // Return address of dev
+  if (blk->size < blk->reserve) {
+    memcpy((char*) blk->blk + blk->size * blk->unit, dev, blk->unit);
+    blk->size++;
+    return (char*) blk->blk + (blk->size - 1) * blk->unit;
+  } else {
+    void* ptr = realloc(blk->blk, (blk->size + blk->reserve) * blk->unit);
+    if (ptr) {
+      blk->blk = ptr;
+      blk->reserve += blk->size;
+      memcpy((char*) blk->blk + blk->size * blk->unit, dev, blk->unit);
+      blk->size++;
+      return (char*) blk->blk + (blk->size - 1) * blk->unit;
+    }
+  }
+
+  return NULL;
+}
+
+void deinit_dev(blk_t* blk, const void* dev) {
+  // Patt: move post segment
+  int n = 0;
+  for (; n < blk->size && (char*) blk->blk + n * blk->unit != dev; n++);
+  memcpy((char*) blk->blk + n * blk->unit, (char*) blk->blk + (n + 1) * blk->unit,
+    (blk->size - n - 1) * blk->unit);
+  blk->size--;
+}
 
 atom_t init_atoms(Display* dpy) {
   return (atom_t) {

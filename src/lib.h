@@ -14,6 +14,15 @@ static const int ROOTMASK = {
 };
 
 typedef struct {
+  void* blk;
+  void* prev;
+  void* curr;
+  size_t unit;
+  size_t reserve;
+  size_t size;
+} blk_t;
+
+typedef struct {
   Atom PROTO;
   Atom NAME;
   Atom DELETE_WINDOW;
@@ -33,6 +42,10 @@ typedef struct {
   Atom SHOWING_DESKTOP;
 } atom_t;
 
+blk_t init_blk(const size_t, const size_t);
+void deinit_blk(blk_t*);
+void* init_dev(blk_t*, const void*);
+void deinit_dev(blk_t*, const void*);
 atom_t init_atoms(Display*);
 int modmask(Display*);
 void init_windows(Display*, const Window);

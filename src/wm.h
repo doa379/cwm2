@@ -8,10 +8,20 @@ typedef struct {
   pair_t pos;
   pair_t size;
   GC gc;
+  // 32B
   int sel;
   int ft;
-  int misc;
+  int m0;
+  int m1;
+  int m2;
+  int m3;
+  int m4;
+  int m5;
 } client_t;
+
+typedef struct {
+  pair_t size;
+} monitor_t;
 
 bool init_wm(Display*, const Window);
 void deinit_wm(Display*, const Window);

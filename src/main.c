@@ -42,6 +42,7 @@ int main(const int ARGC, const char* ARGV[]) {
     return -1;
   }
 
+  init_windows(dpy, ROOTW);
   init_panel(dpy, ROOTW);
   draw_root(dpy, ROOTW, WMNAME);
   if (signal(SIGINT, sighandler) == SIG_ERR)

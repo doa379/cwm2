@@ -27,8 +27,12 @@ static void clientmessage(Display* dpy, const Window ROOTW) {
 
 static void configurenotify(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Configure Notify\n");
-  (void) xev.xconfigure;
-
+  const Window W = xev.xconfigure.window;
+  if (W == ROOTW) {
+    const int WIDTH = xev.xconfigure.width;
+    const int HEIGHT = xev.xconfigure.height;
+    configure_root(dpy, ROOTW, WIDTH, HEIGHT);
+  }
 }
 
 static void maprequest(Display* dpy, const Window ROOTW) {

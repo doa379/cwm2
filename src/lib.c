@@ -3,9 +3,9 @@
 #include <X11/Xutil.h>
 #include <lib.h>
 
-blk_t init_blk(const size_t SIZE, const size_t RESERVE) {
-  void* blk = calloc(RESERVE, SIZE);
-  return (blk_t) { blk, blk, blk, SIZE, RESERVE, 0 };
+blk_t init_blk(const size_t UNITSIZE, const size_t RESERVE) {
+  void* blk = calloc(RESERVE, UNITSIZE);
+  return (blk_t) { blk, UNITSIZE, RESERVE, 0 };
 }
 
 void deinit_blk(blk_t* blk) {

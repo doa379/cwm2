@@ -15,8 +15,6 @@ static const int ROOTMASK = {
 
 typedef struct {
   void* blk;
-  void* prev;
-  void* curr;
   size_t unit;
   size_t reserve;
   size_t size;

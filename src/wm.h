@@ -25,10 +25,12 @@ typedef struct {
 
 bool init_wm(Display*, const Window);
 void deinit_wm(Display*, const Window);
-void key(Display*, const Window, const int, const int);
+void configure_root(Display*, const Window, const int, const int);
 void map(Display*, const Window, const Window);
+void key(Display*, const Window, const int, const int);
 static void focus(Display*, const Window, client_t*);
 static void quit(Display*, const Window);
 static void kill(Display*, const Window);
+static client_t* find_client(const Window);
 static void prev(Display*, const Window);
 static void next(Display*, const Window);

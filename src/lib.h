@@ -15,8 +15,8 @@ static const int ROOTMASK = {
 
 typedef struct {
   void* blk;
-  size_t unit;
   size_t reserve;
+  size_t unit;
   size_t size;
 } blk_t;
 
@@ -42,8 +42,11 @@ typedef struct {
 
 blk_t init_blk(const size_t, const size_t);
 void deinit_blk(blk_t*);
-void* init_dev(blk_t*, const void*);
-void deinit_dev(blk_t*, const void*);
+void* map_dev(blk_t*, const void*);
+void unmap_dev(blk_t*, const void*);
+void* find_dev(blk_t*, void*);
+void* prev_dev(blk_t*, void*);
+void* next_dev(blk_t*, void*);
 atom_t init_atoms(Display*);
 int modmask(Display*);
 void init_windows(Display*, const Window);

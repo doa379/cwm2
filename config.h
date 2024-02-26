@@ -5,7 +5,7 @@
 #include <palette.h>
 
 /*
-Some KeySym {
+KeySym {
   XK_Escape,
   XK_F1,
   XK_F2,
@@ -73,7 +73,7 @@ Some KeySym {
   XF86XK_Sleep,
 }
 
-Some Buttons {
+Buttons {
   Left      = Button1,
   Middle    = Button2,
   Right     = Button3,

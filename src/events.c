@@ -16,7 +16,7 @@ static void mapnotify(Display* dpy, const Window ROOTW) {
 static void unmapnotify(Display* dpy, const Window ROOTW) {
   fprintf(stdout, "EV: Unmapnotify\n");
   const Window W = xev.xunmap.window;
-
+  unmap(dpy, ROOTW, W);
 }
 
 static void clientmessage(Display* dpy, const Window ROOTW) {

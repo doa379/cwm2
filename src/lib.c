@@ -1,10 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
-#include <X11/Xutil.h>
 #include <lib.h>
 
 blk_t init_blk(const size_t UNITSIZE, const size_t RESERVE) {
-  void* blk = calloc(RESERVE + 1, UNITSIZE);
+  void* blk = malloc((RESERVE + 1) * UNITSIZE);
   return (blk_t) { blk, RESERVE, UNITSIZE, 0 };
 }
 
@@ -35,91 +34,31 @@ void* map_dev(blk_t* blk, const void* DEV) {
 
 void unmap_dev(blk_t* blk, const void* DEV) {
   // Patt: move post segment
-  size_t n = 0;
-  for (; n < blk->size && (char*) blk->blk + n * blk->unit != DEV; n++);
-  if (n < blk->size - 1)
-    memcpy((char*) blk->blk + n * blk->unit, 
-      (char*) blk->blk + (n + 1) * blk->unit,
-        (blk->size - n - 1) * blk->unit);
+  const char* E = (char*) blk->blk + (blk->size - 1) * blk->unit;
+  char* p = blk->blk;
+  for (; p < E && p != DEV; p += blk->unit);
+  if (p < E - blk->unit)
+    memcpy(p, p + blk->unit, E - p - blk->unit);
   blk->size--;
 }
 
 void* find_dev(blk_t* blk, void* dev) {
-  size_t n = 0;
-  for (; n < (blk->size + 1) * blk->unit && (char*) blk->blk + n != dev; 
-    n += blk->unit);
-  return n < blk->size ? (char*) blk->blk + n * blk->unit : NULL;
+  const char* E = (char*) blk->blk + blk->size * blk->unit;
+  char* p = blk->blk;
+  for (; p < E && p != dev; p += blk->unit);
+  return p < E - blk->unit ? p : NULL;
 }
 
 void* prev_dev(blk_t* blk, void* dev) {
   return blk->size == 0 ? NULL :
     blk->size == 1 ? dev :
     dev == blk->blk ? (char*) blk->blk + (blk->size  - 1) * blk->unit : 
-    (char*) blk->blk - blk->unit;
+    (char*) dev - blk->unit;
 }
 
 void* next_dev(blk_t* blk, void* dev) {
   return blk->size == 0 ? NULL :
     blk->size == 1 ? dev :
     dev == (char*) blk->blk + (blk->size - 1) * blk->unit ? blk->blk :
-    (char*) blk->blk + blk->unit;
-}
-
-atom_t init_atoms(Display* dpy) {
-  return (atom_t) {
-    XInternAtom(dpy, "WM_PROTOCOLS", false),
-    XInternAtom(dpy, "WM_NAME", false),
-    XInternAtom(dpy, "WM_DELETE_WINDOW", false),
-    XInternAtom(dpy, "WM_STATE", false),
-    XInternAtom(dpy, "WM_TAKE_FOCUS", false),
-    XInternAtom(dpy, "_NET_SUPPORTED", false),
-    XInternAtom(dpy, "_NET_WM_STATE", false),
-    XInternAtom(dpy, "_NET_WM_NAME", false),
-    XInternAtom(dpy, "_NET_ACTIVE_WINDOW", false),
-    XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", false),
-    XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", false),
-    XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", false),
-    XInternAtom(dpy, "_NET_CLIENT_LIST", false),
-    XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", false),
-    XInternAtom(dpy, "_NET_WM_DESKTOP", false),
-    XInternAtom(dpy, "_NET_CURRENT_DESKTOP", false),
-    XInternAtom(dpy, "_NET_SHOWING_DESKTOP", false)
-  };
-}
-
-int modmask(Display* dpy) {
-  XModifierKeymap* modmap = XGetModifierMapping(dpy);
-  unsigned numlockmask = { 0 };
-  for (int k = 0; k < 8; k++)
-    for (int j = 0; j < modmap->max_keypermod; j++)
-      if (modmap->modifiermap[modmap->max_keypermod * k + j] == 
-        XKeysymToKeycode(dpy, XK_Num_Lock))
-        numlockmask = (1 << k);
-  
-  XFreeModifiermap(modmap);
-  return ~(numlockmask | LockMask);
-}
-
-void init_windows(Display* dpy, const Window W) {
-  Window root;
-  Window par;
-  Window* w;
-  unsigned n;
-  if (XQueryTree(dpy, W, &root, &par, &w, &n)) {
-    for (unsigned i = 0; i < n; i++) {
-      XWindowAttributes wa;
-      if (XGetWindowAttributes(dpy, w[i], &wa) && wa.map_state == IsViewable) {
-        XEvent xev = { MapRequest };
-        xev.xmaprequest.send_event = true,
-        xev.xmaprequest.parent = W;
-        xev.xmaprequest.window = w[i];
-        XSendEvent(dpy, W, true, ROOTMASK, &xev);
-      }
-    }
-
-    if (w)
-      XFree(w);
-  }
-
-  XSync(dpy, false);
+    (char*) dev + blk->unit;
 }

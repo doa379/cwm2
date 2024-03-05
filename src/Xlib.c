@@ -1,7 +1,9 @@
 #include <X11/Xatom.h>
 #include <X11/XKBlib.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <Xlib.h>
 #include <util.h>
 #include <../config.h>
@@ -66,36 +68,13 @@ bool init_root() {
   XSetErrorHandler(XError);
   XSelectInput(dpy, rootw, ROOTMASK);
   XUngrabKey(dpy, AnyKey, AnyModifier, rootw);
+  XDeleteProperty(dpy, rootw, atom.CLIENT_LIST);
   return !xerror;
 }
 
 void deinit_root() {
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
-/*
-void events(volatile sig_atomic_t* sig) {
-  void (*EVFN[LASTEvent])(Display*, const Window, const XEvent*);
-  for (size_t i = 0; i < LASTEvent; i++)
-    EVFN[i] = noop;
-
-  EVFN[MapNotify] = mapnotify;
-  EVFN[UnmapNotify] = unmapnotify;
-  EVFN[ClientMessage] = clientmessage;
-  EVFN[ConfigureNotify] = configurenotify;
-  EVFN[MapRequest] = maprequest;
-  EVFN[ConfigureRequest] = configurerequest;
-  EVFN[MotionNotify] = motionnotify;
-  EVFN[KeyPress] = keypress;
-  EVFN[ButtonPress] = btnpress;
-  EVFN[EnterNotify] = enternotify;
-  EVFN[PropertyNotify] = propertynotify;
-
-  while (*sig == 0 && XNextEvent(dpy, &xev) == 0) {
-    EVFN[xev.type](dpy, rootw, &xev);
-    XSync(dpy, false);
-  }
-}
-*/
 
 void init_noop(ev_t* ev) {
   EV[0] = ev;
@@ -122,7 +101,6 @@ void init_unmapnotify(ev_t* ev) {
 static ev_t* unmapnotify() {
   fprintf(stdout, "EV: Unmapnotify\n");
   const Window W = xev.xunmap.window;
-  //unmap(dpy, ROOTW, W);
   EV[2]->DATA[0] = W;
   return EV[2];
 }
@@ -161,8 +139,7 @@ void init_maprequest(ev_t* ev) {
 static ev_t* maprequest() {
   fprintf(stdout, "EV: Map Request\n");
   const Window W = xev.xmaprequest.window;
-  //map(dpy, ROOTW, W);
-  static XWindowAttributes wa;
+  XWindowAttributes wa;
   if (XGetWindowAttributes(dpy, W, &wa) == 0 || wa.override_redirect)
     return EV[0];
   
@@ -202,6 +179,7 @@ static ev_t* motionnotify() {
   return EV[0];
   fprintf(stdout, "EV: Motion Notify\n");
   const Window W = xev.xmotion.window;
+  (void) W;
 }
 
 void init_keypress(ev_t* ev) {
@@ -212,7 +190,6 @@ static ev_t* keypress() {
   fprintf(stdout, "EV: Key Press\n");
   const int STATE = xev.xkey.state;
   const int CODE = xev.xkey.keycode;
-  //key(dpy, ROOTW, STATE, CODE);
   EV[6]->DATA[0] = rootw;
   EV[6]->DATA[1] = STATE;
   EV[6]->DATA[2] = CODE;
@@ -353,32 +330,32 @@ void mapwindow(const Window W) {
 
 void init_atoms() {
   atom = (atom_t) {
-    XInternAtom(dpy, "WM_PROTOCOLS", false),
-    XInternAtom(dpy, "WM_NAME", false),
-    XInternAtom(dpy, "WM_DELETE_WINDOW", false),
-    XInternAtom(dpy, "WM_STATE", false),
-    XInternAtom(dpy, "WM_TAKE_FOCUS", false),
-    XInternAtom(dpy, "_NET_SUPPORTED", false),
-    XInternAtom(dpy, "_NET_WM_STATE", false),
-    XInternAtom(dpy, "_NET_WM_NAME", false),
-    XInternAtom(dpy, "_NET_ACTIVE_WINDOW", false),
-    XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", false),
-    XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", false),
-    XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", false),
-    XInternAtom(dpy, "_NET_CLIENT_LIST", false),
-    XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", false),
-    XInternAtom(dpy, "_NET_WM_DESKTOP", false),
-    XInternAtom(dpy, "_NET_CURRENT_DESKTOP", false),
-    XInternAtom(dpy, "_NET_SHOWING_DESKTOP", false)
+    .PROTO = XInternAtom(dpy, "WM_PROTOCOLS", false),
+    .NAME = XInternAtom(dpy, "WM_NAME", false),
+    .DELETE_WINDOW = XInternAtom(dpy, "WM_DELETE_WINDOW", false),
+    .STATE = XInternAtom(dpy, "WM_STATE", false),
+    .TAKE_FOCUS = XInternAtom(dpy, "WM_TAKE_FOCUS", false),
+    .SUPPORTED = XInternAtom(dpy, "_NET_SUPPORTED", false),
+    .WM_STATE = XInternAtom(dpy, "_NET_WM_STATE", false),
+    .WM_NAME = XInternAtom(dpy, "_NET_WM_NAME", false),
+    .ACTIVE_WINDOW = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", false),
+    .WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", false),
+    .WM_WINDOW_TYPE = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", false),
+    .WM_WINDOW_TYPE_DIALOG = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", false),
+    .CLIENT_LIST = XInternAtom(dpy, "_NET_CLIENT_LIST", false),
+    .NUMBER_OF_DESKTOPS = XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", false),
+    .WM_DESKTOP = XInternAtom(dpy, "_NET_WM_DESKTOP", false),
+    .CURRENT_DESKTOP = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", false),
+    .SHOWING_DESKTOP = XInternAtom(dpy, "_NET_SHOWING_DESKTOP", false)
   };
 }
 
-void appto_clientlist(const Window W) {
+void app_clientlist(const Window W) {
   XChangeProperty(dpy, rootw, atom.CLIENT_LIST, XA_WINDOW, 32, PropModeAppend, 
       (const unsigned char*) &W, 1);
 }
 
-void delfrom_clientlist() {
+void clear_clientlist() {
   XDeleteProperty(dpy, rootw, atom.CLIENT_LIST);
 }
 
@@ -396,11 +373,11 @@ void set_bdrwidth(const Window W, const size_t WIDTH) {
 
 void focusin(const Window W) {
   XSetInputFocus(dpy, W, RevertToPointerRoot, CurrentTime);
+  XRaiseWindow(dpy, W);
   XChangeProperty(dpy, rootw, atom.WM_STATE, XA_WINDOW, 32, PropModeReplace, 
     (const unsigned char*) &W, 1);
   XChangeProperty(dpy, W, atom.ACTIVE_WINDOW, XA_WINDOW, 32, PropModeReplace, 
     (const unsigned char*) &W, 1);
-  XRaiseWindow(dpy, W);
 }
   
 void send_killmsg(const Window W) {
@@ -411,6 +388,14 @@ void send_killmsg(const Window W) {
   xev.xclient.data.l[0] = atom.DELETE_WINDOW;
   xev.xclient.data.l[1] = CurrentTime;
   XSendEvent(dpy, W, false, NoEventMask, &xev);
+}
+
+void spawn(const char* CMD) {
+  if (fork() == 0) {
+    close(ConnectionNumber(dpy));
+    setsid();
+    system(CMD);
+  }
 }
 
 void init_panel() {

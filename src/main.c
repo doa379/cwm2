@@ -14,30 +14,7 @@ static void sighandler(int sig) {
   fprintf(stdout, "\n%s exit\n", WMNAME);
 }
 
-/*
-static int XError(Display*, XErrorEvent* xev) {
-  xerror = xev->error_code == BadAccess;
-  return 0;
-}
-*/
 int main(const int ARGC, const char* ARGV[]) {
-  /*
-  Display* dpy = XOpenDisplay(NULL);
-  if (dpy == NULL) {
-    fprintf(stderr, "Failed to open display\n");
-    return -1;
-  }
-  
-  const Window ROOTW = XRootWindow(dpy, DefaultScreen(dpy));
-  XSetErrorHandler(XError);
-  XSelectInput(dpy, ROOTW, ROOTMASK);
-  if (xerror) {
-    XCloseDisplay(dpy);
-    fprintf(stderr, "Initialization error (another wm running?)");
-    return -1;
-  }
-  */
-
   if (!init_dpy()) {
     fprintf(stderr, "Failed to open display\n");
     return -1;
@@ -55,6 +32,7 @@ int main(const int ARGC, const char* ARGV[]) {
     return -1;
   }
 
+  init_atoms();
   init_panel();
   draw_root(WMNAME);
   init_windows();

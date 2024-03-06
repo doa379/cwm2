@@ -34,6 +34,8 @@ static void (*CALLFN[])() = {
   [NEXTCLI] = next
 };
 
+// Inits
+
 bool init_wm() {
   // Initial reserve is working correctly
   clients = init_blk(sizeof(client_t), 2);
@@ -74,6 +76,8 @@ void deinit_wm() {
     ungrab_key(MOD, KEY);
   }
 }
+
+// Event calls
 
 void noop(const long, const long, const long) {
 
@@ -151,7 +155,9 @@ void propertynotify(const long, const long, const long) {
 
 }
 
-static void unfocus(const Window W) {
+// Utils
+
+void unfocus(const Window W) {
   const int MODMASK = modmask();
   for (size_t i = 0; i < LEN(BTN); i++) {
     const int MOD = BTN[i].mod & MODMASK;
@@ -165,7 +171,7 @@ static void unfocus(const Window W) {
   }
 }
 
-static void focus(const Window W) {
+void focus(const Window W) {
   focusin(W);
   set_bdrcolor(W, ACTBDR);
   const int MODMASK = modmask();
@@ -177,21 +183,20 @@ static void focus(const Window W) {
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Commands                                                                   //
-////////////////////////////////////////////////////////////////////////////////
-static void quit() {
+// Commands
+
+void quit() {
   fprintf(stdout, "Quit\n");
   raise(SIGINT);
 }
 
-static void kill() {
+void kill() {
   fprintf(stdout, "Kill\n");
   if (client)
     send_killmsg(client->w);
 }
 
-static void prev() {
+void prev() {
   fprintf(stdout, "Prev\n");
   client_t* client_p = prev_dev(&clients, client);
   unfocus(client->w);
@@ -199,7 +204,7 @@ static void prev() {
   client = client_p;
 }
 
-static void next() {
+void next() {
   fprintf(stdout, "Next\n");
   client_t* client_p = next_dev(&clients, client);
   unfocus(client->w);

@@ -4,6 +4,7 @@
 #include <lib.h>
 #include <ev.h>
 #include <Xlib.h>
+#include <util.h>
 
 static const char* WMNAME = "cwm2";
 static const char* WMVER = "-0.0";
@@ -33,36 +34,31 @@ int main(const int ARGC, const char* ARGV[]) {
   }
 
   init_atoms();
+  init_ewmh();
   init_panel();
   draw_root(WMNAME);
   init_windows();
   if (signal(SIGINT, sighandler) == SIG_ERR)
     sig_status = 1;
-  
+
   static ev_t EV[] = {
-    { .evfn = noop },
-    { .evfn = mapnotify },
-    { .evfn = unmapnotify },
-    { .evfn = clientmessage },
-    { .evfn = configurenotify },
-    { .evfn = maprequest },
-    { .evfn = keypress },
-    { .evfn = btnpress },
-    { .evfn = enternotify },
-    { .evfn = propertynotify }
+    { .evfn = noop, .name = NOOP },
+    { .evfn = mapnotify, .name = MAPNOTIFY },
+    { .evfn = unmapnotify, .name = UNMAPNOTIFY },
+    { .evfn = clientmessage, .name = CLIENTMESSAGE },
+    { .evfn = configurenotify, .name = CONFIGURENOTIFY },
+    { .evfn = maprequest, .name = MAPREQUEST },
+    { .evfn = noop, .name = CONFIGUREREQUEST },
+    { .evfn = noop, .name = MOTIONNOTIFY },
+    { .evfn = keypress, .name = KEYPRESS },
+    { .evfn = btnpress, .name = BTNPRESS },
+    { .evfn = enternotify, .name = ENTERNOTIFY },
+    { .evfn = propertynotify, .name = PROPERTYNOTIFY }
   };
 
   // Init return events
-  init_noop(&EV[0]);
-  init_mapnotify(&EV[1]);
-  init_unmapnotify(&EV[2]);
-  init_clientmessage(&EV[3]);
-  init_configurenotify(&EV[4]);
-  init_maprequest(&EV[5]);
-  init_keypress(&EV[6]);
-  init_btnpress(&EV[7]);
-  init_enternotify(&EV[8]);
-  init_propertynotify(&EV[9]);
+  for (size_t i = 0; i < LEN(EV); i++)
+    init_event(&EV[i]);
   // Init internal events
   init_events();
   while (sig_status == 0) {

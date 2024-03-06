@@ -68,7 +68,6 @@ bool init_root() {
   XSetErrorHandler(XError);
   XSelectInput(dpy, rootw, ROOTMASK);
   XUngrabKey(dpy, AnyKey, AnyModifier, rootw);
-  XDeleteProperty(dpy, rootw, atom.CLIENT_LIST);
   return !xerror;
 }
 
@@ -76,48 +75,32 @@ void deinit_root() {
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
 
-void init_noop(ev_t* ev) {
-  EV[0] = ev;
+void init_event(ev_t* ev) {
+  EV[ev->name] = ev;
 }
 
 static ev_t* noop() {
   fprintf(stdout, "EV: Unregistered\n");
-  return EV[0];
-}
-
-void init_mapnotify(ev_t* ev) {
-  EV[1] = ev;
+  return EV[NOOP];
 }
 
 static ev_t* mapnotify() {
   fprintf(stdout, "EV: Mapnotify\n");
-  return EV[1];
-}
-
-void init_unmapnotify(ev_t* ev) {
-  EV[2] = ev;
+  return EV[MAPNOTIFY];
 }
 
 static ev_t* unmapnotify() {
   fprintf(stdout, "EV: Unmapnotify\n");
   const Window W = xev.xunmap.window;
-  EV[2]->DATA[0] = W;
-  return EV[2];
-}
-
-void init_clientmessage(ev_t* ev) {
-  EV[3] = ev;
+  EV[UNMAPNOTIFY]->DATA[0] = W;
+  return EV[UNMAPNOTIFY];
 }
 
 static ev_t* clientmessage() {
   fprintf(stdout, "EV: Client Message\n");
   const Window W = xev.xclient.window;
-  EV[3]->DATA[0] = W;
-  return EV[3];
-}
-
-void init_configurenotify(ev_t* ev) {
-  EV[4] = ev;
+  EV[CLIENTMESSAGE]->DATA[0] = W;
+  return EV[CLIENTMESSAGE];
 }
 
 static ev_t* configurenotify() {
@@ -126,14 +109,11 @@ static ev_t* configurenotify() {
   const int WIDTH = xev.xconfigure.width;
   const int HEIGHT = xev.xconfigure.height;
   // want to reconfigure root window
-  EV[4]->DATA[0] = W;
-  EV[4]->DATA[1] = WIDTH;
-  EV[4]->DATA[2] = HEIGHT;
-  return EV[4];
-}
-
-void init_maprequest(ev_t* ev) {
-  EV[5] = ev;
+  ev_t* ev = EV[CONFIGURENOTIFY];
+  ev->DATA[0] = W;
+  ev->DATA[1] = WIDTH;
+  ev->DATA[2] = HEIGHT;
+  return ev;
 }
 
 static ev_t* maprequest() {
@@ -141,7 +121,7 @@ static ev_t* maprequest() {
   const Window W = xev.xmaprequest.window;
   XWindowAttributes wa;
   if (XGetWindowAttributes(dpy, W, &wa) == 0 || wa.override_redirect)
-    return EV[0];
+    return EV[NOOP];
   
   static const int WMASK = EnterWindowMask | 
     FocusChangeMask |
@@ -151,14 +131,11 @@ static ev_t* maprequest() {
   XChangeProperty(dpy, rootw, atom.CLIENT_LIST, XA_WINDOW, 32, PropModeAppend, 
     (unsigned char*) &W, 1);
 
-  EV[5]->DATA[0] = W;
-  EV[5]->DATA[1] = wa.width;
-  EV[5]->DATA[2] = wa.height;
-  return EV[5];
-}
-
-void init_configurerequest(ev_t*) {
-
+  ev_t* ev = EV[MAPREQUEST];
+  ev->DATA[0] = W;
+  ev->DATA[1] = wa.width;
+  ev->DATA[2] = wa.height;
+  return ev;
 }
 
 static ev_t* configurerequest() {
@@ -168,36 +145,25 @@ static ev_t* configurerequest() {
     CONF->x, CONF->y, CONF->width, CONF->height,
     CONF->border_width, CONF->above, CONF->detail };
   XConfigureWindow(dpy, CONF->window, CONF->value_mask, &wc);
-  return EV[0];
-}
-
-void init_motionnotify(ev_t*) {
-
+  return EV[CONFIGUREREQUEST];
 }
 
 static ev_t* motionnotify() {
-  return EV[0];
+  return EV[MOTIONNOTIFY];
   fprintf(stdout, "EV: Motion Notify\n");
   const Window W = xev.xmotion.window;
   (void) W;
-}
-
-void init_keypress(ev_t* ev) {
-  EV[6] = ev;
 }
 
 static ev_t* keypress() {
   fprintf(stdout, "EV: Key Press\n");
   const int STATE = xev.xkey.state;
   const int CODE = xev.xkey.keycode;
-  EV[6]->DATA[0] = rootw;
-  EV[6]->DATA[1] = STATE;
-  EV[6]->DATA[2] = CODE;
-  return EV[6];
-}
-
-void init_btnpress(ev_t* ev) {
-  EV[7] = ev;
+  ev_t* ev = EV[KEYPRESS];
+  ev->DATA[0] = rootw;
+  ev->DATA[1] = STATE;
+  ev->DATA[2] = CODE;
+  return ev;
 }
 
 static ev_t* btnpress() {
@@ -206,32 +172,25 @@ static ev_t* btnpress() {
   const int CODE = xev.xbutton.button;
   const Window W = xev.xbutton.window;
   XUngrabPointer(dpy, CurrentTime);
-  EV[7]->DATA[0] = W;
-  EV[7]->DATA[1] = STATE;
-  EV[7]->DATA[2] = CODE;
-  return EV[7];
-}
-
-void init_enternotify(ev_t* ev) {
-  EV[8] = ev;
+  ev_t* ev = EV[BTNPRESS];
+  ev->DATA[0] = W;
+  ev->DATA[1] = STATE;
+  ev->DATA[2] = CODE;
+  return ev;
 }
 
 static ev_t* enternotify() {
   fprintf(stdout, "EV: Enter Notify\n");
   const Window W = xev.xcrossing.window;
-  EV[8]->DATA[0] = W;
-  return EV[8];
-}
-
-void init_propertynotify(ev_t* ev) {
-  EV[9] = ev;
+  EV[ENTERNOTIFY]->DATA[0] = W;
+  return EV[ENTERNOTIFY];
 }
 
 static ev_t* propertynotify() {
   fprintf(stdout, "EV: Prop Notify\n");
   const Window W = xev.xproperty.window;
-  EV[9]->DATA[0] = W;
-  return EV[9];
+  EV[PROPERTYNOTIFY]->DATA[0] = W;
+  return EV[PROPERTYNOTIFY];
 }
 
 void init_events() {
@@ -257,7 +216,7 @@ ev_t* event() {
     return EVFN[xev.type]();
   }
 
-  return EV[0];
+  return EV[NOOP];
 }
 
 int modmask() {
@@ -352,7 +311,7 @@ void init_atoms() {
 
 void app_clientlist(const Window W) {
   XChangeProperty(dpy, rootw, atom.CLIENT_LIST, XA_WINDOW, 32, PropModeAppend, 
-      (const unsigned char*) &W, 1);
+    (const unsigned char*) &W, 1);
 }
 
 void clear_clientlist() {
@@ -363,8 +322,13 @@ void del_actwindow(const Window W) {
   XDeleteProperty(dpy, W, atom.ACTIVE_WINDOW);
 }
 
-void set_bdrcolor(const Window W, const size_t INACTBDR) {
-  XSetWindowBorder(dpy, W, INACTBDR);
+void init_ewmh() {
+  // Init/Reset EWMH
+  XDeleteProperty(dpy, rootw, atom.CLIENT_LIST);
+}
+
+void set_bdrcolor(const Window W, const size_t BDR) {
+  XSetWindowBorder(dpy, W, BDR);
 }
 
 void set_bdrwidth(const Window W, const size_t WIDTH) {

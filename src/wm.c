@@ -12,6 +12,7 @@ typedef struct {
   pair_t size;
   GC gc;
   // 32B
+  unsigned wks;
   int sel;
   int ft;
   int pad[6];
@@ -26,12 +27,22 @@ static blk_t clients;
 static blk_t monitors;
 static client_t* client;
 static monitor_t* monitor;
-static unsigned wks;
+static unsigned wks = 1;
 static void (*CALLFN[])() = {
-  [QUIT] = quit,
+  [WKS0] = wks0,
+  [WKS1] = wks1,
+  [WKS2] = wks2,
+  [WKS3] = wks3,
+  [WKS4] = wks4,
+  [WKS5] = wks5,
+  [WKS6] = wks6,
+  [WKS7] = wks7,
+  [WKS8] = wks8,
+  [WKS9] = wks9,
   [KILL] = kill,
   [PREVCLI] = prev,
-  [NEXTCLI] = next
+  [NEXTCLI] = next,
+  [QUIT] = quit,
 };
 
 // Inits
@@ -56,6 +67,7 @@ bool init_wm() {
     grab_key(MOD, KEY);
   }
 
+  fprintf(stdout, "Init %s\n", WMNAME);
   return true;
 }
 
@@ -75,6 +87,14 @@ void deinit_wm() {
     const int KEY = KBD[i].key;
     ungrab_key(MOD, KEY);
   }
+  
+  fprintf(stdout, "Deinit %s\n", WMNAME);
+}
+
+void init_wks() {
+  // Workspaces
+  set_nwks(NWKS);
+  set_wks(0);
 }
 
 // Event calls
@@ -115,8 +135,19 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
   const pair_t POS = { clients.size ? client->pos.x + BARH : 0, 
     clients.size ? client->pos.y + BARH : BARH };
   const pair_t SIZE = { WIDTH, HEIGHT };
-  client_t client_ = { W, POS, SIZE, init_gc() };
+  client_t client_ = { W, POS, SIZE, init_gc(), wks };
+  Window curr = client ? client->w : -1;
+  // May realloc
   client_t* client_p = map_dev(&clients, &client_);
+  // Revalidate client
+  if (client) {
+    client_t* client_ = clients.blk;
+    for (;
+      client_ < (client_t*) clients.blk + clients.size && client_->w != curr; 
+      client_++);
+    client = client_;
+  }
+
   if (client_p) {
     if (client)
       unfocus(client->w);
@@ -152,7 +183,7 @@ void enternotify(const long, const long, const long) {
 }
 
 void propertynotify(const long, const long, const long) {
-
+  refresh_panel();
 }
 
 // Utils
@@ -183,11 +214,64 @@ void focus(const Window W) {
   }
 }
 
+void switchwks(const unsigned N) {
+  if (N > 0 && N <= NWKS) {
+    send_switchwks(N);
+    set_wks(N - 1);
+    wks = N;
+    refresh_panel();
+  } else if (N == 0) {
+
+  }
+}
+
+void refresh_panel() {
+  char S[8];
+  snprintf(S, 8, "%d/%d", wks, NWKS);
+  draw_wks(S, BARH, FG0, BG0);
+  draw_root(WMNAME, BARH, FG1, BG1);
+}
+
 // Commands
 
-void quit() {
-  fprintf(stdout, "Quit\n");
-  raise(SIGINT);
+void wks0() {
+  switchwks(0);
+}
+
+void wks1() {
+  switchwks(1);
+}
+
+void wks2() {
+  switchwks(2);
+}
+
+void wks3() {
+  switchwks(3);
+}
+
+void wks4() {
+  switchwks(4);
+}
+
+void wks5() {
+  switchwks(5);
+}
+
+void wks6() {
+  switchwks(6);
+}
+
+void wks7() {
+  switchwks(7);
+}
+
+void wks8() {
+  switchwks(8);
+}
+
+void wks9() {
+  switchwks(9);
 }
 
 void kill() {
@@ -210,4 +294,9 @@ void next() {
   unfocus(client->w);
   focus(client_p->w);
   client = client_p;
+}
+
+void quit() {
+  fprintf(stdout, "Quit\n");
+  raise(SIGINT);
 }

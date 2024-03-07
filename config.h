@@ -82,14 +82,17 @@ Buttons {
 }
 */
 
+static const char* WMNAME = "cwm2";
+static const char* WMVER = "-0.0";
 static const int NWKS = { 8 };
-static const int INITWKS = { 1 };
 static const int BARH = { 14 };
 static const int BDRW = { 4 };
 static const int WKSFG = { Gray1 };
 static const int WKSBG = { Cyan40 };
-static const int TITLEFG = { Gray1 };
-static const int TITLEBG = { Cyan20 };
+static const int FG0 = { Gray2 };
+static const int BG0 = { Cyan60 };
+static const int FG1 = { Gray1 };
+static const int BG1 = { Cyan20 };
 static const int ACTBDR = { Red };
 static const int INACTBDR = { Cyan };
 static const int FTBDR = { Yellow };
@@ -99,7 +102,16 @@ static const bool SLOPPY_FOCUS = { true };
 
 typedef enum {
   // Declare pool of calls
-  QUIT,
+  WKS0,
+  WKS1,
+  WKS2,
+  WKS3,
+  WKS4,
+  WKS5,
+  WKS6,
+  WKS7,
+  WKS8,
+  WKS9,
   UNMAPALL,
   REMAPALL,
   KILL,
@@ -116,18 +128,9 @@ typedef enum {
   RESIZEVDEC,
   RESIZEHDEC,
   RESIZEHINC,
+  QUIT,
   SELECT,
   RESIZE,
-  WKS0,
-  WKS1,
-  WKS2,
-  WKS3,
-  WKS4,
-  WKS5,
-  WKS6,
-  WKS7,
-  WKS8,
-  WKS9,
   STATE,
 } calls_enum;
 
@@ -140,6 +143,16 @@ typedef struct {
 } input_t;
 
 static const input_t KBD[] = {
+  { Mod4Mask, XK_1, { WKS1 } },
+  { Mod4Mask, XK_2, { WKS2 } },
+  { Mod4Mask, XK_3, { WKS3 } },
+  { Mod4Mask, XK_4, { WKS4 } },
+  { Mod4Mask, XK_5, { WKS5 } },
+  { Mod4Mask, XK_6, { WKS6 } },
+  { Mod4Mask, XK_7, { WKS7 } },
+  { Mod4Mask, XK_8, { WKS8 } },
+  { Mod4Mask, XK_9, { WKS9 } },
+  { Mod4Mask, XK_0, { WKS0 } },
   { Mod4Mask, XK_u, { UNMAPALL } },
   { Mod4Mask, XK_v, { REMAPALL } },
   { Mod4Mask, XK_Tab, { SWFOCUS } },

@@ -4,6 +4,7 @@
 
 bool init_wm();
 void deinit_wm();
+void init_wks();
 void noop(const long, const long, const long);
 void mapnotify(const long, const long, const long);
 void unmapnotify(const long, const long, const long);
@@ -16,7 +17,18 @@ void enternotify(const long, const long, const long);
 void propertynotify(const long, const long, const long);
 void unfocus(const Window);
 void focus(const Window);
-void quit();
+void refresh_panel();
+void wks0();
+void wks1();
+void wks2();
+void wks3();
+void wks4();
+void wks5();
+void wks6();
+void wks7();
+void wks8();
+void wks9();
 void kill();
 void prev();
 void next();
+void quit();

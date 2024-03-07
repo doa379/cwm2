@@ -1,3 +1,4 @@
+#include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/XKBlib.h>
 #include <string.h>
@@ -6,7 +7,6 @@
 #include <unistd.h>
 #include <Xlib.h>
 #include <util.h>
-#include <../config.h>
 
 static const int ROOTMASK = { 
   SubstructureRedirectMask | 
@@ -47,7 +47,7 @@ static ev_t* (*EVFN[LASTEvent])();
 static ev_t* EV[LASTEvent];
 static atom_t atom;
 static Drawable drawable;
-static GC rootgc;
+static GC rootgc, wksgc;
 static pair_t dpysize;
 
 static int XError(Display*, XErrorEvent* xev) {
@@ -321,6 +321,16 @@ void clear_clientlist() {
 void del_actwindow(const Window W) {
   XDeleteProperty(dpy, W, atom.ACTIVE_WINDOW);
 }
+  
+void set_nwks(const int NWKS) {
+  XChangeProperty(dpy, rootw, atom.NUMBER_OF_DESKTOPS, XA_CARDINAL, 32, 
+    PropModeReplace, (const unsigned char*) &NWKS, 1);
+}
+
+void set_wks(const int N) {
+  XChangeProperty(dpy, rootw, atom.CURRENT_DESKTOP, XA_CARDINAL, 32,
+    PropModeReplace, (const unsigned char*) &N, 1);
+}
 
 void init_ewmh() {
   // Init/Reset EWMH
@@ -354,6 +364,10 @@ void send_killmsg(const Window W) {
   XSendEvent(dpy, W, false, NoEventMask, &xev);
 }
 
+void send_switchwks(const unsigned N) {
+  fprintf(stdout, "Switch WKS %d\n", N);
+}
+
 void spawn(const char* CMD) {
   if (fork() == 0) {
     close(ConnectionNumber(dpy));
@@ -368,6 +382,7 @@ void init_panel() {
   drawable = XCreatePixmap(dpy, rootw, dpysize.x, dpysize.y, 
     DefaultDepth(dpy, SCRN));
   rootgc = init_gc();
+  wksgc = init_gc();
 }
 
 void deinit_panel() {
@@ -385,9 +400,16 @@ void deinit_gc(const GC GC) {
   XFreeGC(dpy, GC);
 }
 
-void draw_root(const char* S) {
-  XSetForeground(dpy, rootgc, TITLEBG);
-  XFillRectangle(dpy, rootw, rootgc, 0, 0, dpysize.x, BARH);
-  XSetForeground(dpy, rootgc, TITLEFG);
-  XDrawString(dpy, rootw, rootgc, 0, BARH - 2, S, strlen(S));
+void draw_wks(const char* S, const unsigned H, const size_t FG, const size_t BG) {
+  XSetForeground(dpy, wksgc, BG);
+  XFillRectangle(dpy, rootw, wksgc, 0, 0, 28, H);
+  XSetForeground(dpy, wksgc, FG);
+  XDrawString(dpy, rootw, wksgc, 4, H - 2, S, strlen(S));
+}
+
+void draw_root(const char* S, const unsigned H, const size_t FG, const size_t BG) {
+  XSetForeground(dpy, rootgc, BG);
+  XFillRectangle(dpy, rootw, rootgc, 28, 0, dpysize.x, H);
+  XSetForeground(dpy, rootgc, FG);
+  XDrawString(dpy, rootw, rootgc, 32, H - 2, S, strlen(S));
 }

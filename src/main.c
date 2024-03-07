@@ -1,18 +1,15 @@
 #include <stdio.h>
 #include <signal.h>
 #include <wm.h>
-#include <lib.h>
 #include <ev.h>
 #include <Xlib.h>
 #include <util.h>
 
-static const char* WMNAME = "cwm2";
-static const char* WMVER = "-0.0";
 volatile sig_atomic_t sig_status;
 
 static void sighandler(int sig) {
   sig_status = 1;
-  fprintf(stdout, "\n%s exit\n", WMNAME);
+  fprintf(stdout, "\nSig.\n");
 }
 
 int main(const int ARGC, const char* ARGV[]) {
@@ -35,8 +32,8 @@ int main(const int ARGC, const char* ARGV[]) {
 
   init_atoms();
   init_ewmh();
+  init_wks();
   init_panel();
-  draw_root(WMNAME);
   init_windows();
   if (signal(SIGINT, sighandler) == SIG_ERR)
     sig_status = 1;

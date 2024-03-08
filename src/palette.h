@@ -31,6 +31,10 @@ enum palette {
   Magenta20   = 0xff99ff,
   Magenta30   = 0xff66ff,
   Magenta     = 0x750075,
+  Red95       = 0xff004d,
+  Red90       = 0xff0080,
+  Red80       = 0xff8080,
   Red         = 0xff0000,
+  Maroon      = 0xdc0000,
 };
 

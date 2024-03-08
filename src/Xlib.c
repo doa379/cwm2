@@ -49,6 +49,10 @@ static atom_t atom;
 static Drawable drawable;
 static GC rootgc, wksgc;
 static pair_t dpysize;
+static unsigned padding;
+static unsigned wkssize;
+static unsigned clientssize;
+static unsigned rootsize;
 
 static int XError(Display*, XErrorEvent* xev) {
   xerror = xev->error_code == BadAccess;
@@ -383,6 +387,10 @@ void init_panel() {
     DefaultDepth(dpy, SCRN));
   rootgc = init_gc();
   wksgc = init_gc();
+  padding = 4;
+  wkssize = 0.02 * dpysize.x;
+  clientssize = 0.78 * dpysize.x;
+  rootsize = 0.20 * dpysize.x;
 }
 
 void deinit_panel() {
@@ -402,14 +410,24 @@ void deinit_gc(const GC GC) {
 
 void draw_wks(const char* S, const unsigned H, const size_t FG, const size_t BG) {
   XSetForeground(dpy, wksgc, BG);
-  XFillRectangle(dpy, rootw, wksgc, 0, 0, 28, H);
+  XFillRectangle(dpy, rootw, wksgc, 0, 0, wkssize, H);
   XSetForeground(dpy, wksgc, FG);
-  XDrawString(dpy, rootw, wksgc, 4, H - 2, S, strlen(S));
+  XDrawString(dpy, rootw, wksgc, padding, H - 2, S, strlen(S));
+}
+
+void draw_client(const GC GC, const char* S, const size_t I, const size_t N, const unsigned H, const size_t FG, const size_t BG) {
+  const unsigned CLIENTSIZE = clientssize / N;
+  XSetForeground(dpy, GC, BG);
+  XFillRectangle(dpy, rootw, GC, wkssize + I * CLIENTSIZE, 0, CLIENTSIZE, H);
+  XSetForeground(dpy, GC, FG);
+  XDrawString(dpy, rootw, GC, padding + wkssize + I * CLIENTSIZE, H - 2, 
+    S, strlen(S));
 }
 
 void draw_root(const char* S, const unsigned H, const size_t FG, const size_t BG) {
   XSetForeground(dpy, rootgc, BG);
-  XFillRectangle(dpy, rootw, rootgc, 28, 0, dpysize.x, H);
+  XFillRectangle(dpy, rootw, rootgc, wkssize + clientssize, 0, dpysize.x, H);
   XSetForeground(dpy, rootgc, FG);
-  XDrawString(dpy, rootw, rootgc, 32, H - 2, S, strlen(S));
+  XDrawString(dpy, rootw, rootgc, padding + wkssize + clientssize, H - 2, 
+    S, strlen(S));
 }

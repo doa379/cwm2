@@ -15,7 +15,7 @@ typedef struct {
   unsigned wks;
   int sel;
   int ft;
-  int pad[6];
+  int pad[5];
 } client_t;
 
 typedef struct {
@@ -226,10 +226,22 @@ void switchwks(const unsigned N) {
 }
 
 void refresh_panel() {
-  char S[8];
-  snprintf(S, 8, "%d/%d", wks, NWKS);
-  draw_wks(S, BARH, FG0, BG0);
-  draw_root(WMNAME, BARH, FG1, BG1);
+  char S[32];
+  snprintf(S, sizeof S, "%d/%d", wks, NWKS);
+  draw_wks(S, BARH, FG1, BG1);
+  if (clients.size > 10 && client) {
+    snprintf(S, sizeof S, "W %lu", client->w);
+    draw_client(client->gc, S, 0, 1, BARH, FG1, BG0);
+  } else {
+    for (client_t* client_ = clients.blk; 
+        client_ < (client_t*) clients.blk + clients.size; client_++) {
+      snprintf(S, sizeof S, "W %lu", client_->w);
+      draw_client(client_->gc, S, client_ - (client_t*) clients.blk, 
+        clients.size, BARH, FG1, client_ == client ? BG0: BG2);
+    }
+  }
+
+  draw_root(WMNAME, BARH, FG2, BG1);
 }
 
 // Commands

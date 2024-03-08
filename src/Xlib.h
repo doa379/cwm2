@@ -37,4 +37,6 @@ void deinit_panel();
 GC init_gc();
 void deinit_gc(const GC);
 void draw_wks(const char*, const unsigned, const size_t, const size_t);
+void draw_client(const GC, const char*, const size_t, const size_t, 
+  const unsigned, const size_t, const size_t);
 void draw_root(const char*, const unsigned, const size_t, const size_t);

@@ -62,3 +62,7 @@ void* next_dev(blk_t* blk, void* dev) {
     dev == (char*) blk->blk + (blk->size - 1) * blk->unit ? blk->blk :
     (char*) dev + blk->unit;
 }
+
+size_t dist(blk_t* blk, const void* DEV) {
+  return ((char*) DEV - (char*) blk->blk) / blk->unit;
+}

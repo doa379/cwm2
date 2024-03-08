@@ -45,6 +45,15 @@ static void (*CALLFN[])() = {
   [QUIT] = quit,
 };
 
+static GC rootgc;
+static GC wksgc;
+static pair_t dpysize;
+static unsigned wkssize;
+static unsigned clientssize;
+static unsigned rootsize;
+static unsigned panelheight;
+static unsigned padding;
+
 // Inits
 
 bool init_wm() {
@@ -67,6 +76,14 @@ bool init_wm() {
     grab_key(MOD, KEY);
   }
 
+  rootgc = init_gc();
+  wksgc = init_gc();
+  dpysize = (pair_t) { dpywidth(), dpyheight() };
+  wkssize = WKSSIZE_PERC * dpysize.x;
+  clientssize = CLIENTSSIZE_PERC * dpysize.x;
+  rootsize = ROOTSIZE_PERC * dpysize.x;
+  panelheight = VPANEL_PERC * dpysize.y;
+  padding = PADDING_PERC * panelheight;
   fprintf(stdout, "Init %s\n", WMNAME);
   return true;
 }
@@ -88,6 +105,8 @@ void deinit_wm() {
     ungrab_key(MOD, KEY);
   }
   
+  deinit_gc(wksgc);
+  deinit_gc(rootgc);
   fprintf(stdout, "Deinit %s\n", WMNAME);
 }
 
@@ -132,8 +151,8 @@ void configurenotify(const long, const long, const long) {
 }
 
 void maprequest(const long W, const long WIDTH, const long HEIGHT) {
-  const pair_t POS = { clients.size ? client->pos.x + BARH : 0, 
-    clients.size ? client->pos.y + BARH : BARH };
+  const pair_t POS = { clients.size ? client->pos.x + panelheight : 0, 
+    clients.size ? client->pos.y + panelheight : panelheight };
   const pair_t SIZE = { WIDTH, HEIGHT };
   client_t client_ = { W, POS, SIZE, init_gc(), wks };
   Window curr = client ? client->w : -1;
@@ -228,20 +247,39 @@ void switchwks(const unsigned N) {
 void refresh_panel() {
   char S[32];
   snprintf(S, sizeof S, "%d/%d", wks, NWKS);
-  draw_wks(S, BARH, FG1, BG1);
-  if (clients.size > 10 && client) {
-    snprintf(S, sizeof S, "W %lu", client->w);
-    draw_client(client->gc, S, 0, 1, BARH, FG1, BG0);
+  //draw_wks(S, BARH, FG1, BG1);
+  draw_element(wksgc, FG1, BG1, 0, 0, wkssize, panelheight);
+  print_element(wksgc, S, 0, padding, panelheight);
+
+  if (clients.size == 0)
+    return;
+  else if (clientssize / clients.size < 10) {
+    if (client) {
+      snprintf(S, sizeof S, "W %lu", client->w);
+      //draw_client(client->gc, S, 0, 1, BARH, FG1, BG0);
+      draw_element(client->gc, FG1, BG0, wkssize, 0, wkssize + clientssize, 
+        panelheight);
+      print_element(client->gc, S, wkssize, padding, panelheight);
+    }
   } else {
+    const unsigned WSIZE = clientssize / clients.size;
     for (client_t* client_ = clients.blk; 
         client_ < (client_t*) clients.blk + clients.size; client_++) {
+      const size_t D = client_ - (client_t*) clients.blk;
       snprintf(S, sizeof S, "W %lu", client_->w);
-      draw_client(client_->gc, S, client_ - (client_t*) clients.blk, 
-        clients.size, BARH, FG1, client_ == client ? BG0: BG2);
+      draw_element(client_->gc, FG1, client_ == client ? BG0 : BG2, 
+        wkssize + D * WSIZE, 0, WSIZE, panelheight);
+      print_element(client_->gc, S, wkssize + D * WSIZE, padding, panelheight);
+
+      //draw_client(client_->gc, S, client_ - (client_t*) clients.blk, 
+        //clients.size, BARH, FG1, client_ == client ? BG0: BG2);
     }
   }
 
-  draw_root(WMNAME, BARH, FG2, BG1);
+  //draw_root(WMNAME, BARH, FG2, BG1);
+  draw_element(rootgc, FG2, BG1, wkssize + clientssize, 0, dpysize.x, 
+    panelheight);
+  print_element(rootgc, WMNAME, wkssize + clientssize, padding, panelheight);
 }
 
 // Commands

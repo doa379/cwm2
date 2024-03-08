@@ -32,11 +32,13 @@ void focusin(const Window);
 void send_killmsg(const Window);
 void send_switchwks(const unsigned);
 void spawn(const char*);
-void init_panel();
-void deinit_panel();
+void init_drawable();
+void deinit_drawable();
+unsigned dpywidth();
+unsigned dpyheight();
 GC init_gc();
 void deinit_gc(const GC);
-void draw_wks(const char*, const unsigned, const size_t, const size_t);
-void draw_client(const GC, const char*, const size_t, const size_t, 
-  const unsigned, const size_t, const size_t);
-void draw_root(const char*, const unsigned, const size_t, const size_t);
+void draw_element(const GC, const size_t, const size_t, const unsigned, 
+  const unsigned, const unsigned, const unsigned);
+void print_element(const GC, const char*, const unsigned, const unsigned,
+  const unsigned);

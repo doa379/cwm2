@@ -33,7 +33,7 @@ int main(const int ARGC, const char* ARGV[]) {
   init_atoms();
   init_ewmh();
   init_wks();
-  init_panel();
+  init_drawable();
   init_windows();
   if (signal(SIGINT, sighandler) == SIG_ERR)
     sig_status = 1;
@@ -64,7 +64,7 @@ int main(const int ARGC, const char* ARGV[]) {
   }
 
   // Cleanup
-  deinit_panel();
+  deinit_drawable();
   deinit_wm();
   deinit_root();
   deinit_dpy();

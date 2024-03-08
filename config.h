@@ -85,7 +85,6 @@ Buttons {
 static const char* WMNAME = "cwm2";
 static const char* WMVER = "-0.0";
 static const int NWKS = { 8 };
-static const int BARH = { 14 };
 static const int BDRW = { 4 };
 static const int WKSFG = { Gray1 };
 static const int WKSBG = { Cyan40 };
@@ -101,6 +100,11 @@ static const int FTBDR = { Yellow };
 static const int WINGAP = { 0 };
 static const int MOVESTEP_PX = { 5 };
 static const bool SLOPPY_FOCUS = { true };
+static const float WKSSIZE_PERC = { 0.02 };
+static const float CLIENTSSIZE_PERC = { 0.78 };
+static const float ROOTSIZE_PERC = { 0.2 };
+static const float VPANEL_PERC = { 0.03 };
+static const float PADDING_PERC = { 0.25 };
 
 typedef enum {
   // Declare pool of calls

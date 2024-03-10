@@ -35,6 +35,7 @@ enum palette {
   Red90       = 0xff0080,
   Red80       = 0xff8080,
   Red         = 0xff0000,
+  RedAlt      = 0xa03232,
   Maroon      = 0xdc0000,
 };
 

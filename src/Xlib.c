@@ -28,6 +28,7 @@ typedef struct {
   Atom SUPPORTED;
   Atom WM_STATE;
   Atom WM_NAME;
+  Atom WM_WINDOW_OPACITY;
   Atom ACTIVE_WINDOW;
   Atom WM_STATE_FULLSCREEN;
   Atom WM_WINDOW_TYPE;
@@ -45,18 +46,9 @@ static bool xerror;
 static XEvent xev;
 static ev_t* (*EVFN[LASTEvent])();
 static ev_t* EV[LASTEvent];
-// Look at this:
+// TODO
 static atom_t atom;
 static Drawable drawable;
-/*
-static GC rootgc, wksgc;
-static pair_t dpysize;
-static unsigned padding;
-static unsigned wkssize;
-static unsigned clientssize;
-static unsigned rootsize;
-static unsigned panelheight;
-*/
 
 static int XError(Display*, XErrorEvent* xev) {
   xerror = xev->error_code == BadAccess;
@@ -76,6 +68,8 @@ bool init_root() {
   XSetErrorHandler(XError);
   XSelectInput(dpy, rootw, ROOTMASK);
   XUngrabKey(dpy, AnyKey, AnyModifier, rootw);
+  XSetWindowBackground(dpy, rootw, 0x002531);
+  XClearWindow(dpy, rootw);
   return !xerror;
 }
 
@@ -293,6 +287,11 @@ void movewindow(const Window W, const int X, const int Y) {
 
 void mapwindow(const Window W) {
   XMapWindow(dpy, W);
+  XRaiseWindow(dpy, W);
+}
+
+void unmapwindow(const Window W) {
+  XUnmapWindow(dpy, W);
 }
 
 void init_atoms() {
@@ -305,6 +304,7 @@ void init_atoms() {
     .SUPPORTED = XInternAtom(dpy, "_NET_SUPPORTED", false),
     .WM_STATE = XInternAtom(dpy, "_NET_WM_STATE", false),
     .WM_NAME = XInternAtom(dpy, "_NET_WM_NAME", false),
+    .WM_WINDOW_OPACITY = XInternAtom(dpy, "_NET_WM_WINDOW_OPACITY", false),
     .ACTIVE_WINDOW = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", false),
     .WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", false),
     .WM_WINDOW_TYPE = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", false),
@@ -329,7 +329,7 @@ void clear_clientlist() {
 void del_actwindow(const Window W) {
   XDeleteProperty(dpy, W, atom.ACTIVE_WINDOW);
 }
-  
+
 void set_nwks(const int NWKS) {
   XChangeProperty(dpy, rootw, atom.NUMBER_OF_DESKTOPS, XA_CARDINAL, 32, 
     PropModeReplace, (const unsigned char*) &NWKS, 1);
@@ -340,6 +340,20 @@ void set_wks(const int N) {
     PropModeReplace, (const unsigned char*) &N, 1);
 }
 
+//////////////////////////////////////////////////////////////////
+void app_prop(const Window W, const Atom PROP) {
+  XChangeProperty(dpy, rootw, PROP, XA_WINDOW, 32, PropModeAppend, 
+    (const unsigned char*) &W, 1);
+}
+
+void del_prop(const Window W, const Atom PROP) {
+  XDeleteProperty(dpy, W, PROP);
+}
+  
+void del_rootprop(const Atom PROP) {
+  XDeleteProperty(dpy, rootw, PROP);
+}
+//////////////////////////////////////////////////////////////////
 void init_ewmh() {
   // Init/Reset EWMH
   XDeleteProperty(dpy, rootw, atom.CLIENT_LIST);
@@ -384,34 +398,28 @@ void spawn(const char* CMD) {
   }
 }
 
+Window init_shadow(const unsigned WIDTH, const unsigned HEIGHT) {
+  return XCreateSimpleWindow(dpy, rootw, 0, 0, WIDTH, HEIGHT, 0, 0, 0x141414);
+}
+
+void destroy_window(const Window W) {
+  XDestroyWindow(dpy, W);
+}
+
 void init_drawable() {
-  //const int SCRN = DefaultScreen(dpy);
-  //dpysize = (pair_t) { DisplayWidth(dpy, SCRN), DisplayHeight(dpy, SCRN) };
   drawable = XCreatePixmap(dpy, rootw, dpywidth(), dpyheight(), 
     DefaultDepth(dpy, DefaultScreen(dpy)));
-  /*
-  rootgc = init_gc();
-  wksgc = init_gc();
-  padding = 4;
-  wkssize = 0.02 * dpysize.x;
-  clientssize = 0.78 * dpysize.x;
-  rootsize = 0.20 * dpysize.x;
-  panelheight = 0.01 * dpysize.y;
-  */
 }
 
 void deinit_drawable() {
-  //XFreeGC(dpy, rootgc);
   XFreePixmap(dpy, drawable); 
 }
 
 unsigned dpywidth() {
-  //const int SCRN = DefaultScreen(dpy);
   return DisplayWidth(dpy, DefaultScreen(dpy));
 }
 
 unsigned dpyheight() {
-  //const int SCRN = DefaultScreen(dpy);
   return DisplayHeight(dpy, DefaultScreen(dpy));
 }
 
@@ -433,31 +441,6 @@ const unsigned X0, const unsigned Y0, const unsigned X1, const unsigned Y1) {
 }
 
 void print_element(const GC GC, const char* S, const unsigned X, 
-  const unsigned PAD, const unsigned H) {
-  XDrawString(dpy, rootw, GC, PAD + X, H - PAD, S, strlen(S));
+  const unsigned HPAD, const unsigned Y, const unsigned VPAD) {
+  XDrawString(dpy, rootw, GC, X + HPAD, Y - VPAD, S, strlen(S));
 }
-/*
-void draw_wks(const char* S, const unsigned H, const size_t FG, const size_t BG) {
-  XSetForeground(dpy, wksgc, BG);
-  XFillRectangle(dpy, rootw, wksgc, 0, 0, wkssize, H);
-  XSetForeground(dpy, wksgc, FG);
-  XDrawString(dpy, rootw, wksgc, padding, H - 2, S, strlen(S));
-}
-
-void draw_client(const GC GC, const char* S, const size_t I, const size_t N, const unsigned H, const size_t FG, const size_t BG) {
-  const unsigned CLIENTSIZE = clientssize / N;
-  XSetForeground(dpy, GC, BG);
-  XFillRectangle(dpy, rootw, GC, wkssize + I * CLIENTSIZE, 0, CLIENTSIZE, H);
-  XSetForeground(dpy, GC, FG);
-  XDrawString(dpy, rootw, GC, padding + wkssize + I * CLIENTSIZE, H - 2, 
-    S, strlen(S));
-}
-
-void draw_root(const char* S, const unsigned H, const size_t FG, const size_t BG) {
-  XSetForeground(dpy, rootgc, BG);
-  XFillRectangle(dpy, rootw, rootgc, wkssize + clientssize, 0, dpysize.x, H);
-  XSetForeground(dpy, rootgc, FG);
-  XDrawString(dpy, rootw, rootgc, padding + wkssize + clientssize, H - 2, 
-    S, strlen(S));
-}
-*/

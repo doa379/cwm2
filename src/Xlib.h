@@ -19,6 +19,7 @@ void grab_btn(const Window, const int, const int);
 void ungrab_btn(const Window, const int, const int);
 void movewindow(const Window, const int, const int);
 void mapwindow(const Window);
+void unmapwindow(const Window);
 void init_atoms();
 void app_clientlist(const Window);
 void clear_clientlist();
@@ -32,6 +33,8 @@ void focusin(const Window);
 void send_killmsg(const Window);
 void send_switchwks(const unsigned);
 void spawn(const char*);
+Window init_shadow(const unsigned, const unsigned);
+void destroy_window(const Window);
 void init_drawable();
 void deinit_drawable();
 unsigned dpywidth();
@@ -41,4 +44,4 @@ void deinit_gc(const GC);
 void draw_element(const GC, const size_t, const size_t, const unsigned, 
   const unsigned, const unsigned, const unsigned);
 void print_element(const GC, const char*, const unsigned, const unsigned,
-  const unsigned);
+  const unsigned, const unsigned);

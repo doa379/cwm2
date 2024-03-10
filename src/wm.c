@@ -8,14 +8,14 @@
 
 typedef struct {
   Window w;
+  Window shadow;
   pair_t pos;
   pair_t size;
   GC gc;
-  // 32B
   unsigned wks;
   int sel;
   int ft;
-  int pad[5];
+  int pad[3];
 } client_t;
 
 typedef struct {
@@ -52,7 +52,8 @@ static unsigned wkssize;
 static unsigned clientssize;
 static unsigned rootsize;
 static unsigned panelheight;
-static unsigned padding;
+static unsigned hpad;
+static unsigned vpad;
 
 // Inits
 
@@ -79,11 +80,12 @@ bool init_wm() {
   rootgc = init_gc();
   wksgc = init_gc();
   dpysize = (pair_t) { dpywidth(), dpyheight() };
-  wkssize = WKSSIZE_PERC * dpysize.x;
-  clientssize = CLIENTSSIZE_PERC * dpysize.x;
-  rootsize = ROOTSIZE_PERC * dpysize.x;
+  wkssize = WKS_PERC * dpysize.x;
+  clientssize = CLIENTS_PERC * dpysize.x;
+  rootsize = ROOT_PERC * dpysize.x;
   panelheight = VPANEL_PERC * dpysize.y;
-  padding = PADDING_PERC * panelheight;
+  hpad = HPAD_PERC * dpysize.x;
+  vpad = VPAD_PERC * dpysize.y;
   fprintf(stdout, "Init %s\n", WMNAME);
   return true;
 }
@@ -91,10 +93,9 @@ bool init_wm() {
 void deinit_wm() {
   // Blocks are deinit immediately upon failure so no checks here
   // Deinit client elements
-  for (size_t n = 0; n < clients.size; n++) {
-    client_t* client = (client_t*) clients.blk + n;
+  for (client_t* client = clients.blk; 
+    client < (client_t*) clients.blk + clients.size; client++)
     deinit_gc(client->gc);
-  }
   
   deinit_blk(&clients);
   deinit_blk(&monitors);
@@ -133,6 +134,7 @@ void unmapnotify(const long W, const long, const long) {
 
   fprintf(stdout, "unmap(): window %ld\n", W);
   fprintf(stdout, "unmap(): window %ld\n", client->w);
+  destroy_window(client->shadow);
   deinit_gc(client->gc);
   unmap_dev(&clients, client);
   prev();
@@ -154,7 +156,15 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
   const pair_t POS = { clients.size ? client->pos.x + panelheight : 0, 
     clients.size ? client->pos.y + panelheight : panelheight };
   const pair_t SIZE = { WIDTH, HEIGHT };
-  client_t client_ = { W, POS, SIZE, init_gc(), wks };
+  client_t client_ = { 
+    .w = W, 
+    .shadow = init_shadow(WIDTH, HEIGHT), 
+    .pos = POS, 
+    .size = SIZE, 
+    .gc = init_gc(), 
+    .wks = wks
+  };
+
   Window curr = client ? client->w : -1;
   // May realloc
   client_t* client_p = map_dev(&clients, &client_);
@@ -168,13 +178,17 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
   }
 
   if (client_p) {
-    if (client)
+    if (client) {
       unfocus(client->w);
+      unmapwindow(client->shadow);
+    }
 
     focus(client_p->w);
     client = client_p;
-    set_bdrwidth(W, BDRW);
+    set_bdrwidth(W, BDR_PX);
     movewindow(W, POS.x, POS.y);
+    movewindow(client->shadow, POS.x + 20, POS.y + 20);
+    mapwindow(client->shadow);
     mapwindow(W);
   }
 }
@@ -247,19 +261,21 @@ void switchwks(const unsigned N) {
 void refresh_panel() {
   char S[32];
   snprintf(S, sizeof S, "%d/%d", wks, NWKS);
-  //draw_wks(S, BARH, FG1, BG1);
-  draw_element(wksgc, FG1, BG1, 0, 0, wkssize, panelheight);
-  print_element(wksgc, S, 0, padding, panelheight);
+  draw_element(wksgc, FG1, BG1, 0, 0, wkssize + hpad, panelheight);
+  print_element(wksgc, S, 0, hpad, panelheight, vpad);
+  draw_element(rootgc, FG2, BG1, wkssize + clientssize, 0, dpysize.x, 
+    panelheight);
+  print_element(rootgc, WMNAME, wkssize + clientssize, hpad, 
+    panelheight, vpad);
 
   if (clients.size == 0)
     return;
   else if (clientssize / clients.size < 10) {
     if (client) {
       snprintf(S, sizeof S, "W %lu", client->w);
-      //draw_client(client->gc, S, 0, 1, BARH, FG1, BG0);
-      draw_element(client->gc, FG1, BG0, wkssize, 0, wkssize + clientssize, 
-        panelheight);
-      print_element(client->gc, S, wkssize, padding, panelheight);
+      draw_element(client->gc, FG1, BG0, wkssize, 0, 
+        wkssize + clientssize, panelheight);
+      print_element(client->gc, S, wkssize, hpad, panelheight, vpad);
     }
   } else {
     const unsigned WSIZE = clientssize / clients.size;
@@ -269,17 +285,10 @@ void refresh_panel() {
       snprintf(S, sizeof S, "W %lu", client_->w);
       draw_element(client_->gc, FG1, client_ == client ? BG0 : BG2, 
         wkssize + D * WSIZE, 0, WSIZE, panelheight);
-      print_element(client_->gc, S, wkssize + D * WSIZE, padding, panelheight);
-
-      //draw_client(client_->gc, S, client_ - (client_t*) clients.blk, 
-        //clients.size, BARH, FG1, client_ == client ? BG0: BG2);
+      print_element(client_->gc, S, wkssize + D * WSIZE, hpad, 
+        panelheight, vpad);
     }
   }
-
-  //draw_root(WMNAME, BARH, FG2, BG1);
-  draw_element(rootgc, FG2, BG1, wkssize + clientssize, 0, dpysize.x, 
-    panelheight);
-  print_element(rootgc, WMNAME, wkssize + clientssize, padding, panelheight);
 }
 
 // Commands
@@ -326,14 +335,17 @@ void wks9() {
 
 void kill() {
   fprintf(stdout, "Kill\n");
-  if (client)
+  if (client) {
     send_killmsg(client->w);
+  }
 }
 
 void prev() {
   fprintf(stdout, "Prev\n");
   client_t* client_p = prev_dev(&clients, client);
   unfocus(client->w);
+  unmapwindow(client->shadow);
+  mapwindow(client_p->shadow);
   focus(client_p->w);
   client = client_p;
 }
@@ -342,6 +354,8 @@ void next() {
   fprintf(stdout, "Next\n");
   client_t* client_p = next_dev(&clients, client);
   unfocus(client->w);
+  unmapwindow(client->shadow);
+  mapwindow(client_p->shadow);
   focus(client_p->w);
   client = client_p;
 }

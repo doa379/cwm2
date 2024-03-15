@@ -80,10 +80,20 @@ Buttons {
   Up        = Button4,
   Down      = Button5,
 }
+
+Modifiers {
+  Mod1Mask,
+  Mod2Mask,
+  Mod3Mask,
+  Mod4Mask,
+  Mod5Mask,
+  ShiftMask,
+  ControlMask,
+  LockMask
 */
 
-static const char* WMNAME = "cwm2";
-static const char* WMVER = "-0.0";
+static const char* WMNAME = { "cwm2" };
+static const char* WMVER = { "-0.0" };
 static const int NWKS = { 8 };
 static const int WKSFG = { Gray1 };
 static const int WKSBG = { Cyan40 };

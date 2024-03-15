@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <signal.h>
-#include <wm.h>
-#include <ev.h>
 #include <Xlib.h>
+#include <wm.h>
 #include <util.h>
 
 volatile sig_atomic_t sig_status;
 
 static void sighandler(int sig) {
   sig_status = 1;
+  intr_event();
   fprintf(stdout, "\nSig.\n");
 }
 
@@ -35,29 +35,52 @@ int main(const int ARGC, const char* ARGV[]) {
   init_wks();
   init_drawable();
   init_windows();
-  if (signal(SIGINT, sighandler) == SIG_ERR)
-    sig_status = 1;
-
   static ev_t EV[] = {
-    { .evfn = noop, .name = NOOP },
-    { .evfn = mapnotify, .name = MAPNOTIFY },
-    { .evfn = unmapnotify, .name = UNMAPNOTIFY },
-    { .evfn = clientmessage, .name = CLIENTMESSAGE },
-    { .evfn = configurenotify, .name = CONFIGURENOTIFY },
-    { .evfn = maprequest, .name = MAPREQUEST },
-    { .evfn = noop, .name = CONFIGUREREQUEST },
-    { .evfn = noop, .name = MOTIONNOTIFY },
-    { .evfn = keypress, .name = KEYPRESS },
-    { .evfn = btnpress, .name = BTNPRESS },
-    { .evfn = enternotify, .name = ENTERNOTIFY },
-    { .evfn = propertynotify, .name = PROPERTYNOTIFY }
+    { .evfn = noop, .EVENT = NOOP },
+    { .evfn = mapnotify, .EVENT = MAPNOTIFY },
+    { .evfn = unmapnotify, .EVENT = UNMAPNOTIFY },
+    //{ .evfn = clientmessage, .EVENT = CLIENTMESSAGE },
+    { .evfn = configurenotify, .EVENT = CONFIGURENOTIFY },
+    { .evfn = maprequest, .EVENT = MAPREQUEST },
+    { .evfn = noop, .EVENT = CONFIGUREREQUEST },
+    { .evfn = noop, .EVENT = MOTIONNOTIFY },
+    { .evfn = keypress, .EVENT = KEYPRESS },
+    { .evfn = btnpress, .EVENT = BTNPRESS },
+    { .evfn = enternotify, .EVENT = ENTERNOTIFY },
+    { .evfn = propertynotify, .EVENT = PROPERTYNOTIFY }
+  };
+
+  static ev_t MSGEV[] = {
+    { .evfn = noop, .PROP = WM_PROTOCOLS },
+    { .evfn = noop, .PROP = WM_NAME },
+    { .evfn = noop, .PROP = WM_DELETE_WINDOW },
+    { .evfn = noop, .PROP = WM_STATE },
+    { .evfn = noop, .PROP = WM_TAKE_FOCUS },
+    { .evfn = noop, .PROP = NET_SUPPORTED },
+    { .evfn = noop, .PROP = NET_WM_STATE },
+    { .evfn = noop, .PROP = NET_WM_NAME },
+    { .evfn = noop, .PROP = NET_WM_WINDOW_OPACITY },
+    { .evfn = noop, .PROP = NET_ACTIVE_WINDOW },
+    { .evfn = noop, .PROP = NET_WM_STATE_FULLSCREEN },
+    { .evfn = noop, .PROP = NET_WM_WINDOW_TYPE },
+    { .evfn = noop, .PROP = NET_WM_WINDOW_TYPE_DIALOG },
+    { .evfn = noop, .PROP = NET_CLIENT_LIST },
+    { .evfn = noop, .PROP = NET_NUMBER_OF_DESKTOPS },
+    { .evfn = noop, .PROP = NET_WM_DESKTOP },
+    { .evfn = switch_wks, .PROP = NET_CURRENT_DESKTOP },
+    { .evfn = noop, .PROP = NET_SHOWING_DESKTOP },
   };
 
   // Init return events
-  for (size_t i = 0; i < LEN(EV); i++)
+  for (size_t i = { 0 }; i < LEN(EV); i++)
     init_event(&EV[i]);
+  for (size_t i = { 0 }; i < LEN(MSGEV); i++)
+    init_msgevent(&MSGEV[i]);
   // Init internal events
   init_events();
+  if (signal(SIGINT, sighandler) == SIG_ERR)
+    sig_status = 1;
+
   while (sig_status == 0) {
     const ev_t* EV = event();
     EV->evfn(EV->DATA[0], EV->DATA[1], EV->DATA[2]);

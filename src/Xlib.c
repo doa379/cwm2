@@ -8,46 +8,14 @@
 #include <Xlib.h>
 #include <util.h>
 
-static const int ROOTMASK = { 
-  SubstructureRedirectMask | 
-  SubstructureNotifyMask | 
-  ButtonPressMask |
-  PointerMotionMask |
-  EnterWindowMask |
-  LeaveWindowMask |
-  StructureNotifyMask |
-  PropertyChangeMask
-};
-
-typedef struct {
-  Atom PROTO;
-  Atom NAME;
-  Atom DELETE_WINDOW;
-  Atom STATE;
-  Atom TAKE_FOCUS;
-  Atom SUPPORTED;
-  Atom WM_STATE;
-  Atom WM_NAME;
-  Atom WM_WINDOW_OPACITY;
-  Atom ACTIVE_WINDOW;
-  Atom WM_STATE_FULLSCREEN;
-  Atom WM_WINDOW_TYPE;
-  Atom WM_WINDOW_TYPE_DIALOG;
-  Atom CLIENT_LIST;
-  Atom NUMBER_OF_DESKTOPS;
-  Atom WM_DESKTOP;
-  Atom CURRENT_DESKTOP;
-  Atom SHOWING_DESKTOP;
-} atom_t;
-
 static Display* dpy;
 static Window rootw;
 static bool xerror;
 static XEvent xev;
 static ev_t* (*EVFN[LASTEvent])();
-static ev_t* EV[LASTEvent];
-// TODO
-static atom_t atom;
+static ev_t* EV[32];
+static ev_t* MSGEV[32];
+static Atom ATOM[32];
 static Drawable drawable;
 
 static int XError(Display*, XErrorEvent* xev) {
@@ -66,19 +34,35 @@ void deinit_dpy() {
 bool init_root() {
   rootw = XRootWindow(dpy, DefaultScreen(dpy));
   XSetErrorHandler(XError);
-  XSelectInput(dpy, rootw, ROOTMASK);
+  static const long MASK = { 
+    SubstructureRedirectMask | 
+    SubstructureNotifyMask | 
+    ButtonPressMask |
+    PointerMotionMask |
+    EnterWindowMask |
+    LeaveWindowMask |
+    StructureNotifyMask |
+    PropertyChangeMask
+  };
+
+  XSelectInput(dpy, rootw, MASK);
   XUngrabKey(dpy, AnyKey, AnyModifier, rootw);
-  XSetWindowBackground(dpy, rootw, 0x002531);
+  XSetWindowBackground(dpy, rootw, 0x006e99);
   XClearWindow(dpy, rootw);
   return !xerror;
 }
 
 void deinit_root() {
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
+  XUngrabServer(dpy);
 }
 
 void init_event(ev_t* ev) {
-  EV[ev->name] = ev;
+  EV[ev->EVENT] = ev;
+}
+
+void init_msgevent(ev_t* ev) {
+  MSGEV[ev->PROP] = ev;
 }
 
 static ev_t* noop() {
@@ -93,25 +77,49 @@ static ev_t* mapnotify() {
 
 static ev_t* unmapnotify() {
   fprintf(stdout, "EV: Unmapnotify\n");
-  const Window W = xev.xunmap.window;
+  const Window W = { xev.xunmap.window };
   EV[UNMAPNOTIFY]->DATA[0] = W;
   return EV[UNMAPNOTIFY];
 }
 
 static ev_t* clientmessage() {
   fprintf(stdout, "EV: Client Message\n");
-  const Window W = xev.xclient.window;
-  EV[CLIENTMESSAGE]->DATA[0] = W;
-  return EV[CLIENTMESSAGE];
+  const Window W = { xev.xclient.window };
+  const Atom PROP = { xev.xclient.message_type };
+  if (PROP == ATOM[WM_PROTOCOLS]) {
+    ;
+  } else if (PROP == ATOM[WM_NAME]);
+  else if (PROP == ATOM[WM_DELETE_WINDOW]);
+  else if (PROP == ATOM[WM_STATE]);
+  else if (PROP == ATOM[WM_TAKE_FOCUS]);
+  else if (PROP == ATOM[NET_SUPPORTED]);
+  else if (PROP == ATOM[NET_WM_STATE]);
+  else if (PROP == ATOM[NET_WM_NAME]);
+  else if (PROP == ATOM[NET_WM_WINDOW_OPACITY]);
+  else if (PROP == ATOM[NET_ACTIVE_WINDOW]);
+  else if (PROP == ATOM[NET_WM_STATE_FULLSCREEN]);
+  else if (PROP == ATOM[NET_WM_WINDOW_TYPE]);
+  else if (PROP == ATOM[NET_WM_WINDOW_TYPE_DIALOG]);
+  else if (PROP == ATOM[NET_CLIENT_LIST]);
+  else if (PROP == ATOM[NET_NUMBER_OF_DESKTOPS]);
+  else if (PROP == ATOM[NET_WM_DESKTOP]);
+  else if (PROP == ATOM[NET_CURRENT_DESKTOP]) {
+    ev_t* ev = { MSGEV[NET_CURRENT_DESKTOP] };
+    ev->DATA[0] = xev.xclient.data.l[0];
+    return ev;
+  } else if (PROP == ATOM[NET_SHOWING_DESKTOP])
+    ;
+
+  return EV[NOOP];
 }
 
 static ev_t* configurenotify() {
   fprintf(stdout, "EV: Configure Notify\n");
-  const Window W = xev.xconfigure.window;
-  const int WIDTH = xev.xconfigure.width;
-  const int HEIGHT = xev.xconfigure.height;
+  const Window W = { xev.xconfigure.window };
+  const int WIDTH = { xev.xconfigure.width };
+  const int HEIGHT = { xev.xconfigure.height };
   // want to reconfigure root window
-  ev_t* ev = EV[CONFIGURENOTIFY];
+  ev_t* ev = { EV[CONFIGURENOTIFY] };
   ev->DATA[0] = W;
   ev->DATA[1] = WIDTH;
   ev->DATA[2] = HEIGHT;
@@ -120,20 +128,21 @@ static ev_t* configurenotify() {
 
 static ev_t* maprequest() {
   fprintf(stdout, "EV: Map Request\n");
-  const Window W = xev.xmaprequest.window;
-  XWindowAttributes wa;
+  const Window W = { xev.xmaprequest.window };
+  static XWindowAttributes wa = { };
   if (XGetWindowAttributes(dpy, W, &wa) == 0 || wa.override_redirect)
     return EV[NOOP];
   
-  static const int WMASK = EnterWindowMask | 
+  static const long MASK = { EnterWindowMask | 
     FocusChangeMask |
     PropertyChangeMask | 
-    StructureNotifyMask;
-  XSelectInput(dpy, W, WMASK);
-  XChangeProperty(dpy, rootw, atom.CLIENT_LIST, XA_WINDOW, 32, PropModeAppend, 
-    (unsigned char*) &W, 1);
+    StructureNotifyMask
+  };
+  XSelectInput(dpy, W, MASK);
+  XChangeProperty(dpy, rootw, ATOM[NET_CLIENT_LIST], XA_WINDOW, 32, 
+    PropModeAppend, (unsigned char*) &W, 1);
 
-  ev_t* ev = EV[MAPREQUEST];
+  ev_t* ev = { EV[MAPREQUEST] };
   ev->DATA[0] = W;
   ev->DATA[1] = wa.width;
   ev->DATA[2] = wa.height;
@@ -142,7 +151,7 @@ static ev_t* maprequest() {
 
 static ev_t* configurerequest() {
   fprintf(stdout, "EV: Config Request\n");
-  const XConfigureRequestEvent* CONF = &xev.xconfigurerequest;
+  const XConfigureRequestEvent* CONF = { &xev.xconfigurerequest };
   XWindowChanges wc = {
     CONF->x, CONF->y, CONF->width, CONF->height,
     CONF->border_width, CONF->above, CONF->detail };
@@ -153,15 +162,15 @@ static ev_t* configurerequest() {
 static ev_t* motionnotify() {
   return EV[MOTIONNOTIFY];
   fprintf(stdout, "EV: Motion Notify\n");
-  const Window W = xev.xmotion.window;
+  const Window W = { xev.xmotion.window };
   (void) W;
 }
 
 static ev_t* keypress() {
   fprintf(stdout, "EV: Key Press\n");
-  const int STATE = xev.xkey.state;
-  const int CODE = xev.xkey.keycode;
-  ev_t* ev = EV[KEYPRESS];
+  const int STATE = { xev.xkey.state };
+  const int CODE = { xev.xkey.keycode };
+  ev_t* ev = { EV[KEYPRESS] };
   ev->DATA[0] = rootw;
   ev->DATA[1] = STATE;
   ev->DATA[2] = CODE;
@@ -170,11 +179,11 @@ static ev_t* keypress() {
 
 static ev_t* btnpress() {
   fprintf(stdout, "EV: Btn Press\n");
-  const int STATE = xev.xbutton.state;
-  const int CODE = xev.xbutton.button;
-  const Window W = xev.xbutton.window;
+  const int STATE = { xev.xbutton.state };
+  const int CODE = { xev.xbutton.button };
+  const Window W = { xev.xbutton.window };
   XUngrabPointer(dpy, CurrentTime);
-  ev_t* ev = EV[BTNPRESS];
+  ev_t* ev = { EV[BTNPRESS] };
   ev->DATA[0] = W;
   ev->DATA[1] = STATE;
   ev->DATA[2] = CODE;
@@ -183,20 +192,20 @@ static ev_t* btnpress() {
 
 static ev_t* enternotify() {
   fprintf(stdout, "EV: Enter Notify\n");
-  const Window W = xev.xcrossing.window;
+  const Window W = { xev.xcrossing.window };
   EV[ENTERNOTIFY]->DATA[0] = W;
   return EV[ENTERNOTIFY];
 }
 
 static ev_t* propertynotify() {
   fprintf(stdout, "EV: Prop Notify\n");
-  const Window W = xev.xproperty.window;
+  const Window W = { xev.xproperty.window };
   EV[PROPERTYNOTIFY]->DATA[0] = W;
   return EV[PROPERTYNOTIFY];
 }
 
 void init_events() {
-  for (size_t i = 0; i < LASTEvent; i++)
+  for (size_t i = { 0 }; i < LASTEvent; i++)
     EVFN[i] = noop;
 
   EVFN[MapNotify] = mapnotify;
@@ -213,19 +222,25 @@ void init_events() {
 }
 
 ev_t* event() {
+  XSync(dpy, false);
+  XUngrabServer(dpy);
   if (XNextEvent(dpy, &xev) == 0) {
-    XSync(dpy, false);
+    XGrabServer(dpy);
     return EVFN[xev.type]();
   }
-
+    
   return EV[NOOP];
 }
 
+void intr_event() {
+  close(ConnectionNumber(dpy));
+}
+
 int modmask() {
-  XModifierKeymap* modmap = XGetModifierMapping(dpy);
+  XModifierKeymap* modmap = { XGetModifierMapping(dpy) };
   unsigned numlockmask = { 0 };
-  for (int k = 0; k < 8; k++)
-    for (int j = 0; j < modmap->max_keypermod; j++)
+  for (int k = { 0 }; k < 8; k++)
+    for (int j = { 0 }; j < modmap->max_keypermod; j++)
       if (modmap->modifiermap[modmap->max_keypermod * k + j] == 
         XKeysymToKeycode(dpy, XK_Num_Lock))
         numlockmask = (1 << k);
@@ -239,15 +254,27 @@ void init_windows() {
   Window par;
   Window* w;
   unsigned n;
+  XGrabServer(dpy);
   if (XQueryTree(dpy, rootw, &root, &par, &w, &n)) {
-    for (unsigned i = 0; i < n; i++) {
+    static const long MASK = { 
+      SubstructureRedirectMask | 
+      SubstructureNotifyMask | 
+      ButtonPressMask |
+      PointerMotionMask |
+      EnterWindowMask |
+      LeaveWindowMask |
+      StructureNotifyMask |
+      PropertyChangeMask
+    };
+
+    for (unsigned i = { 0 }; i < n; i++) {
       XWindowAttributes wa;
       if (XGetWindowAttributes(dpy, w[i], &wa) && wa.map_state == IsViewable) {
         XEvent xev = { MapRequest };
         xev.xmaprequest.send_event = true,
         xev.xmaprequest.parent = rootw;
         xev.xmaprequest.window = w[i];
-        XSendEvent(dpy, rootw, true, ROOTMASK, &xev);
+        XSendEvent(dpy, rootw, true, MASK, &xev);
       }
     }
 
@@ -255,7 +282,7 @@ void init_windows() {
       XFree(w);
   }
 
-  XSync(dpy, false);
+  XUngrabServer(dpy);
 }
 
 void grab_key(const int MOD, const int KEY) {
@@ -272,8 +299,8 @@ int keycode2sym(const int CODE) {
 }
 
 void grab_btn(const Window W, const int MOD, const int KEY) {
-  static const int BUTTONMASK = ButtonPressMask | ButtonReleaseMask;
-  XGrabButton(dpy, KEY, MOD, W, false, BUTTONMASK, GrabModeSync, GrabModeSync,
+  static const long MASK = { ButtonPressMask | ButtonReleaseMask };
+  XGrabButton(dpy, KEY, MOD, W, false, MASK, GrabModeSync, GrabModeSync,
     None, None);
 }
 
@@ -286,8 +313,7 @@ void movewindow(const Window W, const int X, const int Y) {
 }
 
 void mapwindow(const Window W) {
-  XMapWindow(dpy, W);
-  XRaiseWindow(dpy, W);
+  XMapRaised(dpy, W);
 }
 
 void unmapwindow(const Window W) {
@@ -295,48 +321,50 @@ void unmapwindow(const Window W) {
 }
 
 void init_atoms() {
-  atom = (atom_t) {
-    .PROTO = XInternAtom(dpy, "WM_PROTOCOLS", false),
-    .NAME = XInternAtom(dpy, "WM_NAME", false),
-    .DELETE_WINDOW = XInternAtom(dpy, "WM_DELETE_WINDOW", false),
-    .STATE = XInternAtom(dpy, "WM_STATE", false),
-    .TAKE_FOCUS = XInternAtom(dpy, "WM_TAKE_FOCUS", false),
-    .SUPPORTED = XInternAtom(dpy, "_NET_SUPPORTED", false),
-    .WM_STATE = XInternAtom(dpy, "_NET_WM_STATE", false),
-    .WM_NAME = XInternAtom(dpy, "_NET_WM_NAME", false),
-    .WM_WINDOW_OPACITY = XInternAtom(dpy, "_NET_WM_WINDOW_OPACITY", false),
-    .ACTIVE_WINDOW = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", false),
-    .WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", false),
-    .WM_WINDOW_TYPE = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", false),
-    .WM_WINDOW_TYPE_DIALOG = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", false),
-    .CLIENT_LIST = XInternAtom(dpy, "_NET_CLIENT_LIST", false),
-    .NUMBER_OF_DESKTOPS = XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", false),
-    .WM_DESKTOP = XInternAtom(dpy, "_NET_WM_DESKTOP", false),
-    .CURRENT_DESKTOP = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", false),
-    .SHOWING_DESKTOP = XInternAtom(dpy, "_NET_SHOWING_DESKTOP", false)
-  };
+  ATOM[WM_PROTOCOLS] = XInternAtom(dpy, "WM_PROTOCOLS", false);
+  ATOM[WM_NAME] = XInternAtom(dpy, "WM_NAME", false);
+  ATOM[WM_DELETE_WINDOW] = XInternAtom(dpy, "WM_DELETE_WINDOW", false);
+  ATOM[WM_STATE] = XInternAtom(dpy, "WM_STATE", false);
+  ATOM[WM_TAKE_FOCUS] = XInternAtom(dpy, "WM_TAKE_FOCUS", false);
+  ATOM[NET_SUPPORTED] = XInternAtom(dpy, "_NET_SUPPORTED", false);
+  ATOM[NET_WM_STATE] = XInternAtom(dpy, "_NET_WM_STATE", false);
+  ATOM[NET_WM_NAME] = XInternAtom(dpy, "_NET_WM_NAME", false);
+  ATOM[NET_WM_WINDOW_OPACITY] = 
+    XInternAtom(dpy, "_NET_WM_WINDOW_OPACITY", false);
+  ATOM[NET_ACTIVE_WINDOW] = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", false);
+  ATOM[NET_WM_STATE_FULLSCREEN] = 
+    XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", false);
+  ATOM[NET_WM_WINDOW_TYPE] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", false);
+  ATOM[NET_WM_WINDOW_TYPE_DIALOG] = 
+    XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", false);
+  ATOM[NET_CLIENT_LIST] = XInternAtom(dpy, "_NET_CLIENT_LIST", false);
+  ATOM[NET_NUMBER_OF_DESKTOPS] = 
+    XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", false);
+  ATOM[NET_WM_DESKTOP] = XInternAtom(dpy, "_NET_WM_DESKTOP", false);
+  ATOM[NET_CURRENT_DESKTOP] = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", false);
+  ATOM[NET_SHOWING_DESKTOP] = XInternAtom(dpy, "_NET_SHOWING_DESKTOP", false);
 }
 
 void app_clientlist(const Window W) {
-  XChangeProperty(dpy, rootw, atom.CLIENT_LIST, XA_WINDOW, 32, PropModeAppend, 
-    (const unsigned char*) &W, 1);
+  XChangeProperty(dpy, rootw, ATOM[NET_CLIENT_LIST], XA_WINDOW, 32, 
+    PropModeAppend, (const unsigned char*) &W, 1);
 }
 
 void clear_clientlist() {
-  XDeleteProperty(dpy, rootw, atom.CLIENT_LIST);
+  XDeleteProperty(dpy, rootw, ATOM[NET_CLIENT_LIST]);
 }
 
 void del_actwindow(const Window W) {
-  XDeleteProperty(dpy, W, atom.ACTIVE_WINDOW);
+  XDeleteProperty(dpy, W, ATOM[NET_ACTIVE_WINDOW]);
 }
 
 void set_nwks(const int NWKS) {
-  XChangeProperty(dpy, rootw, atom.NUMBER_OF_DESKTOPS, XA_CARDINAL, 32, 
+  XChangeProperty(dpy, rootw, ATOM[NET_NUMBER_OF_DESKTOPS], XA_CARDINAL, 32, 
     PropModeReplace, (const unsigned char*) &NWKS, 1);
 }
 
 void set_wks(const int N) {
-  XChangeProperty(dpy, rootw, atom.CURRENT_DESKTOP, XA_CARDINAL, 32,
+  XChangeProperty(dpy, rootw, ATOM[NET_CURRENT_DESKTOP], XA_CARDINAL, 32,
     PropModeReplace, (const unsigned char*) &N, 1);
 }
 
@@ -356,7 +384,7 @@ void del_rootprop(const Atom PROP) {
 //////////////////////////////////////////////////////////////////
 void init_ewmh() {
   // Init/Reset EWMH
-  XDeleteProperty(dpy, rootw, atom.CLIENT_LIST);
+  XDeleteProperty(dpy, rootw, ATOM[NET_CLIENT_LIST]);
 }
 
 void set_bdrcolor(const Window W, const size_t BDR) {
@@ -370,24 +398,38 @@ void set_bdrwidth(const Window W, const size_t WIDTH) {
 void focusin(const Window W) {
   XSetInputFocus(dpy, W, RevertToPointerRoot, CurrentTime);
   XRaiseWindow(dpy, W);
-  XChangeProperty(dpy, rootw, atom.WM_STATE, XA_WINDOW, 32, PropModeReplace, 
+  XChangeProperty(dpy, rootw, ATOM[WM_STATE], XA_WINDOW, 32, PropModeReplace, 
     (const unsigned char*) &W, 1);
-  XChangeProperty(dpy, W, atom.ACTIVE_WINDOW, XA_WINDOW, 32, PropModeReplace, 
-    (const unsigned char*) &W, 1);
+  XChangeProperty(dpy, W, ATOM[NET_ACTIVE_WINDOW], XA_WINDOW, 32, 
+    PropModeReplace, (const unsigned char*) &W, 1);
 }
   
-void send_killmsg(const Window W) {
-  XEvent xev = { ClientMessage };
+bool send_killmsg(const Window W) {
+  static XEvent xev = { ClientMessage };
   xev.xclient.window = W;
-  xev.xclient.message_type = atom.PROTO;
+  xev.xclient.message_type = ATOM[WM_PROTOCOLS];
   xev.xclient.format = 32;
-  xev.xclient.data.l[0] = atom.DELETE_WINDOW;
+  xev.xclient.data.l[0] = ATOM[WM_DELETE_WINDOW];
   xev.xclient.data.l[1] = CurrentTime;
-  XSendEvent(dpy, W, false, NoEventMask, &xev);
+  const Status STATUS = { XSendEvent(dpy, W, false, NoEventMask, &xev) };
+  return STATUS == 0 || STATUS == BadValue || STATUS == BadWindow ? false :
+    true;
 }
 
-void send_switchwks(const unsigned N) {
-  fprintf(stdout, "Switch WKS %d\n", N);
+bool send_switchwks(const unsigned N) {
+  static XEvent xev = { ClientMessage };
+  xev.xclient.serial = 0;
+  xev.xclient.send_event = true;
+  xev.xclient.message_type = ATOM[NET_CURRENT_DESKTOP];
+  xev.xclient.window = rootw;
+  xev.xclient.format = 32;
+  xev.xclient.data.l[0] = N;
+  static const long MASK = { 
+    SubstructureRedirectMask | SubstructureNotifyMask
+  };
+  const Status STATUS = { XSendEvent(dpy, rootw, false, MASK, &xev) };
+  return STATUS == 0 || STATUS == BadValue || STATUS == BadWindow ? false :
+    true;
 }
 
 void spawn(const char* CMD) {
@@ -424,7 +466,7 @@ unsigned dpyheight() {
 }
 
 GC init_gc() {
-  GC gc = XCreateGC(dpy, rootw, 0, NULL);
+  GC gc = { XCreateGC(dpy, rootw, 0, NULL) };
   XSetLineAttributes(dpy, gc, 1, LineSolid, CapButt, JoinMiter);
   return gc;
 }

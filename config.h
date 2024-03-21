@@ -109,12 +109,6 @@ static const int FTBDR = { Yellow };
 static const int WINGAP = { 0 };
 static const int MOVESTEP_PX = { 5 };
 static const int BDR_PX = { 4 };
-static const float HPAD_PERC = { 0.005 };
-static const float VPAD_PERC = { 0.007 };
-static const float WKS_PERC = { 0.04 };
-static const float CLIENTS_PERC = { 0.78 };
-static const float ROOT_PERC = { 0.2 };
-static const float VPANEL_PERC = { 0.03 };
 static const bool SLOPPY_FOCUS = { true };
 
 typedef enum {

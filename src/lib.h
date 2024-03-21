@@ -14,3 +14,4 @@ void unmap_dev(blk_t*, const void*);
 void* find_dev(blk_t*, void*);
 void* prev_dev(blk_t*, void*);
 void* next_dev(blk_t*, void*);
+size_t dist(blk_t*, const void*);

@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <Xlib.h>
-#include <util.h>
 
 static Display* dpy;
 static Window rootw;
@@ -16,7 +15,14 @@ static ev_t* (*EVFN[LASTEvent])();
 static ev_t* EV[32];
 static ev_t* MSGEV[32];
 static Atom ATOM[32];
+
 static Drawable drawable;
+static const char* FONT = { 
+  // These are a dependency for X11 so no checks necessary here
+  //"-misc-fixed-medium-r-normal--0-0-100-100-c-0-iso10646-1" };
+  "9x15bold" };
+static XFontStruct* fn;
+static unsigned bh;
 
 static int XError(Display*, XErrorEvent* xev) {
   xerror = xev->error_code == BadAccess;
@@ -119,6 +125,14 @@ static ev_t* configurenotify() {
   const int WIDTH = { xev.xconfigure.width };
   const int HEIGHT = { xev.xconfigure.height };
   // want to reconfigure root window
+  if (W == rootw) {
+    ev_t* ev = { EV[CONFIGUREROOT] };
+    ev->DATA[0] = -1;
+    ev->DATA[1] = WIDTH;
+    ev->DATA[2] = HEIGHT;
+    return ev;
+  }
+
   ev_t* ev = { EV[CONFIGURENOTIFY] };
   ev->DATA[0] = W;
   ev->DATA[1] = WIDTH;
@@ -129,7 +143,7 @@ static ev_t* configurenotify() {
 static ev_t* maprequest() {
   fprintf(stdout, "EV: Map Request\n");
   const Window W = { xev.xmaprequest.window };
-  static XWindowAttributes wa = { };
+  static XWindowAttributes wa;
   if (XGetWindowAttributes(dpy, W, &wa) == 0 || wa.override_redirect)
     return EV[NOOP];
   
@@ -222,13 +236,19 @@ void init_events() {
 }
 
 ev_t* event() {
+  /*
   XSync(dpy, false);
-  XUngrabServer(dpy);
-  if (XNextEvent(dpy, &xev) == 0) {
-    XGrabServer(dpy);
-    return EVFN[xev.type]();
+  return XNextEvent(dpy, &xev) == 0 ? EVFN[xev.type]() : EV[NOOP];
+  */
+  while (XPending(dpy)) {
+    if (XNextEvent(dpy, &xev) == 0) {
+      const ev_t* EV = { EVFN[xev.type]() };
+      EV->evfn(EV->DATA[0], EV->DATA[1], EV->DATA[2]);
+    }
+  
+    XSync(dpy, false);
   }
-    
+
   return EV[NOOP];
 }
 
@@ -269,7 +289,8 @@ void init_windows() {
 
     for (unsigned i = { 0 }; i < n; i++) {
       XWindowAttributes wa;
-      if (XGetWindowAttributes(dpy, w[i], &wa) && wa.map_state == IsViewable) {
+      if (XGetWindowAttributes(dpy, w[i], &wa) && 
+          (wa.map_state == IsViewable || wa.map_state == IconicState)) {
         XEvent xev = { MapRequest };
         xev.xmaprequest.send_event = true,
         xev.xmaprequest.parent = rootw;
@@ -440,6 +461,32 @@ void spawn(const char* CMD) {
   }
 }
 
+// Arrangements
+
+void cascade(int* posx, int* posy, const unsigned X, 
+  const unsigned Y) {
+  static short grav;
+  const char DIRX = { grav >> 0 & 1 ? -1 : 1 };
+  const char DIRY = { grav >> 1 & 1 ? -1 : 1 };
+  *posx += *posy != 0 ? DIRX * bh : 0; 
+  *posy += DIRY * bh;
+  if (*posx + X > dpywidth()) {
+    *posx = dpywidth() - X;
+    grav |= 1 << 0;
+  } if (*posy + Y > dpyheight() - bh - 8) {
+    *posy = dpyheight() - Y - bh - 8;
+    grav |= 1 << 1; 
+  } if (*posx < 0) {
+    *posx = 0;
+    grav ^= 1 << 0;
+  } if (*posy < bh) {
+    *posy = bh;
+    grav ^= 1 << 1;
+  }
+}
+
+// Drawables
+
 Window init_shadow(const unsigned WIDTH, const unsigned HEIGHT) {
   return XCreateSimpleWindow(dpy, rootw, 0, 0, WIDTH, HEIGHT, 0, 0, 0x141414);
 }
@@ -449,8 +496,7 @@ void destroy_window(const Window W) {
 }
 
 void init_drawable() {
-  drawable = XCreatePixmap(dpy, rootw, dpywidth(), dpyheight(), 
-    DefaultDepth(dpy, DefaultScreen(dpy)));
+  drawable = XCreatePixmap(dpy, rootw, dpywidth(), dpyheight(), dpydepth());
 }
 
 void deinit_drawable() {
@@ -465,6 +511,10 @@ unsigned dpyheight() {
   return DisplayHeight(dpy, DefaultScreen(dpy));
 }
 
+unsigned dpydepth() {
+  return DefaultDepth(dpy, DefaultScreen(dpy));
+}
+
 GC init_gc() {
   GC gc = { XCreateGC(dpy, rootw, 0, NULL) };
   XSetLineAttributes(dpy, gc, 1, LineSolid, CapButt, JoinMiter);
@@ -475,14 +525,47 @@ void deinit_gc(const GC GC) {
   XFreeGC(dpy, GC);
 }
 
-void draw_element(const GC GC, const size_t FG, const size_t BG, 
-const unsigned X0, const unsigned Y0, const unsigned X1, const unsigned Y1) {
-  XSetForeground(dpy, GC, BG);
-  XFillRectangle(dpy, rootw, GC, X0, Y0, X1, Y1);
-  XSetForeground(dpy, GC, FG);
+void init_print() {
+  fn = XLoadQueryFont(dpy, FONT);
+  bh = fn->ascent + fn->descent;
 }
 
-void print_element(const GC GC, const char* S, const unsigned X, 
-  const unsigned HPAD, const unsigned Y, const unsigned VPAD) {
-  XDrawString(dpy, rootw, GC, X + HPAD, Y - VPAD, S, strlen(S));
+void deinit_print() {
+  XFreeFont(dpy, fn);
+}
+
+void draw_element(const GC GC, const size_t FG, const size_t BG, const unsigned X0, const unsigned Y0, const unsigned X1, const unsigned Y1) {
+  XSetForeground(dpy, GC, BG);
+  XFillRectangle(dpy, rootw, GC, X0, Y0, X1, Y1);
+}
+
+void draw_wks(const char* S, const GC GC, const size_t FG, const size_t BG, unsigned* offset) {
+  XClearWindow(dpy, rootw);
+  static const unsigned HTO = { 4 };
+  const unsigned SLEN = { strlen(S) };
+  const unsigned SW = { XTextWidth(fn, S, SLEN) };
+  draw_element(GC, FG, BG, 0, dpyheight() - bh, SW, dpyheight() - bh);
+  XSetForeground(dpy, GC, FG);
+  XDrawString(dpy, rootw, GC, HTO, dpyheight() - 0.20 * bh, S, SLEN);
+  *offset = SW;
+}
+
+void draw_root(const char* S, const GC GC, const size_t FG, const size_t BG, unsigned* offset) {
+  static const unsigned HTO = { 4 };
+  const unsigned SLEN = { strlen(S) };
+  const unsigned SW = { XTextWidth(fn, S, SLEN) };
+  draw_element(GC, FG, BG, *offset, dpyheight() - bh, dpywidth(), dpyheight());
+  XSetForeground(dpy, GC, FG);
+  XDrawString(dpy, rootw, GC, *offset + HTO, dpyheight() - 0.20 * bh, S, SLEN);
+  *offset = SW;
+}
+
+void draw_client(const char* S, const GC GC, const size_t FG, const size_t BG, unsigned* offset) {
+  static const unsigned HTO = { 4 };
+  const unsigned SLEN = { strlen(S) };
+  const unsigned SW = { XTextWidth(fn, S, SLEN) };
+  draw_element(GC, FG, BG, *offset, 0, SW, bh);
+  XSetForeground(dpy, GC, FG);
+  XDrawString(dpy, rootw, GC, *offset + HTO, 0.80 * bh, S, SLEN);
+  *offset += SW;
 }

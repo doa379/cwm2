@@ -9,6 +9,7 @@ void noop(const long, const long, const long);
 void mapnotify(const long, const long, const long);
 void unmapnotify(const long, const long, const long);
 //void clientmessage(const long, const long, const long);
+void configureroot(const long, const long, const long);
 void configurenotify(const long, const long, const long);
 void maprequest(const long, const long, const long);
 void keypress(const long, const long, const long);
@@ -17,8 +18,6 @@ void enternotify(const long, const long, const long);
 void propertynotify(const long, const long, const long);
 
 void switch_wks(const long, const long, const long);
-void msg1(const long, const long, const long);
-void msg2(const long, const long, const long);
 
 void unfocus(const Window);
 void focus(const Window);

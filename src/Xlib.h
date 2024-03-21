@@ -7,6 +7,7 @@ enum event {
   MAPNOTIFY,
   UNMAPNOTIFY,
   //CLIENTMESSAGE,
+  CONFIGUREROOT,
   CONFIGURENOTIFY,
   MAPREQUEST,
   CONFIGUREREQUEST,
@@ -88,15 +89,18 @@ void focusin(const Window);
 bool send_killmsg(const Window);
 bool send_switchwks(const unsigned);
 void spawn(const char*);
+void cascade(int*, int*, const unsigned, const unsigned);
 Window init_shadow(const unsigned, const unsigned);
 void destroy_window(const Window);
 void init_drawable();
 void deinit_drawable();
 unsigned dpywidth();
 unsigned dpyheight();
+unsigned dpydepth();
 GC init_gc();
 void deinit_gc(const GC);
-void draw_element(const GC, const size_t, const size_t, const unsigned, 
-  const unsigned, const unsigned, const unsigned);
-void print_element(const GC, const char*, const unsigned, const unsigned,
-  const unsigned, const unsigned);
+void init_print();
+void deinit_print();
+void draw_wks(const char*, const GC, const size_t, const size_t, unsigned*);
+void draw_root(const char*, const GC, const size_t, const size_t, unsigned*);
+void draw_client(const char*, const GC, const size_t, const size_t, unsigned*);

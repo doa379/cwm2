@@ -3,14 +3,15 @@
 #include <wm.h>
 #include <lib.h>
 #include <Xlib.h>
-#include <util.h>
 #include <../config.h>
 
 typedef struct {
   Window w;
   Window shadow;
-  pair_t pos;
-  pair_t size;
+  unsigned posx;
+  unsigned posy;
+  unsigned sizex;
+  unsigned sizey;
   GC gc;
   unsigned wks;
   int sel;
@@ -20,9 +21,12 @@ typedef struct {
 
 typedef struct {
   blk_t CLIENTS[NWKS];
-  pair_t size;
+  unsigned sizex;
+  unsigned sizey;
 } monitor_t;
 
+static const size_t KBDLEN = { sizeof KBD / sizeof KBD[0] };
+static const size_t BTNLEN = { sizeof BTN / sizeof BTN[0] };
 static blk_t clients;
 static blk_t monitors;
 static client_t* client;
@@ -47,13 +51,6 @@ static void (*CALLFN[])() = {
 
 static GC rootgc;
 static GC wksgc;
-static pair_t dpysize;
-static unsigned wkssize;
-static unsigned clientssize;
-static unsigned rootsize;
-static unsigned panelheight;
-static unsigned hpad;
-static unsigned vpad;
 
 // Inits
 
@@ -71,7 +68,7 @@ bool init_wm() {
   }
 
   const int MODMASK = { modmask() };
-  for (size_t i = { 0 }; i < LEN(KBD); i++) {
+  for (size_t i = { 0 }; i < KBDLEN; i++) {
     const int MOD = { KBD[i].mod & MODMASK };
     const int KEY = { KBD[i].key };
     grab_key(MOD, KEY);
@@ -79,13 +76,6 @@ bool init_wm() {
 
   rootgc = init_gc();
   wksgc = init_gc();
-  dpysize = (pair_t) { dpywidth(), dpyheight() };
-  wkssize = WKS_PERC * dpysize.x;
-  clientssize = CLIENTS_PERC * dpysize.x;
-  rootsize = ROOT_PERC * dpysize.x;
-  panelheight = VPANEL_PERC * dpysize.y;
-  hpad = HPAD_PERC * dpysize.x;
-  vpad = VPAD_PERC * dpysize.y;
   fprintf(stdout, "Init %s\n", WMNAME);
   return true;
 }
@@ -100,7 +90,7 @@ void deinit_wm() {
   deinit_blk(&clients);
   deinit_blk(&monitors);
   const int MODMASK = { modmask() };
-  for (size_t i = { 0 }; i < LEN(KBD); i++) {
+  for (size_t i = { 0 }; i < KBDLEN; i++) {
     const int MOD = { KBD[i].mod & MODMASK };
     const int KEY = { KBD[i].key };
     ungrab_key(MOD, KEY);
@@ -149,19 +139,25 @@ void clientmessage(const long W, const long, const long) {
 }
 */
 
-void configurenotify(const long, const long, const long) {
+void configureroot(const long, const long WIDTH, const long HEIGHT) {
+  fprintf(stdout, "Config root %ld, %ld", WIDTH, HEIGHT);
+}
+
+void configurenotify(const long W, const long WIDTH, const long HEIGHT) {
 
 }
 
 void maprequest(const long W, const long WIDTH, const long HEIGHT) {
-  const pair_t POS = { clients.size ? client->pos.x + panelheight : 0, 
-    clients.size ? client->pos.y + panelheight : panelheight };
-  const pair_t SIZE = { WIDTH, HEIGHT };
+  int posx = { client ? client->posx : 0 };
+  int posy = { client ? client->posy : 0 };
+  cascade(&posx, &posy, WIDTH, HEIGHT);
   client_t client_ = { 
     .w = W, 
     .shadow = init_shadow(WIDTH, HEIGHT), 
-    .pos = POS, 
-    .size = SIZE, 
+    .posx = posx,
+    .posy = posy,
+    .sizex = WIDTH,
+    .sizey = HEIGHT, 
     .gc = init_gc(), 
     .wks = wks
   };
@@ -187,8 +183,8 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
     focus(client_p->w);
     client = client_p;
     set_bdrwidth(W, BDR_PX);
-    movewindow(W, POS.x, POS.y);
-    movewindow(client->shadow, POS.x + 14, POS.y + 14);
+    movewindow(W, posx, posy);
+    movewindow(client->shadow, posx + 14, posy + 14);
     mapwindow(client->shadow);
     mapwindow(W);
   }
@@ -197,7 +193,7 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
 void keypress(const long W, const long STATE, const long CODE) {
   const int KMOD = { STATE & modmask() };
   const int KSYM = { keycode2sym(CODE) };
-  for (size_t i = { 0 }; i < LEN(KBD); i++)
+  for (size_t i = { 0 }; i < KBDLEN; i++)
     if (KBD[i].mod == KMOD && KBD[i].key == KSYM) {
       if (KBD[i].call < 128) {
         CALLFN[KBD[i].call]();
@@ -226,19 +222,11 @@ void switch_wks(const long N, const long, const long) {
   refresh_panel();
 }
 
-void msg1(const long W, const long, const long) {
-
-}
-
-void msg2(const long W, const long, const long) {
-
-}
-
 // Utils
 
 void unfocus(const Window W) {
   const int MODMASK = { modmask() };
-  for (size_t i = { 0 }; i < LEN(BTN); i++) {
+  for (size_t i = { 0 }; i < BTNLEN; i++) {
     const int MOD = { BTN[i].mod & MODMASK };
     const int KEY = { BTN[i].key };
     ungrab_btn(W, MOD, KEY);
@@ -254,7 +242,7 @@ void focus(const Window W) {
   focusin(W);
   set_bdrcolor(W, ACTBDR);
   const int MODMASK = { modmask() };
-  for (size_t i = { 0 }; i < LEN(BTN); i++) {
+  for (size_t i = { 0 }; i < BTNLEN; i++) {
     const int MOD = { BTN[i].mod & MODMASK };
     const int KEY = { BTN[i].key };
     ungrab_btn(W, MOD, KEY);
@@ -272,34 +260,22 @@ void switchwks(const unsigned N) {
 }
 
 void refresh_panel() {
-  const unsigned DPYW = { dpysize.x };
-  const unsigned DPYH = { dpysize.y };
   char S[32];
-  snprintf(S, sizeof S, "%d/%d", wks, NWKS);
-  draw_element(wksgc, FG1, BG1, 0, DPYH - panelheight, wkssize + hpad, 
-    panelheight);
-  print_element(wksgc, S, 0, hpad, DPYH, vpad);
-  draw_element(rootgc, FG2, BG1, wkssize, DPYH - panelheight, dpysize.x, 
-    panelheight);
-  print_element(rootgc, WMNAME, wkssize, hpad, DPYH, vpad);
+  {
+    unsigned offset = { 0 };
+    snprintf(S, sizeof S, "%d/%d", wks, NWKS);
+    draw_wks(S, wksgc, FG1, BG2, &offset);
+    draw_root(WMNAME, rootgc, FG1, BG1, &offset);
+  }
 
   if (clients.size == 0)
     return;
-  else if (clientssize / clients.size < 10) {
-    if (client) {
-      snprintf(S, sizeof S, "W %lu", client->w);
-      draw_element(client->gc, FG1, BG0, 0, 0, clientssize, panelheight);
-      print_element(client->gc, S, 0, hpad, panelheight, vpad);
-    }
-  } else {
-    const unsigned WSIZE = { DPYW / clients.size };
+  {
+    unsigned offset = { 0 };
     for (client_t* client_ = { clients.blk }; 
         client_ < (client_t*) clients.blk + clients.size; client_++) {
-      const size_t D = { client_ - (client_t*) clients.blk };
       snprintf(S, sizeof S, "W %lu", client_->w);
-      draw_element(client_->gc, FG1, client_ == client ? BG2 : BG1, 
-        D * WSIZE, 0, WSIZE, panelheight);
-      print_element(client_->gc, S, D * WSIZE, hpad, panelheight, vpad);
+      draw_client(S, client_->gc, FG1, client_ == client ? BG2 : BG1, &offset);
     }
   }
 }

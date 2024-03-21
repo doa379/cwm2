@@ -2,7 +2,6 @@
 #include <signal.h>
 #include <Xlib.h>
 #include <wm.h>
-#include <util.h>
 
 volatile sig_atomic_t sig_status;
 
@@ -20,13 +19,13 @@ int main(const int ARGC, const char* ARGV[]) {
 
   if (!init_root()) {
     deinit_dpy();
-    fprintf(stderr, "Initialization error (another wm running?)");
+    fprintf(stderr, "Initialization error (another wm running?)\n");
     return -1;
   }
 
   if (!init_wm()) {
     deinit_dpy();
-    fprintf(stderr, "Initialization error (Failed to alloc for clients)");
+    fprintf(stderr, "Initialization error (Failed to alloc for clients)\n");
     return -1;
   }
 
@@ -34,12 +33,17 @@ int main(const int ARGC, const char* ARGV[]) {
   init_ewmh();
   init_wks();
   init_drawable();
+  init_print();
   init_windows();
+  // Init internal events
+  init_events();
+  //
   static ev_t EV[] = {
     { .evfn = noop, .EVENT = NOOP },
     { .evfn = mapnotify, .EVENT = MAPNOTIFY },
     { .evfn = unmapnotify, .EVENT = UNMAPNOTIFY },
     //{ .evfn = clientmessage, .EVENT = CLIENTMESSAGE },
+    { .evfn = configureroot, .EVENT = CONFIGUREROOT },
     { .evfn = configurenotify, .EVENT = CONFIGURENOTIFY },
     { .evfn = maprequest, .EVENT = MAPREQUEST },
     { .evfn = noop, .EVENT = CONFIGUREREQUEST },
@@ -72,21 +76,29 @@ int main(const int ARGC, const char* ARGV[]) {
   };
 
   // Init return events
-  for (size_t i = { 0 }; i < LEN(EV); i++)
-    init_event(&EV[i]);
-  for (size_t i = { 0 }; i < LEN(MSGEV); i++)
-    init_msgevent(&MSGEV[i]);
-  // Init internal events
-  init_events();
+  {
+    const size_t N = { sizeof EV / sizeof EV[0] };
+    for (size_t i = { 0 }; i < N; i++)
+      init_event(&EV[i]);
+  }
+
+  {
+    const size_t N = { sizeof MSGEV / sizeof MSGEV[0] };
+    for (size_t i = { 0 }; i < N; i++)
+      init_msgevent(&MSGEV[i]);
+  }
+  
   if (signal(SIGINT, sighandler) == SIG_ERR)
     sig_status = 1;
 
   while (sig_status == 0) {
-    const ev_t* EV = event();
-    EV->evfn(EV->DATA[0], EV->DATA[1], EV->DATA[2]);
+    //const ev_t* EV = { event() };
+    //EV->evfn(EV->DATA[0], EV->DATA[1], EV->DATA[2]);
+    event();
   }
 
   // Cleanup
+  deinit_print();
   deinit_drawable();
   deinit_wm();
   deinit_root();

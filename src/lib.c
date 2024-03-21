@@ -3,7 +3,7 @@
 #include <lib.h>
 
 blk_t init_blk(const size_t UNITSIZE, const size_t RESERVE) {
-  void* blk = malloc((RESERVE + 1) * UNITSIZE);
+  void* blk = { malloc((RESERVE + 1) * UNITSIZE) };
   return (blk_t) { blk, RESERVE, UNITSIZE, 0 };
 }
 
@@ -19,7 +19,8 @@ void* map_dev(blk_t* blk, const void* DEV) {
     blk->size++;
     return (char*) blk->blk + (blk->size - 1) * blk->unit;
   } else {
-    void* ptr = realloc(blk->blk, (blk->size + blk->reserve + 1) * blk->unit);
+    void* ptr = {
+      realloc(blk->blk, (blk->size + blk->reserve + 1) * blk->unit) };
     if (ptr) {
       blk->blk = ptr;
       blk->reserve += blk->size;
@@ -34,8 +35,8 @@ void* map_dev(blk_t* blk, const void* DEV) {
 
 void unmap_dev(blk_t* blk, const void* DEV) {
   // Patt: move post segment
-  const char* E = (char*) blk->blk + (blk->size - 1) * blk->unit;
-  char* p = blk->blk;
+  const char* E = { (char*) blk->blk + (blk->size - 1) * blk->unit };
+  char* p = { blk->blk };
   for (; p < E && p != DEV; p += blk->unit);
   if (p < E - blk->unit)
     memcpy(p, p + blk->unit, E - p - blk->unit);
@@ -43,8 +44,8 @@ void unmap_dev(blk_t* blk, const void* DEV) {
 }
 
 void* find_dev(blk_t* blk, void* dev) {
-  const char* E = (char*) blk->blk + blk->size * blk->unit;
-  char* p = blk->blk;
+  const char* E = { (char*) blk->blk + blk->size * blk->unit };
+  char* p = { blk->blk };
   for (; p < E && p != dev; p += blk->unit);
   return p < E - blk->unit ? p : NULL;
 }

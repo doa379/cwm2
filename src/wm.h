@@ -2,6 +2,25 @@
 
 #include <X11/Xlib.h>
 
+typedef struct {
+  Window w;
+  Window shadow;
+  unsigned posx;
+  unsigned posy;
+  unsigned sizex;
+  unsigned sizey;
+  GC gc;
+  unsigned wks;
+  int sel;
+  int ft;
+  int pad[3];
+} client_t;
+
+typedef struct {
+  unsigned sizex;
+  unsigned sizey;
+} monitor_t;
+
 bool init_wm();
 void deinit_wm();
 void init_wks();
@@ -22,6 +41,7 @@ void switch_wks(const long, const long, const long);
 void unfocus(const Window);
 void focus(const Window);
 void refresh_panel();
+client_t* prev_client(client_t*, const bool);
 void wks0();
 void wks1();
 void wks2();
@@ -33,6 +53,7 @@ void wks7();
 void wks8();
 void wks9();
 void kill();
+void mode();
 void prev();
 void next();
 void quit();

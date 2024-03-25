@@ -5,31 +5,16 @@
 #include <Xlib.h>
 #include <../config.h>
 
-typedef struct {
-  Window w;
-  Window shadow;
-  unsigned posx;
-  unsigned posy;
-  unsigned sizex;
-  unsigned sizey;
-  GC gc;
-  unsigned wks;
-  int sel;
-  int ft;
-  int pad[3];
-} client_t;
-
-typedef struct {
-  blk_t CLIENTS[NWKS];
-  unsigned sizex;
-  unsigned sizey;
-} monitor_t;
-
 static const size_t KBDLEN = { sizeof KBD / sizeof KBD[0] };
 static const size_t BTNLEN = { sizeof BTN / sizeof BTN[0] };
 static blk_t clients;
 static blk_t monitors;
-static client_t* client;
+static client_t* client[2]; // Prev, Curr
+// Init monitors
+// Set curr monitor
+// Uniform virt vport dpywidth(), dpyheight() to span all monitors
+// WKs to span all monitors
+// Arrangements, Modes to operate on selection per monitor
 static monitor_t* monitor;
 static unsigned wks = { 1 };
 static void (*CALLFN[])() = {
@@ -44,6 +29,7 @@ static void (*CALLFN[])() = {
   [WKS8] = wks8,
   [WKS9] = wks9,
   [KILL] = kill,
+  [TOGGLEMODE] = mode,
   [PREVCLI] = prev,
   [NEXTCLI] = next,
   [QUIT] = quit,
@@ -57,12 +43,12 @@ static GC wksgc;
 bool init_wm() {
   // Initial reserve is working correctly
   clients = init_blk(sizeof(client_t), 2);
-  if (clients.blk == NULL) 
+  if (beg(&clients) == NULL) 
     return false;
 
   // Initial reserve is working correctly
   monitors = init_blk(sizeof(monitor_t), 2);
-  if (monitors.blk == NULL) {
+  if (beg(&monitors) == NULL) {
     deinit_blk(&clients);
     return false;
   }
@@ -83,9 +69,8 @@ bool init_wm() {
 void deinit_wm() {
   // Blocks are deinit immediately upon failure so no checks here
   // Deinit client elements
-  for (client_t* client = { clients.blk }; 
-    client < (client_t*) clients.blk + clients.size; client++)
-    deinit_gc(client->gc);
+  for (client_t* c = { beg(&clients) }; c != clients.end; c++)
+    deinit_gc(c->gc);
   
   deinit_blk(&clients);
   deinit_blk(&monitors);
@@ -119,19 +104,23 @@ void mapnotify(const long, const long, const long) {
 
 void unmapnotify(const long W, const long, const long) {
   // Validate client
-  if (!client || client->w != W)
+  if (!client[1] || client[1]->w != W)
     return;
-
-  fprintf(stdout, "unmap(): window %ld\n", W);
-  fprintf(stdout, "unmap(): window %ld\n", client->w);
-  destroy_window(client->shadow);
-  deinit_gc(client->gc);
-  unmap_dev(&clients, client);
-  prev();
+  
+  client[1] = prev_client(client[1], true);
   clear_clientlist();
-  for (client_t* client = { clients.blk };
-    client < (client_t*) clients.blk + clients.size; client++)
-    app_clientlist(client->w);
+  client_t* c;
+  for (client_t* client = { beg(&clients) }; client != clients.end; client++) {
+    if (client->w == W)
+      c = client;
+    else 
+      app_clientlist(client->w);
+  }
+  // No fail  
+  destroy_window(c->shadow);
+  deinit_gc(c->gc);
+  unmap_dev(&clients, c);
+  client[1] = clients.size == 0 ? NULL : client[1];
 }
 /*
 void clientmessage(const long W, const long, const long) {
@@ -148,46 +137,39 @@ void configurenotify(const long W, const long WIDTH, const long HEIGHT) {
 }
 
 void maprequest(const long W, const long WIDTH, const long HEIGHT) {
-  int posx = { client ? client->posx : 0 };
-  int posy = { client ? client->posy : 0 };
-  cascade(&posx, &posy, WIDTH, HEIGHT);
-  client_t client_ = { 
+  int x = { client[1] ? client[1]->posx : 0 };
+  int y = { client[1] ? client[1]->posy : 0 };
+  cascade(&x, &y, WIDTH, HEIGHT);
+  client_t next = { 
     .w = W, 
     .shadow = init_shadow(WIDTH, HEIGHT), 
-    .posx = posx,
-    .posy = posy,
+    .posx = x,
+    .posy = y,
     .sizex = WIDTH,
     .sizey = HEIGHT, 
     .gc = init_gc(), 
     .wks = wks
   };
 
-  Window curr = { client ? client->w : -1 };
+  Window currw = { client[1] ? client[1]->w : -1 };
   // May realloc
-  client_t* client_p = { map_dev(&clients, &client_) };
+  client_t* c = { map_dev(&clients, &next) };
   // Revalidate client
-  if (client) {
-    client_t* client_ = { clients.blk };
-    for (;
-      client_ < (client_t*) clients.blk + clients.size && client_->w != curr; 
-      client_++);
-    client = client_;
+  if (client[1]) {
+    client_t* c = { beg(&clients) };
+    for (; c != clients.end && c->w != currw; c++);
+    client[1] = c;
+    unfocus(client[1]->w);
+    unmapwindow(client[1]->shadow);
   }
-
-  if (client_p) {
-    if (client) {
-      unfocus(client->w);
-      unmapwindow(client->shadow);
-    }
-
-    focus(client_p->w);
-    client = client_p;
-    set_bdrwidth(W, BDR_PX);
-    movewindow(W, posx, posy);
-    movewindow(client->shadow, posx + 14, posy + 14);
-    mapwindow(client->shadow);
-    mapwindow(W);
-  }
+  
+  set_bdrwidth(W, BDR_PX);
+  movewindow(W, x, y);
+  mapwindow(W);
+  movewindow(c->shadow, x + 14, y + 14);
+  mapwindow(c->shadow);
+  focus(c->w);
+  client[1] = c;
 }
 
 void keypress(const long W, const long STATE, const long CODE) {
@@ -232,9 +214,9 @@ void unfocus(const Window W) {
     ungrab_btn(W, MOD, KEY);
   }
   
-  if (client) {
-    del_actwindow(client->w);
-    set_bdrcolor(client->w, INACTBDR);
+  if (client[1]) {
+    del_actwindow(client[1]->w);
+    set_bdrcolor(client[1]->w, INACTBDR);
   }
 }
 
@@ -272,12 +254,21 @@ void refresh_panel() {
     return;
   {
     unsigned offset = { 0 };
-    for (client_t* client_ = { clients.blk }; 
-        client_ < (client_t*) clients.blk + clients.size; client_++) {
-      snprintf(S, sizeof S, "W %lu", client_->w);
-      draw_client(S, client_->gc, FG1, client_ == client ? BG2 : BG1, &offset);
+    for (client_t* c = { beg(&clients) }; c != clients.end; c++) {
+      snprintf(S, sizeof S, "W %lu", c->w);
+      draw_client(S, c->gc, FG1, c == client[1] ? BG2 : BG1, &offset);
     }
   }
+}
+
+client_t* prev_client(client_t* client, const bool FL) {
+  unfocus(client->w);
+  unmapwindow(client->shadow);
+  client_t* c = { FL ? prev_dev(&clients, client) :
+    next_dev(&clients, client) };
+  mapwindow(c->shadow);
+  focus(c->w);
+  return c;
 }
 
 // Commands
@@ -324,36 +315,24 @@ void wks9() {
 
 void kill() {
   fprintf(stdout, "Kill\n");
-  if (client) {
-    if (!send_killmsg(client->w))
+  if (client[1]) {
+    if (!send_killmsg(client[1]->w))
       fprintf(stderr, "Failed to send kill event\n");
   }
 }
 
-void prev() {
-  fprintf(stdout, "Prev\n");
-  if (!clients.size)
-    return;
+void mode() {
+  // Minimize (unmap)
+  // Restore
+  // Maximize to current monitor
+}
 
-  client_t* client_p = { prev_dev(&clients, client) };
-  unfocus(client->w);
-  unmapwindow(client->shadow);
-  mapwindow(client_p->shadow);
-  focus(client_p->w);
-  client = client_p;
+void prev() {
+  client[1] = client[1] ? prev_client(client[1], true) : NULL;
 }
 
 void next() {
-  fprintf(stdout, "Next\n");
-  if (!clients.size)
-    return;
-
-  client_t* client_p = { next_dev(&clients, client) };
-  unfocus(client->w);
-  unmapwindow(client->shadow);
-  mapwindow(client_p->shadow);
-  focus(client_p->w);
-  client = client_p;
+  client[1] = client[1] ? prev_client(client[1], false) : NULL;
 }
 
 void quit() {

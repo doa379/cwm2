@@ -12,6 +12,11 @@ static void sighandler(int sig) {
 }
 
 int main(const int ARGC, const char* ARGV[]) {
+  if (signal(SIGINT, sighandler) == SIG_ERR) {
+    fprintf(stderr, "Failed to set handler\n");
+    return -1;
+  }
+
   if (!init_dpy()) {
     fprintf(stderr, "Failed to open display\n");
     return -1;
@@ -88,9 +93,6 @@ int main(const int ARGC, const char* ARGV[]) {
       init_msgevent(&MSGEV[i]);
   }
   
-  if (signal(SIGINT, sighandler) == SIG_ERR)
-    sig_status = 1;
-
   while (sig_status == 0) {
     //const ev_t* EV = { event() };
     //EV->evfn(EV->DATA[0], EV->DATA[1], EV->DATA[2]);

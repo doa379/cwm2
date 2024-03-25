@@ -40,7 +40,7 @@ void deinit_dpy() {
 bool init_root() {
   rootw = XRootWindow(dpy, DefaultScreen(dpy));
   XSetErrorHandler(XError);
-  static const long MASK = { 
+  const long MASK = { 
     SubstructureRedirectMask | 
     SubstructureNotifyMask | 
     ButtonPressMask |
@@ -91,6 +91,7 @@ static ev_t* unmapnotify() {
 static ev_t* clientmessage() {
   fprintf(stdout, "EV: Client Message\n");
   const Window W = { xev.xclient.window };
+  (void) W;
   const Atom PROP = { xev.xclient.message_type };
   if (PROP == ATOM[WM_PROTOCOLS]) {
     ;
@@ -143,7 +144,7 @@ static ev_t* configurenotify() {
 static ev_t* maprequest() {
   fprintf(stdout, "EV: Map Request\n");
   const Window W = { xev.xmaprequest.window };
-  static XWindowAttributes wa;
+  XWindowAttributes wa;
   if (XGetWindowAttributes(dpy, W, &wa) == 0 || wa.override_redirect)
     return EV[NOOP];
   
@@ -276,7 +277,7 @@ void init_windows() {
   unsigned n;
   XGrabServer(dpy);
   if (XQueryTree(dpy, rootw, &root, &par, &w, &n)) {
-    static const long MASK = { 
+    const long MASK = { 
       SubstructureRedirectMask | 
       SubstructureNotifyMask | 
       ButtonPressMask |
@@ -426,7 +427,7 @@ void focusin(const Window W) {
 }
   
 bool send_killmsg(const Window W) {
-  static XEvent xev = { ClientMessage };
+  XEvent xev = { ClientMessage };
   xev.xclient.window = W;
   xev.xclient.message_type = ATOM[WM_PROTOCOLS];
   xev.xclient.format = 32;
@@ -438,7 +439,7 @@ bool send_killmsg(const Window W) {
 }
 
 bool send_switchwks(const unsigned N) {
-  static XEvent xev = { ClientMessage };
+  XEvent xev = { ClientMessage };
   xev.xclient.serial = 0;
   xev.xclient.send_event = true;
   xev.xclient.message_type = ATOM[NET_CURRENT_DESKTOP];
@@ -463,24 +464,23 @@ void spawn(const char* CMD) {
 
 // Arrangements
 
-void cascade(int* posx, int* posy, const unsigned X, 
-  const unsigned Y) {
+void cascade(int* x, int* y, const unsigned X, const unsigned Y) {
   static short grav;
   const char DIRX = { grav >> 0 & 1 ? -1 : 1 };
   const char DIRY = { grav >> 1 & 1 ? -1 : 1 };
-  *posx += *posy != 0 ? DIRX * bh : 0; 
-  *posy += DIRY * bh;
-  if (*posx + X > dpywidth()) {
-    *posx = dpywidth() - X;
+  *x += *y != 0 ? DIRX * bh : 0; 
+  *y += DIRY * bh;
+  if (*x + X > dpywidth()) {
+    *x = dpywidth() - X;
     grav |= 1 << 0;
-  } if (*posy + Y > dpyheight() - bh - 8) {
-    *posy = dpyheight() - Y - bh - 8;
+  } if (*y + Y > dpyheight() - bh - 8) {
+    *y = dpyheight() - Y - bh - 8;
     grav |= 1 << 1; 
-  } if (*posx < 0) {
-    *posx = 0;
+  } if (*x < 0) {
+    *x = 0;
     grav ^= 1 << 0;
-  } if (*posy < bh) {
-    *posy = bh;
+  } if (*y < bh) {
+    *y = bh;
     grav ^= 1 << 1;
   }
 }
@@ -534,38 +534,43 @@ void deinit_print() {
   XFreeFont(dpy, fn);
 }
 
-void draw_element(const GC GC, const size_t FG, const size_t BG, const unsigned X0, const unsigned Y0, const unsigned X1, const unsigned Y1) {
+void draw_element(const GC GC, const size_t FG, const size_t BG, 
+  const unsigned X0, const unsigned Y0, const unsigned X1, const unsigned Y1) {
   XSetForeground(dpy, GC, BG);
   XFillRectangle(dpy, rootw, GC, X0, Y0, X1, Y1);
 }
 
-void draw_wks(const char* S, const GC GC, const size_t FG, const size_t BG, unsigned* offset) {
+void draw_wks(const char* S, const GC GC, const size_t FG, const size_t BG,
+  unsigned* offset) {
   XClearWindow(dpy, rootw);
-  static const unsigned HTO = { 4 };
+  static const unsigned HPAD_PX = { 4 };
   const unsigned SLEN = { strlen(S) };
   const unsigned SW = { XTextWidth(fn, S, SLEN) };
   draw_element(GC, FG, BG, 0, dpyheight() - bh, SW, dpyheight() - bh);
   XSetForeground(dpy, GC, FG);
-  XDrawString(dpy, rootw, GC, HTO, dpyheight() - 0.20 * bh, S, SLEN);
+  XDrawString(dpy, rootw, GC, HPAD_PX, dpyheight() - fn->descent, S, SLEN);
   *offset = SW;
 }
 
-void draw_root(const char* S, const GC GC, const size_t FG, const size_t BG, unsigned* offset) {
-  static const unsigned HTO = { 4 };
+void draw_root(const char* S, const GC GC, const size_t FG, const size_t BG,
+  unsigned* offset) {
+  static const unsigned HPAD_PX = { 4 };
   const unsigned SLEN = { strlen(S) };
   const unsigned SW = { XTextWidth(fn, S, SLEN) };
   draw_element(GC, FG, BG, *offset, dpyheight() - bh, dpywidth(), dpyheight());
   XSetForeground(dpy, GC, FG);
-  XDrawString(dpy, rootw, GC, *offset + HTO, dpyheight() - 0.20 * bh, S, SLEN);
+  XDrawString(dpy, rootw, GC, *offset + HPAD_PX, dpyheight() - fn->descent, 
+    S, SLEN);
   *offset = SW;
 }
 
-void draw_client(const char* S, const GC GC, const size_t FG, const size_t BG, unsigned* offset) {
-  static const unsigned HTO = { 4 };
+void draw_client(const char* S, const GC GC, const size_t FG, const size_t BG,
+  unsigned* offset) {
+  static const unsigned HPAD_PX = { 4 };
   const unsigned SLEN = { strlen(S) };
   const unsigned SW = { XTextWidth(fn, S, SLEN) };
   draw_element(GC, FG, BG, *offset, 0, SW, bh);
   XSetForeground(dpy, GC, FG);
-  XDrawString(dpy, rootw, GC, *offset + HTO, 0.80 * bh, S, SLEN);
+  XDrawString(dpy, rootw, GC, *offset + HPAD_PX, fn->ascent, S, SLEN);
   *offset += SW;
 }

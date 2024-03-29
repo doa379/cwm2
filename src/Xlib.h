@@ -61,6 +61,12 @@ bool init_dpy();
 void deinit_dpy();
 bool init_root();
 void deinit_root();
+
+bool xinerama();
+int init_queryscreens();
+void deinit_queryscreens();
+void query_screen(const int, unsigned*, unsigned*, unsigned*, unsigned*);
+
 void init_event(ev_t*);
 void init_msgevent(ev_t*);
 void init_events();
@@ -101,6 +107,8 @@ GC init_gc();
 void deinit_gc(const GC);
 void init_print();
 void deinit_print();
-void draw_wks(const char*, const GC, const size_t, const size_t, unsigned*);
-void draw_root(const char*, const GC, const size_t, const size_t, unsigned*);
+void draw_wks(const char*, const GC, const size_t, const size_t, 
+  const unsigned, unsigned*);
+void draw_root(const char*, const GC, const size_t, const size_t, 
+  const unsigned, const unsigned, unsigned*);
 void draw_client(const char*, const GC, const size_t, const size_t, unsigned*);

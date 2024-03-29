@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <sys/time.h>
 #include <lib.h>
 
 blk_t init_blk(const size_t UNITSIZE, const size_t RESERVE) {
@@ -23,6 +25,10 @@ void* beg(blk_t* blk) {
 
 void* end(blk_t* blk) {
   return (char*) blk->blk + blk->size * blk->unit;
+}
+
+void* itr(blk_t* blk, const size_t N) {
+  return (char*) blk->blk + N * blk->unit;
 }
 
 void* map_dev(blk_t* blk, const void* DEV) {
@@ -77,4 +83,12 @@ void* next_dev(blk_t* blk, void* dev) {
 
 size_t dist(blk_t* blk, const void* DEV) {
   return ((char*) DEV - (char*) blk->blk) / blk->unit;
+}
+
+int rng(const unsigned N0, const unsigned N1) {
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  srand(tv.tv_usec * tv.tv_sec);
+  // srand(time(NULL));
+  return N0 + rand() % (N1 - N0 + 1);
 }

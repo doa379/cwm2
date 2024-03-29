@@ -13,7 +13,7 @@ LIBSPATH = -L $(LOCAL)/ -Wl,-R$(LOCAL)/ '-Wl,-R$$ORIGIN' \
   -L /usr/lib64 \
   -L /usr/local/lib
 
-LIBS = -l X11 -l Xinerama -l dbus-1
+LIBS = -l c -l X11 -l Xinerama -l dbus-1
 
 CC = clang
 CC_FLAGS = -std=c2x -Wall -fPIE -fPIC -pedantic
@@ -35,7 +35,7 @@ DBG_EXEC = cwm2~dbg.bin
   EXEC = $(DBG_EXEC)
 .endif
 
-SRC = src/msg.c src/main.c src/lib.c src/Xlib.c src/wm.c
+SRC = src/dbus.c src/main.c src/lib.c src/Xlib.c src/wm.c
 OBJ = $(SRC:.c=.o)
 
 .POSIX:

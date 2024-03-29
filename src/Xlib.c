@@ -1,6 +1,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/XKBlib.h>
+#include <X11/extensions/Xinerama.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,6 +17,7 @@ static ev_t* EV[32];
 static ev_t* MSGEV[32];
 static Atom ATOM[32];
 
+static XineramaScreenInfo* screeninfo;
 static Drawable drawable;
 static const char* FONT = { 
   // These are a dependency for X11 so no checks necessary here
@@ -61,6 +63,28 @@ bool init_root() {
 void deinit_root() {
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
   XUngrabServer(dpy);
+}
+
+bool xinerama() {
+  return XineramaIsActive(dpy);
+}
+
+int init_queryscreens() {
+  int n;
+  screeninfo = XineramaQueryScreens(dpy, &n);
+  return n;
+}
+
+void deinit_queryscreens() {
+  XFree(screeninfo);
+}
+
+void query_screen(const int N, unsigned* x, unsigned* y, unsigned* width, 
+  unsigned* height) {
+  *x = screeninfo[N].x_org;
+  *y = screeninfo[N].y_org;
+  *width = screeninfo[N].width;
+  *height = screeninfo[N].height;
 }
 
 void init_event(ev_t* ev) {
@@ -128,9 +152,8 @@ static ev_t* configurenotify() {
   // want to reconfigure root window
   if (W == rootw) {
     ev_t* ev = { EV[CONFIGUREROOT] };
-    ev->DATA[0] = -1;
-    ev->DATA[1] = WIDTH;
-    ev->DATA[2] = HEIGHT;
+    ev->DATA[0] = WIDTH;
+    ev->DATA[1] = HEIGHT;
     return ev;
   }
 
@@ -175,10 +198,11 @@ static ev_t* configurerequest() {
 }
 
 static ev_t* motionnotify() {
-  return EV[MOTIONNOTIFY];
-  fprintf(stdout, "EV: Motion Notify\n");
   const Window W = { xev.xmotion.window };
-  (void) W;
+  ev_t* ev = { EV[MOTIONNOTIFY] };
+  ev->DATA[0] = xev.xmotion.x;
+  ev->DATA[1] = xev.xmotion.y;
+  return W == rootw ? ev : EV[NOOP];
 }
 
 static ev_t* keypress() {
@@ -541,26 +565,25 @@ void draw_element(const GC GC, const size_t FG, const size_t BG,
 }
 
 void draw_wks(const char* S, const GC GC, const size_t FG, const size_t BG,
-  unsigned* offset) {
+  const unsigned H_PX, unsigned* offset) {
   XClearWindow(dpy, rootw);
   static const unsigned HPAD_PX = { 4 };
   const unsigned SLEN = { strlen(S) };
   const unsigned SW = { XTextWidth(fn, S, SLEN) };
-  draw_element(GC, FG, BG, 0, dpyheight() - bh, SW, dpyheight() - bh);
+  draw_element(GC, FG, BG, 0, H_PX - bh, SW, H_PX - bh);
   XSetForeground(dpy, GC, FG);
-  XDrawString(dpy, rootw, GC, HPAD_PX, dpyheight() - fn->descent, S, SLEN);
+  XDrawString(dpy, rootw, GC, HPAD_PX, H_PX - fn->descent, S, SLEN);
   *offset = SW;
 }
 
 void draw_root(const char* S, const GC GC, const size_t FG, const size_t BG,
-  unsigned* offset) {
+  const unsigned W_PX, const unsigned H_PX, unsigned* offset) {
   static const unsigned HPAD_PX = { 4 };
   const unsigned SLEN = { strlen(S) };
   const unsigned SW = { XTextWidth(fn, S, SLEN) };
-  draw_element(GC, FG, BG, *offset, dpyheight() - bh, dpywidth(), dpyheight());
+  draw_element(GC, FG, BG, *offset, H_PX - bh, W_PX - *offset, H_PX);
   XSetForeground(dpy, GC, FG);
-  XDrawString(dpy, rootw, GC, *offset + HPAD_PX, dpyheight() - fn->descent, 
-    S, SLEN);
+  XDrawString(dpy, rootw, GC, *offset + HPAD_PX, H_PX - fn->descent, S, SLEN);
   *offset = SW;
 }
 

@@ -3,6 +3,7 @@
 #include <wm.h>
 #include <lib.h>
 #include <Xlib.h>
+#include <dbus.h>
 #include <../config.h>
 
 static const size_t KBDLEN = { sizeof KBD / sizeof KBD[0] };
@@ -28,6 +29,16 @@ static void (*CALLFN[])() = {
   [WKS7] = wks7,
   [WKS8] = wks8,
   [WKS9] = wks9,
+  [MON0] = mon0,
+  [MON1] = mon1,
+  [MON2] = mon2,
+  [MON3] = mon3,
+  [MON4] = mon4,
+  [MON5] = mon5,
+  [MON6] = mon6,
+  [MON7] = mon7,
+  [MON8] = mon8,
+  [MON9] = mon9,
   [KILL] = kill,
   [TOGGLEMODE] = mode,
   [PREVCLI] = prev,
@@ -47,7 +58,7 @@ bool init_wm() {
     return false;
 
   // Initial reserve is working correctly
-  monitors = init_blk(sizeof(monitor_t), 2);
+  monitors = init_blk(sizeof(monitor_t), 1);
   if (beg(&monitors) == NULL) {
     deinit_blk(&clients);
     return false;
@@ -92,6 +103,35 @@ void init_wks() {
   set_wks(0);
 }
 
+void init_monitors() {
+  if (xinerama()) {
+    const int N = { init_queryscreens() };
+    for (int i = { 0 }; i < N; i++) {
+      monitor_t m;
+      query_screen(i, &m.posx, &m.posy, &m.sizex, &m.sizey);
+      map_dev(&monitors, &m);
+    }
+
+    deinit_queryscreens();
+  } else {
+    monitor_t m = {
+      .posx = 0,
+      .posy = 0,
+      .sizex = dpywidth(),
+      .sizey = dpyheight()
+    };
+    
+    map_dev(&monitors, &m);
+  }
+    
+  monitor = beg(&monitors);
+}
+
+void deinit_monitors() {
+  for (monitor_t* m = { beg(&monitors) }; m != monitors.end; m++)
+    unmap_dev(&monitors, m);
+}
+
 // Event calls
 
 void noop(const long, const long, const long) {
@@ -120,6 +160,7 @@ void unmapnotify(const long W, const long, const long) {
   destroy_window(c->shadow);
   deinit_gc(c->gc);
   unmap_dev(&clients, c);
+  client[0] = clients.size == 0 ? NULL : client[0];
   client[1] = clients.size == 0 ? NULL : client[1];
 }
 /*
@@ -128,8 +169,9 @@ void clientmessage(const long W, const long, const long) {
 }
 */
 
-void configureroot(const long, const long WIDTH, const long HEIGHT) {
-  fprintf(stdout, "Config root %ld, %ld", WIDTH, HEIGHT);
+void configureroot(const long WIDTH, const long HEIGHT, const long) {
+  fprintf(stdout, "Config root %ld, %ld\n", WIDTH, HEIGHT);
+
 }
 
 void configurenotify(const long W, const long WIDTH, const long HEIGHT) {
@@ -169,7 +211,12 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
   movewindow(c->shadow, x + 14, y + 14);
   mapwindow(c->shadow);
   focus(c->w);
+  client[0] = client[1];
   client[1] = c;
+}
+
+void motionnotify(const long X, const long Y, const long) {
+  fprintf(stdout, "Motion on root (%ld, %ld)\n", X, Y);
 }
 
 void keypress(const long W, const long STATE, const long CODE) {
@@ -241,13 +288,25 @@ void switchwks(const unsigned N) {
   }
 }
 
+void switchmon(const unsigned N) {
+  if (N > 0 && N <= monitors.size) {
+    monitor = itr(&monitors, N - 1);
+    char S[4];
+    snprintf(S, sizeof S, "%d", N);
+    dbus_send("Monitor", S, NORMAL, 1000);
+  } else if (N == 0) {
+
+  }
+}
+
 void refresh_panel() {
   char S[32];
   {
     unsigned offset = { 0 };
     snprintf(S, sizeof S, "%d/%d", wks, NWKS);
-    draw_wks(S, wksgc, FG1, BG2, &offset);
-    draw_root(WMNAME, rootgc, FG1, BG1, &offset);
+    const monitor_t* M = { beg(&monitors) };
+    draw_wks(S, wksgc, FG1, BG2, M->sizey, &offset);
+    draw_root(WMNAME, rootgc, FG1, BG1, M->sizex, M->sizey, &offset);
   }
 
   if (clients.size == 0)
@@ -313,6 +372,46 @@ void wks9() {
   switchwks(9);
 }
 
+void mon0() {
+  switchmon(0);
+}
+
+void mon1() {
+  switchmon(1);
+}
+
+void mon2() {
+  switchmon(2);
+}
+
+void mon3() {
+  switchmon(3);
+}
+
+void mon4() {
+  switchmon(4);
+}
+
+void mon5() {
+  switchmon(5);
+}
+
+void mon6() {
+  switchmon(6);
+}
+
+void mon7() {
+  switchmon(7);
+}
+
+void mon8() {
+  switchmon(8);
+}
+
+void mon9() {
+  switchmon(9);
+}
+
 void kill() {
   fprintf(stdout, "Kill\n");
   if (client[1]) {
@@ -328,10 +427,12 @@ void mode() {
 }
 
 void prev() {
+  client[0] = client[1];
   client[1] = client[1] ? prev_client(client[1], true) : NULL;
 }
 
 void next() {
+  client[0] = client[1];
   client[1] = client[1] ? prev_client(client[1], false) : NULL;
 }
 

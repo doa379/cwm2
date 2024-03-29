@@ -2,6 +2,9 @@
 #include <signal.h>
 #include <Xlib.h>
 #include <wm.h>
+#include <lib.h>
+#include <dbus.h>
+#include <eggs.h>
 
 volatile sig_atomic_t sig_status;
 
@@ -13,30 +16,36 @@ static void sighandler(int sig) {
 
 int main(const int ARGC, const char* ARGV[]) {
   if (signal(SIGINT, sighandler) == SIG_ERR) {
-    fprintf(stderr, "Failed to set handler\n");
+    fprintf(stderr, "Critical: Failed to set handler\n");
     return -1;
   }
 
   if (!init_dpy()) {
-    fprintf(stderr, "Failed to open display\n");
+    fprintf(stderr, "Critical: Failed to open display\n");
     return -1;
   } 
 
   if (!init_root()) {
     deinit_dpy();
-    fprintf(stderr, "Initialization error (another wm running?)\n");
+    fprintf(stderr, "Critical: Initialization error (another wm running?)\n");
     return -1;
   }
 
   if (!init_wm()) {
     deinit_dpy();
-    fprintf(stderr, "Initialization error (Failed to alloc for clients)\n");
+    fprintf(stderr, 
+      "Critical: Initialization error (Failed to alloc. for clients)\n");
     return -1;
   }
+
+  if (!init_dbus())
+    fprintf(stderr,
+      "Warning: Initialization with DBus error (Won't provide DBus comms.)\n");
 
   init_atoms();
   init_ewmh();
   init_wks();
+  init_monitors();
   init_drawable();
   init_print();
   init_windows();
@@ -52,7 +61,7 @@ int main(const int ARGC, const char* ARGV[]) {
     { .evfn = configurenotify, .EVENT = CONFIGURENOTIFY },
     { .evfn = maprequest, .EVENT = MAPREQUEST },
     { .evfn = noop, .EVENT = CONFIGUREREQUEST },
-    { .evfn = noop, .EVENT = MOTIONNOTIFY },
+    { .evfn = motionnotify, .EVENT = MOTIONNOTIFY },
     { .evfn = keypress, .EVENT = KEYPRESS },
     { .evfn = btnpress, .EVENT = BTNPRESS },
     { .evfn = enternotify, .EVENT = ENTERNOTIFY },
@@ -92,7 +101,13 @@ int main(const int ARGC, const char* ARGV[]) {
     for (size_t i = { 0 }; i < N; i++)
       init_msgevent(&MSGEV[i]);
   }
-  
+
+  {
+    const int N = { rng(0, sizeof EE / sizeof EE[0] - 1) };
+    dbus_send("Hi", EE[N], NORMAL, 2500);
+    dbus_send("Status", "cwm2 initialized", CRITICAL, 1500);
+  }
+
   while (sig_status == 0) {
     //const ev_t* EV = { event() };
     //EV->evfn(EV->DATA[0], EV->DATA[1], EV->DATA[2]);
@@ -102,6 +117,8 @@ int main(const int ARGC, const char* ARGV[]) {
   // Cleanup
   deinit_print();
   deinit_drawable();
+  deinit_monitors();
+  deinit_dbus();
   deinit_wm();
   deinit_root();
   deinit_dpy();

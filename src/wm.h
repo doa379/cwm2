@@ -2,39 +2,19 @@
 
 #include <X11/Xlib.h>
 
-typedef struct {
-  Window w;
-  Window shadow;
-  unsigned posx;
-  unsigned posy;
-  unsigned sizex;
-  unsigned sizey;
-  GC gc;
-  unsigned wks;
-  unsigned mode;
-  int sel;
-  int ft;
-  int pad[2];
-} client_t;
+typedef struct client_s client_t;
 
-typedef struct {
-  unsigned posx;
-  unsigned posy;
-  unsigned sizex;
-  unsigned sizey;
-} monitor_t;
-
-bool init_wm();
-void deinit_wm();
-void init_wks();
-void init_monitors();
+bool init_wks();
+void deinit_wks();
+bool init_monitors();
 void deinit_monitors();
+void init_wm();
+void deinit_wm();
 void noop(const long, const long, const long);
 void mapnotify(const long, const long, const long);
 void unmapnotify(const long, const long, const long);
 //void clientmessage(const long, const long, const long);
 void configureroot(const long, const long, const long);
-void deconfigureroot();
 void configurenotify(const long, const long, const long);
 void maprequest(const long, const long, const long);
 void motionnotify(const long, const long, const long);

@@ -3,6 +3,7 @@
 #include <Xlib.h>
 #include <wm.h>
 #include <lib.h>
+#include <draw.h>
 #include <dbus.h>
 #include <eggs.h>
 
@@ -20,37 +21,37 @@ int main(const int ARGC, const char* ARGV[]) {
     return -1;
   }
 
-  if (!init_dpy()) {
+  Display* dpy = { XOpenDisplay(NULL) };
+  if (!dpy) {
     fprintf(stderr, "Critical: Failed to open display\n");
     return -1;
   } 
 
-  if (!init_root()) {
-    deinit_dpy();
+  if (!init_root(dpy)) {
+    XCloseDisplay(dpy);
     fprintf(stderr, "Critical: Initialization error (another wm running?)\n");
     return -1;
   }
 
-  if (!init_wm()) {
-    deinit_dpy();
+  if (!init_wks()) {
+    XCloseDisplay(dpy);
     fprintf(stderr, 
-      "Critical: Initialization error (Failed to alloc. for clients)\n");
+      "Critical: Initialization error (Failed to alloc. workspaces)\n");
+    return -1;
+  }
+  
+  if (!init_monitors()) {
+    deinit_wks();
+    XCloseDisplay(dpy);
+    fprintf(stderr, 
+      "Critical: Initialization error (Failed to alloc. monitors)\n");
     return -1;
   }
 
-  if (!init_dbus())
-    fprintf(stderr,
-      "Warning: Initialization with DBus error (Won't provide DBus comms.)\n");
-
-  init_atoms();
-  init_ewmh();
-  init_wks();
-  init_monitors();
-  init_drawable();
-  init_print();
-  init_windows();
+  init_atoms(dpy);
+  init_draw(dpy);
   // Init internal events
-  init_events();
+  init_events(dpy);
   //
   static ev_t EV[] = {
     { .evfn = noop, .EVENT = NOOP },
@@ -102,10 +103,15 @@ int main(const int ARGC, const char* ARGV[]) {
       init_msgevent(&MSGEV[i]);
   }
 
+  if (!init_dbus())
+    fprintf(stderr,
+      "Warning: Initialization with DBus error (Won't provide DBus comms.)\n");
+
+  init_wm();
+  dbus_send("Status", "cwm2 initialized", CRITICAL, 1500);
   {
     const int N = { rng(0, sizeof EE / sizeof EE[0] - 1) };
     dbus_send("Hi", EE[N], NORMAL, 2500);
-    dbus_send("Status", "cwm2 initialized", CRITICAL, 1500);
   }
 
   while (sig_status == 0) {
@@ -115,12 +121,12 @@ int main(const int ARGC, const char* ARGV[]) {
   }
 
   // Cleanup
-  deinit_print();
-  deinit_drawable();
-  deinit_monitors();
-  deinit_dbus();
   deinit_wm();
+  deinit_dbus();
+  deinit_draw();
+  deinit_monitors();
+  deinit_wks();
   deinit_root();
-  deinit_dpy();
+  XCloseDisplay(dpy);
   return 0;
 }

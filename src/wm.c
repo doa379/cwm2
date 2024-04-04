@@ -36,10 +36,8 @@ typedef struct {
 
 static const size_t KBDLEN = { sizeof KBD / sizeof KBD[0] };
 static const size_t BTNLEN = { sizeof BTN / sizeof BTN[0] };
-//static blk_t clients;
 static blk_t wks;
 static blk_t monitors;
-//static client_t* client[2]; // Prev, Curr
 
 /*
 // Init monitors
@@ -51,7 +49,6 @@ static blk_t monitors;
 
 static wks_t* wk[2]; // Prev, Curr
 static monitor_t* monitor;
-//static unsigned wks = { 1 };
 static void (*CALLFN[])() = {
   [WKS0] = wks0,
   [WKS1] = wks1,
@@ -80,9 +77,6 @@ static void (*CALLFN[])() = {
   [QUIT] = quit,
 };
 
-static GC statusgc;
-static GC wksgc;
-
 // Inits
 bool init_wks() {
   wks = init_blk(sizeof(wks_t), NWKS);
@@ -105,31 +99,12 @@ bool init_wks() {
 }
 
 void deinit_wks() {
-  for (size_t i = { 0 }; i < wks.size; i++) {
-    wks_t* w = { itr(&wks, i) };
+  for (wks_t* w = { beg(&wks) }; w != wks.end; w++)
     deinit_blk(&w->clients);
-  }
     
   deinit_blk(&wks);
 }
-/*
-bool init_clients() {
-  // Initial reserve is working correctly
-  clients = init_blk(sizeof(client_t), 2);
-  if (beg(&clients) == NULL) 
-    return false;
-  
-  return true;
-}
 
-void deinit_clients() {
-  // No fail
-  for (client_t* c = { beg(&clients) }; c != clients.end; c++)
-    deinit_gc(c->gc);
-  
-  deinit_blk(&clients);
-}
-*/
 bool init_monitors() {
   // Initial reserve is working correctly
   monitors = init_blk(sizeof(monitor_t), 1);
@@ -145,11 +120,8 @@ bool init_monitors() {
 
     deinit_queryscreens();
   } else {
-    monitor_t m = {
-      .posx = 0,
-      .posy = 0,
-      .sizex = dpywidth(),
-      .sizey = dpyheight()
+    monitor_t m = { .posx = 0, .posy = 0, 
+      .sizex = dpywidth(), .sizey = dpyheight()
     };
     
     map_dev(&monitors, &m);
@@ -170,16 +142,36 @@ void init_wm() {
     grab_key(MOD, KEY);
   }
 
-  statusgc = init_gc();
-  wksgc = init_gc();
   setprop_nwks(wks.size);
   setprop_wks(0);
   wk[0] = wk[1] = beg(&wks);
-  init_windows();
+  clrprop_clientlist();
+  unsigned n = { 0 };
+  Window* W = { init_querytree(&n) };
+  for (unsigned i = { 0 }; i < n; i++) {
+    unsigned w = { 0 };
+    unsigned h = { 0 };
+    if (wa_size(W[i], &w, &h))
+      maprequest(W[i], w, h);
+  }
+
+  if (W)
+    deinit_querytree(W);
+
+  // Raise into curr wks
+  for (client_t* c = { beg(&wk[1]->clients) }; c != wk[1]->clients.end; c++) {
+    //mapwindow(c->shadow);
+    mapwindow(c->w);
+  }
+
   fprintf(stdout, "Init %s\n", WMNAME);
 }
 
 void deinit_wm() {
+  for (wks_t* w = { beg(&wks) }; w != wks.end; w++)
+    for (client_t* c = { beg(&w->clients) }; c != w->clients.end; c++)
+      deinit_window(c->shadow);
+
   const int MODMASK = { modmask() };
   for (size_t i = { 0 }; i < KBDLEN; i++) {
     const int MOD = { KBD[i].mod & MODMASK };
@@ -187,8 +179,6 @@ void deinit_wm() {
     ungrab_key(MOD, KEY);
   }
   
-  deinit_gc(wksgc);
-  deinit_gc(statusgc);
   fprintf(stdout, "Deinit %s\n", WMNAME);
 }
 
@@ -218,7 +208,7 @@ void unmapnotify(const long W, const long, const long) {
       addprop_clientlist(client->w);
   }
   // No fail  
-  destroy_window(c->shadow);
+  //destroy_window(c->shadow);
   deinit_gc(c->gc);
   unmap_dev(&wk[1]->clients, c);
   wk[1]->client[0] = wk[1]->clients.size == 0 ? NULL : wk[1]->client[0];
@@ -240,12 +230,13 @@ void configurenotify(const long W, const long WIDTH, const long HEIGHT) {
 }
 
 void maprequest(const long W, const long WIDTH, const long HEIGHT) {
+  map(W);
   int x = { wk[1]->client[1] ? wk[1]->client[1]->posx : 0 };
   int y = { wk[1]->client[1] ? wk[1]->client[1]->posy : 0 };
-  cascade(&x, &y, WIDTH, HEIGHT);
+  cascade(&x, &y, WIDTH, HEIGHT, monitor->sizex, monitor->sizey);
   client_t next = { 
     .w = W, 
-    .shadow = init_shadow(WIDTH, HEIGHT), 
+    .shadow = init_window(WIDTH, HEIGHT), 
     .posx = x,
     .posy = y,
     .sizex = WIDTH,
@@ -262,14 +253,15 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
     for (; c != wk[1]->clients.end && c->w != currw; c++);
     wk[1]->client[1] = c;
     unfocus(wk[1]->client[1]->w);
-    unmapwindow(wk[1]->client[1]->shadow);
+    //unmapwindow(wk[1]->client[1]->shadow);
   }
   
   set_bdrwidth(W, BDR_PX);
   movewindow(W, x, y);
   mapwindow(W);
-  movewindow(c->shadow, x + 14, y + 14);
-  mapwindow(c->shadow);
+  //static const unsigned SH = { 10 + BDR_PX };
+  //movewindow(c->shadow, x + SH, y + SH);
+  //mapwindow(c->shadow);
   focus(c->w);
   wk[1]->client[0] = wk[1]->client[1];
   wk[1]->client[1] = c;
@@ -293,21 +285,7 @@ void motionnotify(const long X, const long Y, const long) {
   y = Y;
 }
 
-//void keypress(const long STATE, const long CODE, const long) {
 void keypress(const long MOD, const long KEYSYM, const long) {
-  /*
-  const int KMOD = { STATE & modmask() };
-  const int KSYM = { keycode2sym(CODE) };
-  for (size_t i = { 0 }; i < KBDLEN; i++)
-    if (KBD[i].mod == KMOD && KBD[i].key == KSYM) {
-      if (KBD[i].call < 128) {
-        CALLFN[KBD[i].call]();
-      } else if (KBD[i].cmd) {
-        fprintf(stdout, "spawn %s\n", KBD[i].cmd);
-        spawn(KBD[i].cmd);
-      }
-    }
-  */
   for (size_t i = { 0 }; i < KBDLEN; i++)
     if (KBD[i].mod == MOD && KBD[i].key == KEYSYM) {
       if (KBD[i].call < 128) {
@@ -331,14 +309,30 @@ void propertynotify(const long, const long, const long) {
   refresh_panel();
 }
 
+void exposeroot(const long, const long, const long) {
+  for (monitor_t* m = { beg(&monitors) }; m != monitors.end; m++)
+    refresh_rootw(m->posx, m->posy, m->sizex - 1, m->posy + m->sizey - 1);
+  
+  refresh_panel();
+}
+
 void switch_wks(const long N, const long, const long) {
   if (wk[1] == itr(&wks, N))
     return;
 
+  for (client_t* c = { beg(&wk[1]->clients) }; c != wk[1]->clients.end; c++) {
+    unmapwindow(c->w);
+    //unmapwindow(c->shadow);
+  }
+
   setprop_wks(N);
   wk[0] = wk[1];
   wk[1] = itr(&wks, N);
-  //wks = N + 1;
+  for (client_t* c = { beg(&wk[1]->clients) }; c != wk[1]->clients.end; c++) {
+    //mapwindow(c->shadow);
+    mapwindow(c->w);
+  }
+
   refresh_panel();
 }
 
@@ -395,10 +389,10 @@ void refresh_panel() {
   char S[32];
   {
     unsigned offset = { 0 };
-    snprintf(S, sizeof S, "%d/%lu", wk[1]->n, wks.size);
+    snprintf(S, sizeof S, "%d/%lu", wk[1]->n + 1, wks.size);
     const monitor_t* M = { beg(&monitors) };
-    draw_wks(S, wksgc, FG1, BG2, M->sizey, &offset);
-    draw_status(WMNAME, statusgc, FG1, BG1, M->sizex, M->sizey, &offset);
+    draw_wks(S, FG1, BG2, M->sizey, &offset);
+    draw_status(WMNAME, FG1, BG1, M->sizex, M->sizey, &offset);
   }
 
   if (wk[1]->clients.size == 0)
@@ -415,10 +409,10 @@ void refresh_panel() {
 
 client_t* prev_client(client_t* client, const bool FL) {
   unfocus(client->w);
-  unmapwindow(client->shadow);
+  //unmapwindow(client->shadow);
   client_t* c = { FL ? prev_dev(&wk[1]->clients, client) :
     next_dev(&wk[1]->clients, client) };
-  mapwindow(c->shadow);
+  //mapwindow(c->shadow);
   focus(c->w);
   return c;
 }

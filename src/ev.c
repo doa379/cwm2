@@ -97,7 +97,7 @@ static ev_t* maprequest() {
   XWindowAttributes wa;
   if (XGetWindowAttributes(dpy, W, &wa) == 0 || wa.override_redirect)
     return EV[NOOP];
-  
+/*  
   static const long MASK = { EnterWindowMask | 
     FocusChangeMask |
     PropertyChangeMask | 
@@ -106,7 +106,7 @@ static ev_t* maprequest() {
   XSelectInput(dpy, W, MASK);
   XChangeProperty(dpy, rootw, atom(NET_CLIENT_LIST), XA_WINDOW, 32, 
     PropModeAppend, (unsigned char*) &W, 1);
-
+*/
   ev_t* ev = { EV[MAPREQUEST] };
   ev->DATA[0] = W;
   ev->DATA[1] = wa.width;
@@ -173,6 +173,13 @@ static ev_t* propertynotify() {
   return EV[PROPERTYNOTIFY];
 }
 
+static ev_t* expose() {
+  fprintf(stdout, "EV: Expose\n");
+  const Window W = { xev.xexpose.window };
+  EV[EXPOSE]->DATA[0] = W;
+  return W == rootw ? EV[EXPOSE] : EV[NOOP];
+}
+
 void init_events(Display* dpy_) {
   dpy = dpy_;
   rootw = XRootWindow(dpy, DefaultScreen(dpy));
@@ -190,6 +197,7 @@ void init_events(Display* dpy_) {
   EVFN[ButtonPress] = btnpress;
   EVFN[EnterNotify] = enternotify;
   EVFN[PropertyNotify] = propertynotify;
+  EVFN[Expose] = expose;
 }
 
 ev_t* event() {

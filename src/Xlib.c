@@ -10,7 +10,6 @@
 static Display* dpy;
 static Window rootw;
 static bool xerror;
-
 static XineramaScreenInfo* screeninfo;
 
 static int XError(Display*, XErrorEvent* xev) {
@@ -30,7 +29,8 @@ bool init_root(Display* dpy_) {
     EnterWindowMask |
     LeaveWindowMask |
     StructureNotifyMask |
-    PropertyChangeMask
+    PropertyChangeMask |
+    ExposureMask
   };
 
   XSelectInput(dpy, rootw, MASK);
@@ -56,63 +56,39 @@ int modmask() {
   return ~(numlockmask | LockMask);
 }
 
-bool xinerama() {
-  return XineramaIsActive(dpy);
-}
-
-int init_queryscreens() {
-  int n;
-  screeninfo = XineramaQueryScreens(dpy, &n);
-  return n;
-}
-
-void deinit_queryscreens() {
-  XFree(screeninfo);
-}
-
-void query_screen(const int N, unsigned* x, unsigned* y, unsigned* width, 
-  unsigned* height) {
-  *x = screeninfo[N].x_org;
-  *y = screeninfo[N].y_org;
-  *width = screeninfo[N].width;
-  *height = screeninfo[N].height;
-}
-
-void init_windows() {
+Window* init_querytree(unsigned* n) {
   Window root;
   Window par;
   Window* w;
-  unsigned n;
-  XGrabServer(dpy);
-  if (XQueryTree(dpy, rootw, &root, &par, &w, &n)) {
-    const long MASK = { 
-      SubstructureRedirectMask | 
-      SubstructureNotifyMask | 
-      ButtonPressMask |
-      PointerMotionMask |
-      EnterWindowMask |
-      LeaveWindowMask |
-      StructureNotifyMask |
-      PropertyChangeMask
-    };
+  return XQueryTree(dpy, rootw, &root, &par, &w, n) ? w : NULL;
+}
 
-    for (unsigned i = { 0 }; i < n; i++) {
-      XWindowAttributes wa;
-      if (XGetWindowAttributes(dpy, w[i], &wa) && 
-          (wa.map_state == IsViewable || wa.map_state == IconicState)) {
-        XEvent xev = { MapRequest };
-        xev.xmaprequest.send_event = true,
-        xev.xmaprequest.parent = rootw;
-        xev.xmaprequest.window = w[i];
-        XSendEvent(dpy, rootw, true, MASK, &xev);
-      }
-    }
+void deinit_querytree(Window* w) {
+  XFree(w);
+}
 
-    if (w)
-      XFree(w);
+bool wa_size(const Window W, unsigned* w, unsigned* h) {
+  XWindowAttributes wa;
+  if (XGetWindowAttributes(dpy, W, &wa) && !wa.override_redirect &&
+      (wa.map_state == IsViewable || wa.map_state == IconicState)) {
+    *w = wa.width;
+    *h = wa.height;
+    return true;
   }
 
-  XUngrabServer(dpy);
+  return false;
+}
+
+void map(const Window W) {
+  static const long MASK = { EnterWindowMask | 
+    FocusChangeMask |
+    PropertyChangeMask | 
+    StructureNotifyMask
+  };
+
+  XSelectInput(dpy, W, MASK);
+  XChangeProperty(dpy, rootw, atom(NET_CLIENT_LIST), XA_WINDOW, 32, 
+    PropModeAppend, (unsigned char*) &W, 1);
 }
 
 void grab_key(const int MOD, const int KEY) {
@@ -203,31 +179,40 @@ void spawn(const char* CMD) {
   }
 }
 
-void destroy_window(const Window W) {
+Window init_window(const unsigned W, const unsigned H) {
+  return XCreateSimpleWindow(dpy, rootw, 0, 0, W, H, 0, 0, 0x141414);
+}
+
+void deinit_window(const Window W) {
   XDestroyWindow(dpy, W);
 }
 
-// Arrangements
+unsigned dpywidth() {
+  return DisplayWidth(dpy, DefaultScreen(dpy));
+}
 
-void cascade(int* x, int* y, const unsigned X, const unsigned Y) {
-  /*
-  static short grav;
-  const char DIRX = { grav >> 0 & 1 ? -1 : 1 };
-  const char DIRY = { grav >> 1 & 1 ? -1 : 1 };
-  *x += *y != 0 ? DIRX * bh : 0; 
-  *y += DIRY * bh;
-  if (*x + X > dpywidth()) {
-    *x = dpywidth() - X;
-    grav |= 1 << 0;
-  } if (*y + Y > dpyheight() - bh - 8) {
-    *y = dpyheight() - Y - bh - 8;
-    grav |= 1 << 1; 
-  } if (*x < 0) {
-    *x = 0;
-    grav ^= 1 << 0;
-  } if (*y < bh) {
-    *y = bh;
-    grav ^= 1 << 1;
-  }
-  */
+unsigned dpyheight() {
+  return DisplayHeight(dpy, DefaultScreen(dpy));
+}
+
+bool xinerama() {
+  return XineramaIsActive(dpy);
+}
+
+int init_queryscreens() {
+  int n;
+  screeninfo = XineramaQueryScreens(dpy, &n);
+  return n;
+}
+
+void deinit_queryscreens() {
+  XFree(screeninfo);
+}
+
+void query_screen(const int N, unsigned* x, unsigned* y, unsigned* width, 
+  unsigned* height) {
+  *x = screeninfo[N].x_org;
+  *y = screeninfo[N].y_org;
+  *width = screeninfo[N].width;
+  *height = screeninfo[N].height;
 }

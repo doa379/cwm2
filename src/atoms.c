@@ -30,8 +30,6 @@ void init_atoms(Display* dpy_) {
   ATOM[NET_WM_DESKTOP] = XInternAtom(dpy, "_NET_WM_DESKTOP", false);
   ATOM[NET_CURRENT_DESKTOP] = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", false);
   ATOM[NET_SHOWING_DESKTOP] = XInternAtom(dpy, "_NET_SHOWING_DESKTOP", false);
-  // Init/Reset EWMH
-  XDeleteProperty(dpy, rootw, ATOM[NET_CLIENT_LIST]);
 }
 
 Atom atom(const enum prop PROP) {
@@ -74,4 +72,3 @@ void del_prop(const Window W, const Atom PROP) {
 void del_rootprop(const Atom PROP) {
   XDeleteProperty(dpy, rootw, PROP);
 }
-

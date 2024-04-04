@@ -7,12 +7,11 @@ bool init_root(Display*);
 void deinit_root();
 int modmask();
 
-bool xinerama();
-int init_queryscreens();
-void deinit_queryscreens();
-void query_screen(const int, unsigned*, unsigned*, unsigned*, unsigned*);
+Window* init_querytree(unsigned*);
+void deinit_querytree(Window*);
+bool wa_size(const Window, unsigned*, unsigned*);
+void map(const Window);
 
-void init_windows();
 void grab_key(const int, const int);
 void ungrab_key(const int, const int);
 void grab_btn(const Window, const int, const int);
@@ -27,6 +26,12 @@ void focusin(const Window);
 bool send_killmsg(const Window);
 bool send_switchwks(const unsigned);
 void spawn(const char*);
-Window init_shadow(const unsigned, const unsigned);
-void destroy_window(const Window);
-void cascade(int*, int*, const unsigned, const unsigned);
+Window init_window(const unsigned, const unsigned);
+void deinit_window(const Window);
+
+unsigned dpywidth();
+unsigned dpyheight();
+bool xinerama();
+int init_queryscreens();
+void deinit_queryscreens();
+void query_screen(const int, unsigned*, unsigned*, unsigned*, unsigned*);

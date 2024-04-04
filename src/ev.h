@@ -15,7 +15,8 @@ enum event {
   KEYPRESS,
   BTNPRESS,
   ENTERNOTIFY,
-  PROPERTYNOTIFY
+  PROPERTYNOTIFY,
+  EXPOSE
 };
   
 typedef union {

@@ -66,7 +66,8 @@ int main(const int ARGC, const char* ARGV[]) {
     { .evfn = keypress, .EVENT = KEYPRESS },
     { .evfn = btnpress, .EVENT = BTNPRESS },
     { .evfn = enternotify, .EVENT = ENTERNOTIFY },
-    { .evfn = propertynotify, .EVENT = PROPERTYNOTIFY }
+    { .evfn = propertynotify, .EVENT = PROPERTYNOTIFY },
+    { .evfn = exposeroot, .EVENT = EXPOSE },
   };
 
   static ev_t MSGEV[] = {

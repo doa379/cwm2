@@ -22,6 +22,7 @@ void keypress(const long, const long, const long);
 void btnpress(const long, const long, const long);
 void enternotify(const long, const long, const long);
 void propertynotify(const long, const long, const long);
+void exposeroot(const long, const long, const long);
 
 void switch_wks(const long, const long, const long);
 

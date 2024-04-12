@@ -15,10 +15,11 @@ typedef struct client_s {
   unsigned sizex;
   unsigned sizey;
   GC gc;
+  //monitor_t *m;
   unsigned mode;
   int sel;
   int ft;
-  int pad[3];
+  int pad[2];
 } client_t;
 
 typedef struct {
@@ -38,15 +39,6 @@ static const size_t KBDLEN = { sizeof KBD / sizeof KBD[0] };
 static const size_t BTNLEN = { sizeof BTN / sizeof BTN[0] };
 static blk_t wks;
 static blk_t monitors;
-
-/*
-// Init monitors
-// Set curr monitor
-// Uniform virt vport dpywidth(), dpyheight() to span all monitors
-// WKs to span all monitors
-// Arrangements, Modes to operate on selection per monitor
-*/
-
 static wks_t* wk[2]; // Prev, Curr
 static monitor_t* monitor;
 static void (*CALLFN[])() = {
@@ -106,8 +98,9 @@ void deinit_wks() {
 }
 
 bool init_monitors() {
+  fprintf(stdout, "Dpysize |%d, %d|\n", dpywidth(), dpyheight());
   // Initial reserve is working correctly
-  monitors = init_blk(sizeof(monitor_t), 1);
+  monitors = init_blk(sizeof(monitor_t), 2);
   if (beg(&monitors) == NULL)
     return false;
   else if (xinerama()) {
@@ -115,6 +108,8 @@ bool init_monitors() {
     for (int i = { 0 }; i < N; i++) {
       monitor_t m;
       query_screen(i, &m.posx, &m.posy, &m.sizex, &m.sizey);
+      fprintf(stdout, "Mon %d (%d, %d) |%d, %d|\n", 
+        i, m.posx, m.posy, m.sizex, m.sizey);
       map_dev(&monitors, &m);
     }
 
@@ -126,7 +121,7 @@ bool init_monitors() {
     
     map_dev(&monitors, &m);
   }
- 
+  
   return (monitor = beg(&monitors));
 }
 
@@ -149,28 +144,26 @@ void init_wm() {
   unsigned n = { 0 };
   Window* W = { init_querytree(&n) };
   for (unsigned i = { 0 }; i < n; i++) {
-    unsigned w = { 0 };
-    unsigned h = { 0 };
-    if (wa_size(W[i], &w, &h))
+    int w = { 0 };
+    int h = { 0 };
+    if (wa_size(&w, &h, W[i]))
       maprequest(W[i], w, h);
   }
 
   if (W)
     deinit_querytree(W);
 
-  // Raise into curr wks
-  for (client_t* c = { beg(&wk[1]->clients) }; c != wk[1]->clients.end; c++) {
-    //mapwindow(c->shadow);
-    mapwindow(c->w);
-  }
-
   fprintf(stdout, "Init %s\n", WMNAME);
 }
 
 void deinit_wm() {
+  // Restore state to defaults
   for (wks_t* w = { beg(&wks) }; w != wks.end; w++)
-    for (client_t* c = { beg(&w->clients) }; c != w->clients.end; c++)
+    for (client_t* c = { beg(&w->clients) }; c != w->clients.end; c++) {
+      set_bdrwidth(c->w, 0);
+      mapwindow(c->w);
       deinit_window(c->shadow);
+    }
 
   const int MODMASK = { modmask() };
   for (size_t i = { 0 }; i < KBDLEN; i++) {
@@ -231,17 +224,20 @@ void configurenotify(const long W, const long WIDTH, const long HEIGHT) {
 
 void maprequest(const long W, const long WIDTH, const long HEIGHT) {
   map(W);
-  int x = { wk[1]->client[1] ? wk[1]->client[1]->posx : 0 };
-  int y = { wk[1]->client[1] ? wk[1]->client[1]->posy : 0 };
+  int x = { wk[1]->client[1] && wk[1]->client[1]->posx > monitor->posx ? 
+    wk[1]->client[1]->posx : monitor->posx };
+  int y = { wk[1]->client[1] && wk[1]->client[1]->posy > monitor->posy ? 
+    wk[1]->client[1]->posy : monitor->posy };
   cascade(&x, &y, WIDTH, HEIGHT, monitor->sizex, monitor->sizey);
   client_t next = { 
     .w = W, 
-    .shadow = init_window(WIDTH, HEIGHT), 
+    //.shadow = init_window(WIDTH, HEIGHT), 
     .posx = x,
     .posy = y,
     .sizex = WIDTH,
     .sizey = HEIGHT, 
-    .gc = init_gc(), 
+    .gc = init_gc(),
+    //.m = monitor,
   };
 
   Window currw = { wk[1]->client[1] ? wk[1]->client[1]->w : -1 };
@@ -257,7 +253,7 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
   }
   
   set_bdrwidth(W, BDR_PX);
-  movewindow(W, x, y);
+  movewindow(W, x + 550, y);
   mapwindow(W);
   //static const unsigned SH = { 10 + BDR_PX };
   //movewindow(c->shadow, x + SH, y + SH);
@@ -267,22 +263,33 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
   wk[1]->client[1] = c;
 }
 
-void motionnotify(const long X, const long Y, const long) {
-  fprintf(stdout, "Motion on root (%ld, %ld)\n", X, Y);
-  // Prev coords.
-  static unsigned x;
-  static unsigned y;
-  for (monitor_t* m = { beg(&monitors) }; m != monitors.end; m++)
-    if (X == m->posx || Y == m->posy) {
-      monitor = m;
-      char S[4];
-      snprintf(S, sizeof S, "%lu", dist(&monitors, m) + 1);
-      dbus_send("Monitor", S, NORMAL, 1000);
-      break;
-    }
+static void notify_monitor() {
+  char S[4];
+  snprintf(S, sizeof S, "%lu", dist(&monitors, monitor) + 1);
+  dbus_send("Monitor", S, NORMAL, 1000);
+}
 
-  x = X;
-  y = Y;
+void motionnotify(const long X, const long Y, const long TIME) {
+  fprintf(stdout, "Motion on root (%ld, %ld)\n", X, Y);
+  static Time time;
+  if (TIME - time < 1000)
+    return;
+
+  time = TIME;
+  if (X == monitor->posx || Y == monitor->posy) {
+    monitor = prev_dev(&monitors, monitor);
+    notify_monitor();
+  } else if (X == monitor->posx + monitor->sizex || 
+      Y == monitor->posy + monitor->sizey) {
+    monitor = next_dev(&monitors, monitor);
+    notify_monitor();
+  }
+  // determine when pointer has moved off size coords of monitor
+  if (X > monitor->posx + monitor->sizex)
+    warp_pointer(monitor->posx + monitor->sizex, Y);
+  if (Y > monitor->posy + monitor->sizey)
+    warp_pointer(X, monitor->posy + monitor->sizey);
+  // Translation of pointer coords in Xephyr??
 }
 
 void keypress(const long MOD, const long KEYSYM, const long) {
@@ -310,9 +317,11 @@ void propertynotify(const long, const long, const long) {
 }
 
 void exposeroot(const long, const long, const long) {
-  for (monitor_t* m = { beg(&monitors) }; m != monitors.end; m++)
-    refresh_rootw(m->posx, m->posy, m->sizex - 1, m->posy + m->sizey - 1);
+  //for (monitor_t* m = { beg(&monitors) }; m != monitors.end; m++)
+    //refresh_rootw(m->posx, m->posy, m->sizex - 1, m->posy + m->sizey - 1);
   
+  //refresh_rootw(0, 0, 50, 50);
+  //refresh_rootw(500, 0, 50, 50);
   refresh_panel();
 }
 

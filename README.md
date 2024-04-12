@@ -1,16 +1,14 @@
 # cwm2
 cwm2 X11 WM
 
-Next-gen *nix WM. 
+Next-gen *nix WM.
 
-This project has no relation to cwm. It is a new project formulated from scratch written in modern C for purity.
-No BS abstraction, no BS OO. Cuts to the chase. Interfaces directly with Xlib. Correct, fast, lightweight.
+A new project formulated from scratch written in modern C for purity. This project has no relation to cwm. There is no 
+reason why you cannot have a safe system written in C. The main abstraction is memory abstraction. Implemented using AI 
+(Actual Intelligence) as opposed to Fake or Artificial Intelligence.
 
 Build prerequisites/deps:
 
-BSD Make (bmake)  
-libX11 (dev, devel)  
-libXinerama (dev, devel)  
-dbus-1 (dev, devel)
+BSD Make (bmake), libX11, libXinerama, dbus-1
 
 Target(s): BSD UNIX, Linux

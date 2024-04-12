@@ -9,8 +9,6 @@ int modmask();
 
 Window* init_querytree(unsigned*);
 void deinit_querytree(Window*);
-bool wa_size(const Window, unsigned*, unsigned*);
-void map(const Window);
 
 void grab_key(const int, const int);
 void ungrab_key(const int, const int);
@@ -22,6 +20,8 @@ void mapwindow(const Window);
 void unmapwindow(const Window);
 void set_bdrcolor(const Window, const size_t);
 void set_bdrwidth(const Window, const size_t);
+bool wa_size(int*, int*, const Window);
+void map(const Window);
 void focusin(const Window);
 bool send_killmsg(const Window);
 bool send_switchwks(const unsigned);

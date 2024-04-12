@@ -41,4 +41,3 @@ void init_event(ev_t*);
 void init_msgevent(ev_t*);
 void init_events(Display*);
 ev_t* event();
-void intr_event();

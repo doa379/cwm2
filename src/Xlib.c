@@ -40,7 +40,6 @@ bool init_root(Display* dpy_) {
 
 void deinit_root() {
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
-  XUngrabServer(dpy);
 }
 
 int modmask() {
@@ -65,30 +64,6 @@ Window* init_querytree(unsigned* n) {
 
 void deinit_querytree(Window* w) {
   XFree(w);
-}
-
-bool wa_size(const Window W, unsigned* w, unsigned* h) {
-  XWindowAttributes wa;
-  if (XGetWindowAttributes(dpy, W, &wa) && !wa.override_redirect &&
-      (wa.map_state == IsViewable || wa.map_state == IconicState)) {
-    *w = wa.width;
-    *h = wa.height;
-    return true;
-  }
-
-  return false;
-}
-
-void map(const Window W) {
-  static const long MASK = { EnterWindowMask | 
-    FocusChangeMask |
-    PropertyChangeMask | 
-    StructureNotifyMask
-  };
-
-  XSelectInput(dpy, W, MASK);
-  XChangeProperty(dpy, rootw, atom(NET_CLIENT_LIST), XA_WINDOW, 32, 
-    PropModeAppend, (unsigned char*) &W, 1);
 }
 
 void grab_key(const int MOD, const int KEY) {
@@ -134,13 +109,37 @@ void set_bdrwidth(const Window W, const size_t WIDTH) {
   XSetWindowBorderWidth(dpy, W, WIDTH);
 }
 
+bool wa_size(int* w, int* h, const Window W) {
+  XWindowAttributes wa;
+  if (XGetWindowAttributes(dpy, W, &wa) && !wa.override_redirect &&
+    wa.map_state == IsViewable) {
+    *w = wa.width;
+    *h = wa.height;
+    return true;
+  }
+
+  return false;
+}
+
+void map(const Window W) {
+  static const long MASK = { EnterWindowMask | 
+    FocusChangeMask |
+    PropertyChangeMask | 
+    StructureNotifyMask
+  };
+
+  XSelectInput(dpy, W, MASK);
+  XChangeProperty(dpy, rootw, atom(NET_CLIENT_LIST), XA_WINDOW, 32, 
+    PropModeAppend, (unsigned char*) &W, 1);
+}
+
 void focusin(const Window W) {
   XSetInputFocus(dpy, W, RevertToPointerRoot, CurrentTime);
   XRaiseWindow(dpy, W);
   XChangeProperty(dpy, rootw, atom(WM_STATE), XA_WINDOW, 32, PropModeReplace, 
-    (const unsigned char*) &W, 1);
+    (unsigned char*) &W, 1);
   XChangeProperty(dpy, W, atom(NET_ACTIVE_WINDOW), XA_WINDOW, 32, 
-    PropModeReplace, (const unsigned char*) &W, 1);
+    PropModeReplace, (unsigned char*) &W, 1);
 }
   
 bool send_killmsg(const Window W) {
@@ -209,10 +208,10 @@ void deinit_queryscreens() {
   XFree(screeninfo);
 }
 
-void query_screen(const int N, unsigned* x, unsigned* y, unsigned* width, 
-  unsigned* height) {
+void query_screen(const int N, unsigned* x, unsigned* y, unsigned* w, 
+  unsigned* h) {
   *x = screeninfo[N].x_org;
   *y = screeninfo[N].y_org;
-  *width = screeninfo[N].width;
-  *height = screeninfo[N].height;
+  *w = screeninfo[N].width;
+  *h = screeninfo[N].height;
 }

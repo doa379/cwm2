@@ -127,8 +127,11 @@ static ev_t* configurerequest() {
 static ev_t* motionnotify() {
   const Window W = { xev.xmotion.window };
   ev_t* ev = { EV[MOTIONNOTIFY] };
+  //ev->DATA[0] = xev.xmotion.x;
   ev->DATA[0] = xev.xmotion.x_root;
+  //ev->DATA[1] = xev.xmotion.y;
   ev->DATA[1] = xev.xmotion.y_root;
+  ev->DATA[2] = xev.xmotion.time;
   return W == rootw ? ev : EV[NOOP];
 }
 
@@ -201,22 +204,10 @@ void init_events(Display* dpy_) {
 }
 
 ev_t* event() {
-  /*
   XSync(dpy, false);
   return XNextEvent(dpy, &xev) == 0 ? EVFN[xev.type]() : EV[NOOP];
-  */
-  while (XPending(dpy)) {
-    if (XNextEvent(dpy, &xev) == 0) {
-      const ev_t* EV = { EVFN[xev.type]() };
-      EV->evfn(EV->DATA[0], EV->DATA[1], EV->DATA[2]);
-    }
-  
-    XSync(dpy, false);
-  }
-
-  return EV[NOOP];
 }
 
-void intr_event() {
+void close_conn() {
   close(ConnectionNumber(dpy));
 }

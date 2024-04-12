@@ -15,6 +15,7 @@ enum palette {
   Gray70      = 0xb3b3b3,
   Gray80      = 0xcccccc,
   Gray90      = 0xe6e6e6,
+  White       = 0xffffff,
   Cyan10      = 0xccf1ff,
   Cyan20      = 0x99e2ff,
   Cyan30      = 0x66d4ff,

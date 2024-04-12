@@ -5,13 +5,11 @@
 #include <lib.h>
 #include <draw.h>
 #include <dbus.h>
-#include <eggs.h>
 
 volatile sig_atomic_t sig_status;
 
 static void sighandler(int sig) {
   sig_status = 1;
-  intr_event();
   fprintf(stdout, "\nSig.\n");
 }
 
@@ -110,18 +108,13 @@ int main(const int ARGC, const char* ARGV[]) {
 
   init_wm();
   dbus_send("Status", "cwm2 initialized", CRITICAL, 1500);
-  {
-    const int N = { rng(0, sizeof EE / sizeof EE[0] - 1) };
-    dbus_send("Hi", EE[N], NORMAL, 2500);
-  }
-
   while (sig_status == 0) {
-    //const ev_t* EV = { event() };
-    //EV->evfn(EV->DATA[0], EV->DATA[1], EV->DATA[2]);
-    event();
+    const ev_t* EV = { event() };
+    EV->evfn(EV->DATA[0], EV->DATA[1], EV->DATA[2]);
   }
 
   // Cleanup
+  dbus_send("Status", "cwm2 exit", CRITICAL, 1500);
   deinit_wm();
   deinit_dbus();
   deinit_draw();

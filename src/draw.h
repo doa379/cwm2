@@ -8,6 +8,8 @@ GC init_gc();
 void deinit_gc(const GC);
 void refresh_rootw(const unsigned, const unsigned, const unsigned, 
   const unsigned);
+void draw_element(const GC, const size_t, const unsigned, const unsigned, 
+  const unsigned, const unsigned);
 void draw_wks(const char*, const size_t, const size_t, const unsigned, 
   unsigned*);
 void draw_status(const char*, const size_t, const size_t, const unsigned,

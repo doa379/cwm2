@@ -1,6 +1,7 @@
 #include <X11/Xlib.h>
 #include <string.h>
 #include <draw.h>
+#include <palette.h>
 
 static Display* dpy;
 static Window rootw;
@@ -10,6 +11,9 @@ static const char* FONT = {
   "9x15bold" };
 static XFontStruct* fn;
 static unsigned bh;
+static int dpyw;
+static int dpyh;
+static int depth;
 static Drawable drawable;
 static GC statusgc;
 static GC wksgc;
@@ -20,34 +24,32 @@ void init_draw(Display* dpy_) {
   rootw = XRootWindow(dpy, DefaultScreen(dpy));
   fn = XLoadQueryFont(dpy, FONT);
   bh = fn->ascent + fn->descent;
-  
-  drawable = XCreatePixmap(dpy, rootw,
-    // Drawable over full extent of mon estate
-    DisplayWidth(dpy, DefaultScreen(dpy)),
-    DisplayHeight(dpy, DefaultScreen(dpy)),
-    DefaultDepth(dpy, DefaultScreen(dpy)));
+  dpyw = DisplayWidth(dpy, DefaultScreen(dpy));
+  dpyh = DisplayHeight(dpy, DefaultScreen(dpy));
+  depth = DefaultDepth(dpy, DefaultScreen(dpy));
+  // Drawable over full extent of mon estate
+  drawable = XCreatePixmap(dpy, rootw, dpyw, dpyh, depth);
   
   statusgc = init_gc();
   wksgc = init_gc();
   rootgc = XCreateGC(dpy, rootw, 0, NULL);
-  XSetForeground(dpy, rootgc, 0xffffff);
-  XFillRectangle(dpy, drawable, rootgc, 0, 0, 
-    DisplayWidth(dpy, DefaultScreen(dpy)),
-    DisplayHeight(dpy, DefaultScreen(dpy)));
-
-  const unsigned D = { 5 };
-  XSetForeground(dpy, rootgc, 0x1f1f1f);
-  for (int i = { 0 };
-      i < DisplayWidth(dpy, DefaultScreen(dpy)); i++)
-    for (int j = { 0 }; 
-      j < DisplayHeight(dpy, DefaultScreen(dpy)); j++) {
-      const unsigned X = { D * i };
-      const unsigned Y = { D * j };
-      XFillArc(dpy, drawable, rootgc, X - 2, Y - 2, 5, 5, 0, 360 * 64);
-    }
+  // Allowable set custom wallpaper etc.
+  XSetWindowBackground(dpy, rootw, Gray70);
+  XClearWindow(dpy, rootw);
+  /*
+  XSetForeground(dpy, rootgc, Gray70);
+  XFillRectangle(dpy, drawable, rootgc, 0, 0, dpyw, dpyh);
+  const unsigned D = { 3 };
+  XSetForeground(dpy, rootgc, Gray20);
+  for (int i = { 0 }; i < dpyw; i++)
+    for (int j = { 0 }; j < dpyh; j++)
+      XFillArc(dpy, drawable, rootgc, D * i - 0, D * j - 0, 3, 3, 0, 360 * 64);
+  refresh_rootw(0, 0, dpyw, dpyh);
+  */
 }
 
 void deinit_draw() {
+  draw_element(rootgc, Black, 0, 0, dpyw, dpyh);
   XFreePixmap(dpy, drawable);
   XFreeGC(dpy, rootgc);
   XFreeGC(dpy, wksgc);
@@ -70,18 +72,18 @@ void refresh_rootw(const unsigned X0, const unsigned Y0, const unsigned X1,
   XCopyArea(dpy, drawable, rootw, rootgc, X0, Y0, X1, Y1, 0, 0);
 }
 
-void draw_element(const GC GC, const size_t FG, const size_t BG, 
+void draw_element(const GC GC, const size_t COL, 
   const unsigned X0, const unsigned Y0, const unsigned X1, const unsigned Y1) {
-  XSetForeground(dpy, GC, BG);
+  XSetForeground(dpy, GC, COL);
   XFillRectangle(dpy, rootw, GC, X0, Y0, X1, Y1);
 }
 
-void draw_wks(const char* S, const size_t FG, const size_t BG,
+void draw_wks(const char* S, const size_t FG, const size_t BG, 
   const unsigned H, unsigned* offset) {
   static const unsigned HPAD_PX = { 4 };
   const unsigned SLEN = { strlen(S) };
   const unsigned SW = { XTextWidth(fn, S, SLEN) };
-  draw_element(wksgc, FG, BG, 0, H - bh, SW, H - bh);
+  draw_element(wksgc, BG, 0, H - bh, SW, H - bh);
   XSetForeground(dpy, wksgc, FG);
   XDrawString(dpy, rootw, wksgc, HPAD_PX, H - fn->descent, S, SLEN);
   *offset = SW;
@@ -92,7 +94,7 @@ void draw_status(const char* S, const size_t FG, const size_t BG,
   static const unsigned HPAD_PX = { 4 };
   const unsigned SLEN = { strlen(S) };
   const unsigned SW = { XTextWidth(fn, S, SLEN) };
-  draw_element(statusgc, FG, BG, *offset, H - bh, W - *offset, H);
+  draw_element(statusgc, BG, *offset, H - bh, W - *offset, H);
   XSetForeground(dpy, statusgc, FG);
   XDrawString(dpy, rootw, statusgc, *offset + HPAD_PX, H - fn->descent, S, SLEN);
   *offset = SW;
@@ -103,7 +105,7 @@ void draw_client(const char* S, const GC GC, const size_t FG, const size_t BG,
   static const unsigned HPAD_PX = { 4 };
   const unsigned SLEN = { strlen(S) };
   const unsigned SW = { XTextWidth(fn, S, SLEN) };
-  draw_element(GC, FG, BG, *offset, 0, SW, bh);
+  draw_element(GC, BG, *offset, 0, SW, bh);
   XSetForeground(dpy, GC, FG);
   XDrawString(dpy, rootw, GC, *offset + HPAD_PX, fn->ascent, S, SLEN);
   *offset += SW;

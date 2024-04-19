@@ -15,7 +15,6 @@ typedef struct client_s {
   unsigned sizex;
   unsigned sizey;
   GC gc;
-  //monitor_t *m;
   unsigned mode;
   int sel;
   int ft;
@@ -62,12 +61,15 @@ static void (*CALLFN[])() = {
   [MON7] = mon7,
   [MON8] = mon8,
   [MON9] = mon9,
-  [KILL] = kill,
+  [KILL] = kill_curr,
   [TOGGLEMODE] = mode,
   [PREVCLI] = prev,
   [NEXTCLI] = next,
   [QUIT] = quit,
 };
+
+static GC statusgc;
+static GC wksgc;
 
 // Inits
 bool init_wks() {
@@ -153,11 +155,15 @@ void init_wm() {
   if (W)
     deinit_querytree(W);
 
+  statusgc = init_gc();
+  wksgc = init_gc();
   fprintf(stdout, "Init %s\n", WMNAME);
 }
 
 void deinit_wm() {
-  // Restore state to defaults
+  deinit_gc(wksgc);
+  deinit_gc(statusgc);
+  // Restore X11 states to defaults
   for (wks_t* w = { beg(&wks) }; w != wks.end; w++)
     for (client_t* c = { beg(&w->clients) }; c != w->clients.end; c++) {
       set_bdrwidth(c->w, 0);
@@ -224,10 +230,13 @@ void configurenotify(const long W, const long WIDTH, const long HEIGHT) {
 
 void maprequest(const long W, const long WIDTH, const long HEIGHT) {
   map(W);
-  int x = { wk[1]->client[1] && wk[1]->client[1]->posx > monitor->posx ? 
+  // Set origin
+  int x = { wk[1]->client[1] && wk[1]->client[1]->posx < monitor->posx ? 
     wk[1]->client[1]->posx : monitor->posx };
-  int y = { wk[1]->client[1] && wk[1]->client[1]->posy > monitor->posy ? 
+  int y = { wk[1]->client[1] && wk[1]->client[1]->posy < monitor->posy ? 
     wk[1]->client[1]->posy : monitor->posy };
+   
+
   cascade(&x, &y, WIDTH, HEIGHT, monitor->sizex, monitor->sizey);
   client_t next = { 
     .w = W, 
@@ -237,7 +246,6 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
     .sizex = WIDTH,
     .sizey = HEIGHT, 
     .gc = init_gc(),
-    //.m = monitor,
   };
 
   Window currw = { wk[1]->client[1] ? wk[1]->client[1]->w : -1 };
@@ -253,7 +261,7 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
   }
   
   set_bdrwidth(W, BDR_PX);
-  movewindow(W, x + 550, y);
+  movewindow(W, x, y);
   mapwindow(W);
   //static const unsigned SH = { 10 + BDR_PX };
   //movewindow(c->shadow, x + SH, y + SH);
@@ -394,26 +402,53 @@ void switchmon(const unsigned N) {
   }
 }
 
+static void get_icon(char* S, const size_t L, const Window W) {
+  static const size_t ICONLEN = { 4 };
+  unsigned char* icon = { NULL };
+  /*
+  if (getprop_icon(&icon, W, 0, 1)) {
+    fprintf(stdout, "Icon width prop %d\n", *icon);
+    deinit_prop(icon);
+  }
+  
+  if (getprop_icon(&icon, W, 1, 1)) {
+    fprintf(stdout, "Icon height prop %d\n", *icon);
+    deinit_prop(icon);
+  }
+  */
+  //create_pixmap((char*) icon + 2, *icon, *(icon + 1), FG1, BG1);
+  if (getprop_iconname(&icon, W, 0, ICONLEN)) {
+    snprintf(S, ICOLEN < L ? ICOLEN : L, "%s", icon);
+    deinit_prop(icon);
+  }
+}
+
 void refresh_panel() {
   char S[32];
-  {
-    unsigned offset = { 0 };
-    snprintf(S, sizeof S, "%d/%lu", wk[1]->n + 1, wks.size);
-    const monitor_t* M = { beg(&monitors) };
-    draw_wks(S, FG1, BG2, M->sizey, &offset);
-    draw_status(WMNAME, FG1, BG1, M->sizex, M->sizey, &offset);
+  unsigned x = { 0 };
+  const monitor_t* M = { beg(&monitors) };
+  for (wks_t* w = { beg(&wks) }; w != wks.end; w++) {
+    snprintf(S, sizeof S, "%c", w->clients.size ? '*' : ' ');
+    draw_element(S, wksgc, FG1, w == wk[1] ? BG2 : BG1, &x, M->sizex, 
+      M->sizey);
+    snprintf(S, sizeof S, "");
+    draw_element(S, wksgc, 0, FG1, &x, M->sizex, M->sizey);
+  }
+  
+  snprintf(S, sizeof S, "");
+  draw_element(S, wksgc, 0, BG1, &x, M->sizex, M->sizey);
+  for (client_t* c = { beg(&wk[1]->clients) }; c != wk[1]->clients.end; c++) {
+    get_icon(S, sizeof S, c->w); 
+    draw_element(S, c->gc, FG1, c == wk[1]->client[1] ? BG2 : BG1, &x, 
+      M->sizex, M->sizey);
+  }
+  
+  if (wk[1]->clients.size) {
+    snprintf(S, sizeof S, "");
+    draw_element(S, statusgc, 0, BG1, &x, M->sizex, M->sizey);
   }
 
-  if (wk[1]->clients.size == 0)
-    return;
-  {
-    unsigned offset = { 0 };
-    for (client_t* c = { beg(&wk[1]->clients) }; 
-        c != wk[1]->clients.end; c++) {
-      snprintf(S, sizeof S, "W %lu", c->w);
-      draw_client(S, c->gc, FG1, c == wk[1]->client[1] ? BG2 : BG1, &offset);
-    }
-  }
+  draw_element(WMNAME, statusgc, FG1, BG1, &x, M->sizex, M->sizey);
 }
 
 client_t* prev_client(client_t* client, const bool FL) {
@@ -508,7 +543,7 @@ void mon9() {
   switchmon(9);
 }
 
-void kill() {
+void kill_curr() {
   fprintf(stdout, "Kill\n");
   if (wk[1]->client[1]) {
     if (!send_killmsg(wk[1]->client[1]->w))

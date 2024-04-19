@@ -8,6 +8,7 @@ enum prop {
   WM_DELETE_WINDOW,
   WM_STATE,
   WM_TAKE_FOCUS,
+  WM_ICON_NAME,
   NET_SUPPORTED,
   NET_WM_STATE,
   NET_WM_NAME,
@@ -21,13 +22,18 @@ enum prop {
   NET_WM_DESKTOP,
   NET_CURRENT_DESKTOP,
   NET_SHOWING_DESKTOP,
+  NET_WM_ICON,
+  NET_WM_ICON_NAME,
   NPROPS
 };
 
 void init_atoms(Display*);
 Atom atom(const enum prop);
+void deinit_prop(void*);
 void addprop_clientlist(const Window);
 void clrprop_clientlist();
 void delprop_actwindow(const Window);
 void setprop_nwks(const int);
 void setprop_wks(const int);
+bool getprop_iconname(unsigned char**, const Window, const long, const long);
+bool getprop_icon(unsigned char**, const Window, const long, const long);

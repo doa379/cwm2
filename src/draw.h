@@ -8,12 +8,11 @@ GC init_gc();
 void deinit_gc(const GC);
 void refresh_rootw(const unsigned, const unsigned, const unsigned, 
   const unsigned);
-void draw_element(const GC, const size_t, const unsigned, const unsigned, 
-  const unsigned, const unsigned);
-void draw_wks(const char*, const size_t, const size_t, const unsigned, 
-  unsigned*);
-void draw_status(const char*, const size_t, const size_t, const unsigned,
-  const unsigned, unsigned*);
-void draw_client(const char*, const GC, const size_t, const size_t, unsigned*);
+
+void draw_element(const char*, const GC, const size_t, const size_t,
+  unsigned *, const unsigned, const unsigned);
+Pixmap create_pixmap(char*, const unsigned, const unsigned, size_t, 
+  size_t);
+void draw_icon(const Window);
 void cascade(int*, int*, const unsigned, const unsigned, const unsigned,
   const unsigned);

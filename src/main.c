@@ -49,7 +49,7 @@ int main(const int ARGC, const char* ARGV[]) {
   init_atoms(dpy);
   init_draw(dpy);
   // Init internal events
-  init_events(dpy);
+  init_events();
   //
   static ev_t EV[] = {
     { .evfn = noop, .EVENT = NOOP },
@@ -109,7 +109,7 @@ int main(const int ARGC, const char* ARGV[]) {
   init_wm();
   dbus_send("Status", "cwm2 initialized", CRITICAL, 1500);
   while (sig_status == 0) {
-    const ev_t* EV = { event() };
+    const ev_t* EV = { event(dpy) };
     EV->evfn(EV->DATA[0], EV->DATA[1], EV->DATA[2]);
   }
 

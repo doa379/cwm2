@@ -7,8 +7,6 @@
 #include <atoms.h>
 #include <Xlib.h>
 
-static Display* dpy;
-static Window rootw;
 static XEvent xev;
 static ev_t* (*EVFN[LASTEvent])();
 static ev_t* EV[32];
@@ -73,11 +71,12 @@ static ev_t* clientmessage() {
 
 static ev_t* configurenotify() {
   fprintf(stdout, "EV: Configure Notify\n");
+  Display* dpy = { xev.xconfigure.display };
   const Window W = { xev.xconfigure.window };
   const int WIDTH = { xev.xconfigure.width };
   const int HEIGHT = { xev.xconfigure.height };
   // want to reconfigure root window
-  if (W == rootw) {
+  if (W == XRootWindow(dpy, DefaultScreen(dpy))) {
     ev_t* ev = { EV[CONFIGUREROOT] };
     ev->DATA[0] = WIDTH;
     ev->DATA[1] = HEIGHT;
@@ -93,8 +92,9 @@ static ev_t* configurenotify() {
 
 static ev_t* maprequest() {
   fprintf(stdout, "EV: Map Request\n");
-  const Window W = { xev.xmaprequest.window };
   XWindowAttributes wa;
+  Display* dpy = { xev.xmaprequest.display };
+  const Window W = { xev.xmaprequest.window };
   if (XGetWindowAttributes(dpy, W, &wa) == 0 || wa.override_redirect)
     return EV[NOOP];
 /*  
@@ -116,6 +116,7 @@ static ev_t* maprequest() {
 
 static ev_t* configurerequest() {
   fprintf(stdout, "EV: Config Request\n");
+  Display* dpy = { xev.xconfigurerequest.display };
   const XConfigureRequestEvent* CONF = { &xev.xconfigurerequest };
   XWindowChanges wc = {
     CONF->x, CONF->y, CONF->width, CONF->height,
@@ -125,6 +126,7 @@ static ev_t* configurerequest() {
 }
 
 static ev_t* motionnotify() {
+  Display* dpy = { xev.xmotion.display };
   const Window W = { xev.xmotion.window };
   ev_t* ev = { EV[MOTIONNOTIFY] };
   //ev->DATA[0] = xev.xmotion.x;
@@ -132,11 +134,12 @@ static ev_t* motionnotify() {
   //ev->DATA[1] = xev.xmotion.y;
   ev->DATA[1] = xev.xmotion.y_root;
   ev->DATA[2] = xev.xmotion.time;
-  return W == rootw ? ev : EV[NOOP];
+  return W == XRootWindow(dpy, DefaultScreen(dpy)) ? ev : EV[NOOP];
 }
 
 static ev_t* keypress() {
   fprintf(stdout, "EV: Key Press\n");
+  Display* dpy = { xev.xkey.display };
   const int STATE = { xev.xkey.state };
   const int CODE = { xev.xkey.keycode };
   ev_t* ev = { EV[KEYPRESS] };
@@ -151,6 +154,7 @@ static ev_t* keypress() {
 
 static ev_t* btnpress() {
   fprintf(stdout, "EV: Btn Press\n");
+  Display* dpy = { xev.xbutton.display };
   const Window W = { xev.xbutton.window };
   const int STATE = { xev.xbutton.state };
   const int CODE = { xev.xbutton.button };
@@ -178,14 +182,13 @@ static ev_t* propertynotify() {
 
 static ev_t* expose() {
   fprintf(stdout, "EV: Expose\n");
+  Display* dpy = { xev.xexpose.display };
   const Window W = { xev.xexpose.window };
   EV[EXPOSE]->DATA[0] = W;
-  return W == rootw ? EV[EXPOSE] : EV[NOOP];
+  return W == XRootWindow(dpy, DefaultScreen(dpy)) ? EV[EXPOSE] : EV[NOOP];
 }
 
-void init_events(Display* dpy_) {
-  dpy = dpy_;
-  rootw = XRootWindow(dpy, DefaultScreen(dpy));
+void init_events() {
   for (size_t i = { 0 }; i < LASTEvent; i++)
     EVFN[i] = noop;
 
@@ -203,11 +206,11 @@ void init_events(Display* dpy_) {
   EVFN[Expose] = expose;
 }
 
-ev_t* event() {
+ev_t* event(Display* dpy) {
   XSync(dpy, false);
   return XNextEvent(dpy, &xev) == 0 ? EVFN[xev.type]() : EV[NOOP];
 }
 
-void close_conn() {
+void close_conn(Display* dpy) {
   close(ConnectionNumber(dpy));
 }

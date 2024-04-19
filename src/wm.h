@@ -50,7 +50,7 @@ void mon6();
 void mon7();
 void mon8();
 void mon9();
-void kill();
+void kill_curr();
 void mode();
 void prev();
 void next();

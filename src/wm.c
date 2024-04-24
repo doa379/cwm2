@@ -4,17 +4,17 @@
 #include <lib.h>
 #include <Xlib.h>
 #include <draw.h>
-#include <dbus.h>
 #include <../config.h>
 
 typedef struct client_s {
   Window w;
+  Window parw;
   Window shadow;
+  GC gc;
   unsigned posx;
   unsigned posy;
   unsigned sizex;
   unsigned sizey;
-  GC gc;
   unsigned mode;
   int sel;
   int ft;
@@ -68,8 +68,10 @@ static void (*CALLFN[])() = {
   [QUIT] = quit,
 };
 
-static GC statusgc;
+static Window rootw;
+static Window panel;
 static GC wksgc;
+static GC statusgc;
 
 // Inits
 bool init_wks() {
@@ -131,7 +133,8 @@ void deinit_monitors() {
   deinit_blk(&monitors);
 }
 
-void init_wm() {
+void init_wm(const Window W) {
+  rootw = W;
   const int MODMASK = { modmask() };
   for (size_t i = { 0 }; i < KBDLEN; i++) {
     const int MOD = { KBD[i].mod & MODMASK };
@@ -143,32 +146,37 @@ void init_wm() {
   setprop_wks(0);
   wk[0] = wk[1] = beg(&wks);
   clrprop_clientlist();
-  unsigned n = { 0 };
-  Window* W = { init_querytree(&n) };
-  for (unsigned i = { 0 }; i < n; i++) {
-    int w = { 0 };
-    int h = { 0 };
-    if (wa_size(&w, &h, W[i]))
-      maprequest(W[i], w, h);
+  {
+    unsigned n = { 0 };
+    Window* W = { init_querytree(&n) };
+    for (unsigned i = { 0 }; i < n; i++) {
+      int w = { 0 };
+      int h = { 0 };
+      if (wa_size(&w, &h, W[i]))
+        maprequest(W[i], w, h);
+    }
+
+    if (W)
+      deinit_querytree(W);
   }
 
-  if (W)
-    deinit_querytree(W);
-
-  statusgc = init_gc();
   wksgc = init_gc();
+  statusgc = init_gc();
   fprintf(stdout, "Init %s\n", WMNAME);
 }
 
 void deinit_wm() {
-  deinit_gc(wksgc);
   deinit_gc(statusgc);
+  deinit_gc(wksgc);
   // Restore X11 states to defaults
   for (wks_t* w = { beg(&wks) }; w != wks.end; w++)
     for (client_t* c = { beg(&w->clients) }; c != w->clients.end; c++) {
-      set_bdrwidth(c->w, 0);
+      //set_bdrwidth(c->w, 0);
+      mapwindow(c->parw);
       mapwindow(c->w);
-      deinit_window(c->shadow);
+      reparent(c->w, rootw);
+      deinit_window(c->parw);
+      //deinit_window(c->shadow);
     }
 
   const int MODMASK = { modmask() };
@@ -196,6 +204,7 @@ void unmapnotify(const long W, const long, const long) {
   if (!wk[1]->client[1] || wk[1]->client[1]->w != W)
     return;
   
+  reparent(W, rootw);
   wk[1]->client[1] = prev_client(wk[1]->client[1], true);
   clrprop_clientlist();
   client_t* c;
@@ -207,8 +216,8 @@ void unmapnotify(const long W, const long, const long) {
       addprop_clientlist(client->w);
   }
   // No fail  
-  //destroy_window(c->shadow);
   deinit_gc(c->gc);
+  deinit_window(c->parw);
   unmap_dev(&wk[1]->clients, c);
   wk[1]->client[0] = wk[1]->clients.size == 0 ? NULL : wk[1]->client[0];
   wk[1]->client[1] = wk[1]->clients.size == 0 ? NULL : wk[1]->client[1];
@@ -229,23 +238,23 @@ void configurenotify(const long W, const long WIDTH, const long HEIGHT) {
 }
 
 void maprequest(const long W, const long WIDTH, const long HEIGHT) {
-  map(W);
   // Set origin
   int x = { wk[1]->client[1] && wk[1]->client[1]->posx < monitor->posx ? 
     wk[1]->client[1]->posx : monitor->posx };
   int y = { wk[1]->client[1] && wk[1]->client[1]->posy < monitor->posy ? 
     wk[1]->client[1]->posy : monitor->posy };
    
-
   cascade(&x, &y, WIDTH, HEIGHT, monitor->sizex, monitor->sizey);
+
   client_t next = { 
     .w = W, 
-    //.shadow = init_window(WIDTH, HEIGHT), 
+    .parw = par(W, x, y, WIDTH, HEIGHT + vh(), BDR_PX, 0x0, BG1),
+    //.shadow = init_window(WIDTH, HEIGHT),
+    .gc = init_gc(),
     .posx = x,
     .posy = y,
     .sizex = WIDTH,
     .sizey = HEIGHT, 
-    .gc = init_gc(),
   };
 
   Window currw = { wk[1]->client[1] ? wk[1]->client[1]->w : -1 };
@@ -256,29 +265,25 @@ void maprequest(const long W, const long WIDTH, const long HEIGHT) {
     client_t* c = { beg(&wk[1]->clients) };
     for (; c != wk[1]->clients.end && c->w != currw; c++);
     wk[1]->client[1] = c;
-    unfocus(wk[1]->client[1]->w);
+    unfocus(wk[1]->client[1]->parw);
     //unmapwindow(wk[1]->client[1]->shadow);
   }
   
-  set_bdrwidth(W, BDR_PX);
-  movewindow(W, x, y);
+  set_bdrwidth(W, 0);
+  //movewindow(W, x, y);
+  mapwindow(c->parw);
   mapwindow(W);
+  
   //static const unsigned SH = { 10 + BDR_PX };
   //movewindow(c->shadow, x + SH, y + SH);
   //mapwindow(c->shadow);
-  focus(c->w);
+  focus(c->parw);
   wk[1]->client[0] = wk[1]->client[1];
   wk[1]->client[1] = c;
 }
 
-static void notify_monitor() {
-  char S[4];
-  snprintf(S, sizeof S, "%lu", dist(&monitors, monitor) + 1);
-  dbus_send("Monitor", S, NORMAL, 1000);
-}
-
 void motionnotify(const long X, const long Y, const long TIME) {
-  fprintf(stdout, "Motion on root (%ld, %ld)\n", X, Y);
+  //fprintf(stdout, "Motion on root (%ld, %ld)\n", X, Y);
   static Time time;
   if (TIME - time < 1000)
     return;
@@ -286,18 +291,17 @@ void motionnotify(const long X, const long Y, const long TIME) {
   time = TIME;
   if (X == monitor->posx || Y == monitor->posy) {
     monitor = prev_dev(&monitors, monitor);
-    notify_monitor();
+    fprintf(stdout, "Monitor %lu\n", dist(&monitors, monitor) + 1);
   } else if (X == monitor->posx + monitor->sizex || 
       Y == monitor->posy + monitor->sizey) {
     monitor = next_dev(&monitors, monitor);
-    notify_monitor();
+    fprintf(stdout, "Monitor %lu\n", dist(&monitors, monitor) + 1);
   }
   // determine when pointer has moved off size coords of monitor
   if (X > monitor->posx + monitor->sizex)
     warp_pointer(monitor->posx + monitor->sizex, Y);
   if (Y > monitor->posy + monitor->sizey)
     warp_pointer(X, monitor->posy + monitor->sizey);
-  // Translation of pointer coords in Xephyr??
 }
 
 void keypress(const long MOD, const long KEYSYM, const long) {
@@ -322,14 +326,14 @@ void enternotify(const long, const long, const long) {
 
 void propertynotify(const long, const long, const long) {
   refresh_panel();
+  char S[32];
+  for (client_t* c = { beg(&wk[1]->clients) }; c != wk[1]->clients.end; c++) {
+    get_name(S, sizeof S, c->w);
+    draw_string(S, c->parw, c->gc, FG1, 4, vh());
+  }
 }
 
 void exposeroot(const long, const long, const long) {
-  //for (monitor_t* m = { beg(&monitors) }; m != monitors.end; m++)
-    //refresh_rootw(m->posx, m->posy, m->sizex - 1, m->posy + m->sizey - 1);
-  
-  //refresh_rootw(0, 0, 50, 50);
-  //refresh_rootw(500, 0, 50, 50);
   refresh_panel();
 }
 
@@ -339,6 +343,7 @@ void switch_wks(const long N, const long, const long) {
 
   for (client_t* c = { beg(&wk[1]->clients) }; c != wk[1]->clients.end; c++) {
     unmapwindow(c->w);
+    unmapwindow(c->parw);
     //unmapwindow(c->shadow);
   }
 
@@ -347,6 +352,7 @@ void switch_wks(const long N, const long, const long) {
   wk[1] = itr(&wks, N);
   for (client_t* c = { beg(&wk[1]->clients) }; c != wk[1]->clients.end; c++) {
     //mapwindow(c->shadow);
+    mapwindow(c->parw);
     mapwindow(c->w);
   }
 
@@ -364,13 +370,15 @@ void unfocus(const Window W) {
   }
   
   if (wk[1]->client[1]) {
-    delprop_actwindow(wk[1]->client[1]->w);
+    delprop_active(wk[1]->client[1]->w);
     set_bdrcolor(wk[1]->client[1]->w, INACTBDR);
   }
 }
 
 void focus(const Window W) {
   focusin(W);
+  setprop_state(W);
+  setprop_active(W);
   set_bdrcolor(W, ACTBDR);
   const int MODMASK = { modmask() };
   for (size_t i = { 0 }; i < BTNLEN; i++) {
@@ -390,74 +398,127 @@ void switchwks(const unsigned N) {
   }
 }
 
-void switchmon(const unsigned N) {
+void switchmon(const size_t N) {
   if (N > 0 && N <= monitors.size) {
     monitor = itr(&monitors, N - 1);
     warp_pointer(monitor->posx + 4, monitor->posy + 4);
-    char S[4];
-    snprintf(S, sizeof S, "%d", N);
-    dbus_send("Monitor", S, NORMAL, 1000);
+    fprintf(stdout, "Monitor %lu\n", N);
   } else if (N == 0) {
 
   }
 }
 
-static void get_icon(char* S, const size_t L, const Window W) {
-  static const size_t ICONLEN = { 4 };
+void get_name(char* S, const size_t L, const Window W) {
+  static const size_t LEN = { 32 };
+  unsigned char* name = { NULL };
+  if (getprop_utfname(&name, W, 0, LEN) || getprop_name(&name, W, 0, LEN)) {
+    snprintf(S, LEN < L ? LEN : L, "%s", name);
+    deinit_prop(name);
+  }
+}
+
+void get_icon(char* S, const size_t L, const Window W) {
+  static const size_t LEN = { 4 };
   unsigned char* icon = { NULL };
-  /*
-  if (getprop_icon(&icon, W, 0, 1)) {
-    fprintf(stdout, "Icon width prop %d\n", *icon);
-    deinit_prop(icon);
-  }
-  
-  if (getprop_icon(&icon, W, 1, 1)) {
-    fprintf(stdout, "Icon height prop %d\n", *icon);
-    deinit_prop(icon);
-  }
-  */
-  //create_pixmap((char*) icon + 2, *icon, *(icon + 1), FG1, BG1);
-  if (getprop_iconname(&icon, W, 0, ICONLEN)) {
-    snprintf(S, ICOLEN < L ? ICOLEN : L, "%s", icon);
+  if (getprop_iconname(&icon, W, 0, LEN)) {
+    snprintf(S, LEN < L ? LEN : L, "%s", icon);
     deinit_prop(icon);
   }
 }
 
 void refresh_panel() {
-  char S[32];
+  static const unsigned BDRW = { 1 };
   unsigned x = { 0 };
+  char S[32];
   const monitor_t* M = { beg(&monitors) };
+  fill_element(wksgc, Gray70, 0, M->sizey - vh(), M->sizey, vh());
   for (wks_t* w = { beg(&wks) }; w != wks.end; w++) {
-    snprintf(S, sizeof S, "%c", w->clients.size ? '*' : ' ');
-    draw_element(S, wksgc, FG1, w == wk[1] ? BG2 : BG1, &x, M->sizex, 
-      M->sizey);
-    snprintf(S, sizeof S, "");
-    draw_element(S, wksgc, 0, FG1, &x, M->sizex, M->sizey);
-  }
-  
-  snprintf(S, sizeof S, "");
-  draw_element(S, wksgc, 0, BG1, &x, M->sizex, M->sizey);
-  for (client_t* c = { beg(&wk[1]->clients) }; c != wk[1]->clients.end; c++) {
-    get_icon(S, sizeof S, c->w); 
-    draw_element(S, c->gc, FG1, c == wk[1]->client[1] ? BG2 : BG1, &x, 
-      M->sizex, M->sizey);
-  }
-  
-  if (wk[1]->clients.size) {
-    snprintf(S, sizeof S, "");
-    draw_element(S, statusgc, 0, BG1, &x, M->sizex, M->sizey);
+    
+    if (w->clients.size) {
+      if (w == wk[1]) {
+        
+        unsigned slen = { 0 };
+        for (client_t* c = { beg(&w->clients) }; c != w->clients.end; c++) {
+          get_icon(S, sizeof S, c->w);
+          slen += string_len(S);
+        }
+
+        fill_element(wksgc, FG1, x, M->sizey - vh(), slen, vh());
+        unsigned x0 = { x };
+        for (client_t* c = { beg(&w->clients) }; c != w->clients.end; c++) {
+          get_icon(S, sizeof S, c->w);
+          const unsigned SLEN = { string_len(S) };
+          fill_element(wksgc, c == w->client[1] ? BG2 : BG1,
+            x0 + 1, M->sizey - vh() + BDRW, 
+            SLEN, vh() - 2 * BDRW);
+          draw_string(S, rootw, wksgc, FG1, x0 + 4, M->sizey);
+          x0 += SLEN;
+        }
+
+        x += x0 - 1;
+        
+      } else {
+        
+        char ICON[32];
+        get_icon(ICON, sizeof ICON, w->client[1]->w);
+        snprintf(S, sizeof S, "(%lu) %s", w->clients.size, ICON);
+        const unsigned SLEN = { string_len(S) };
+        fill_element(wksgc, FG1, x, M->sizey - vh(), SLEN, vh());
+        fill_element(wksgc, BG1,
+            x + BDRW, M->sizey - vh() + BDRW, 
+            SLEN - 2 * BDRW, vh() - 2 * BDRW);
+        draw_string(S, rootw, wksgc, FG1, x + 4, M->sizey);
+        x += SLEN - 1;
+        
+      }
+
+    } else {
+      S[0] = ' ';
+      S[1] = '\0';
+      const unsigned SLEN = { string_len(S) + 4 };
+      fill_element(wksgc, FG1, x, M->sizey - vh(), SLEN, vh());
+      fill_element(wksgc, w == wk[1] ? BG2 : BG1,
+        x + BDRW, M->sizey - vh() + BDRW, 
+        SLEN - 2 * BDRW, vh() - 2 * BDRW);
+      draw_string(S, rootw, wksgc, FG1, x + 4, M->sizey);
+      x += SLEN - 1;
+    }
   }
 
-  draw_element(WMNAME, statusgc, FG1, BG1, &x, M->sizex, M->sizey);
+  const unsigned SLEN = { string_len(WMNAME) };
+  fill_element(statusgc, Gray70, 
+    M->sizex - SLEN, M->sizey - vh(),
+    SLEN, vh());
+  draw_string(WMNAME, rootw, statusgc, FG1, M->sizex - SLEN, M->sizey);
+
+
+ /* 
+  if (M->sizex - SLEN - x < 8) {
+    if (wk[1]->clients.size) {
+      snprintf(S, sizeof S, "%lu/%lu",
+        dist(&wk[1]->clients, wk[1]->client[1]) + 1, wk[1]->clients.size);
+      draw_string(S, clientsgc, FG1, x + 4, M->sizey);
+    }
+  } else {
+    for (client_t* c = { beg(&wk[1]->clients) }; 
+        c != wk[1]->clients.end; c++) {
+      get_icon(S, sizeof S, c->w);
+      fprintf(stdout, "%s\n", S);
+      const unsigned SLEN = { string_len(S) };
+      draw_string(S, clientsgc, FG1, x, M->sizey);
+      x += SLEN + 1;
+    }
+  }
+  */
 }
 
 client_t* prev_client(client_t* client, const bool FL) {
-  unfocus(client->w);
+  unfocus(client->parw);
   //unmapwindow(client->shadow);
   client_t* c = { FL ? prev_dev(&wk[1]->clients, client) :
     next_dev(&wk[1]->clients, client) };
   //mapwindow(c->shadow);
-  focus(c->w);
+  focus(c->parw);
   return c;
 }
 
@@ -546,6 +607,7 @@ void mon9() {
 void kill_curr() {
   fprintf(stdout, "Kill\n");
   if (wk[1]->client[1]) {
+    reparent(wk[1]->client[1]->w, rootw);
     if (!send_killmsg(wk[1]->client[1]->w))
       fprintf(stderr, "Failed to send kill event\n");
   }

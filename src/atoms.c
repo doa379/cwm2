@@ -52,7 +52,17 @@ void clrprop_clientlist() {
   XDeleteProperty(dpy, rootw, ATOM[NET_CLIENT_LIST]);
 }
 
-void delprop_actwindow(const Window W) {
+void setprop_state(const Window W) {  
+  XChangeProperty(dpy, rootw, ATOM[WM_STATE], XA_WINDOW, 32, PropModeReplace, 
+    (unsigned char*) &W, 1);
+}
+  
+void setprop_active(const Window W) {
+  XChangeProperty(dpy, W, ATOM[NET_ACTIVE_WINDOW], XA_WINDOW, 32, 
+    PropModeReplace, (unsigned char*) &W, 1);
+}
+
+void delprop_active(const Window W) {
   XDeleteProperty(dpy, W, ATOM[NET_ACTIVE_WINDOW]);
 }
 
@@ -64,6 +74,28 @@ void setprop_nwks(const int N) {
 void setprop_wks(const int N) {
   XChangeProperty(dpy, rootw, ATOM[NET_CURRENT_DESKTOP], XA_CARDINAL, 32,
     PropModeReplace, (unsigned char*) &N, 1);
+}
+
+bool getprop_name(unsigned char** ret, const Window W, const long O, 
+  const long L) {
+  Atom actual_type;
+  int actual_format;
+  unsigned long nitems;
+  unsigned long bytes_after;
+  return XGetWindowProperty(dpy, W, ATOM[WM_NAME], O, L, false, 
+    AnyPropertyType, &actual_type, &actual_format, &nitems, &bytes_after, 
+      ret) == Success && *ret;
+}
+
+bool getprop_utfname(unsigned char** ret, const Window W, const long O, 
+  const long L) {
+  Atom actual_type;
+  int actual_format;
+  unsigned long nitems;
+  unsigned long bytes_after;
+  return XGetWindowProperty(dpy, W, ATOM[NET_WM_NAME], O, L, false, 
+    AnyPropertyType, &actual_type, &actual_format, &nitems, &bytes_after, 
+      ret) == Success && *ret;
 }
 
 bool getprop_iconname(unsigned char** ret, const Window W, const long O, 

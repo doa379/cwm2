@@ -21,7 +21,9 @@ void unmapwindow(const Window);
 void set_bdrcolor(const Window, const size_t);
 void set_bdrwidth(const Window, const size_t);
 bool wa_size(int*, int*, const Window);
-void map(const Window);
+Window par(const Window, const int, const int, const int, const int,
+  const int, const size_t, const size_t);
+void reparent(const Window, const Window);
 void focusin(const Window);
 bool send_killmsg(const Window);
 bool send_switchwks(const unsigned);

@@ -121,25 +121,36 @@ bool wa_size(int* w, int* h, const Window W) {
   return false;
 }
 
-void map(const Window W) {
+Window par(const Window W, const int X, const int Y, const int WIDTH, 
+  const int HEIGHT, const int BDR_PX, const size_t BDR_COL, const size_t BG) {
   static const long MASK = { EnterWindowMask | 
     FocusChangeMask |
     PropertyChangeMask | 
     StructureNotifyMask
   };
+  
+  const Window PAR = XCreateSimpleWindow(dpy, rootw, X, Y, WIDTH, HEIGHT,
+    BDR_PX, BDR_COL, BG);
+  XReparentWindow(dpy, W, PAR, 0, 14);
 
+  /*
   XSelectInput(dpy, W, MASK);
   XChangeProperty(dpy, rootw, atom(NET_CLIENT_LIST), XA_WINDOW, 32, 
     PropModeAppend, (unsigned char*) &W, 1);
+  */
+  XSelectInput(dpy, PAR, MASK);
+  XChangeProperty(dpy, rootw, atom(NET_CLIENT_LIST), XA_WINDOW, 32, 
+    PropModeAppend, (unsigned char*) &W, 1);
+  return PAR;
+}
+
+void reparent(const Window W, const Window PAR) {
+  XReparentWindow(dpy, W, PAR, 0, 0);
 }
 
 void focusin(const Window W) {
   XSetInputFocus(dpy, W, RevertToPointerRoot, CurrentTime);
   XRaiseWindow(dpy, W);
-  XChangeProperty(dpy, rootw, atom(WM_STATE), XA_WINDOW, 32, PropModeReplace, 
-    (unsigned char*) &W, 1);
-  XChangeProperty(dpy, W, atom(NET_ACTIVE_WINDOW), XA_WINDOW, 32, 
-    PropModeReplace, (unsigned char*) &W, 1);
 }
   
 bool send_killmsg(const Window W) {

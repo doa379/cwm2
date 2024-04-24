@@ -11,13 +11,11 @@ static const char* FONT = {
   //"-misc-fixed-medium-r-normal--0-0-100-100-c-0-iso10646-1" };
   "9x15bold" };
 static XFontStruct* fn;
-static unsigned bh;
+static int bh;
 static int dpyw;
 static int dpyh;
 static int depth;
 static Drawable drawable;
-//static GC statusgc;
-//static GC wksgc;
 static GC rootgc;
 
 void init_draw(Display* dpy_) {
@@ -31,8 +29,6 @@ void init_draw(Display* dpy_) {
   // Drawable over full extent of mon estate
   drawable = XCreatePixmap(dpy, rootw, dpyw, dpyh, depth);
   
-  //statusgc = init_gc();
-  //wksgc = init_gc();
   rootgc = XCreateGC(dpy, rootw, 0, NULL);
   // Allowable set custom wallpaper etc.
   XSetWindowBackground(dpy, rootw, Gray70);
@@ -54,8 +50,6 @@ void deinit_draw() {
   XFillRectangle(dpy, rootw, rootgc, 0, 0, dpyw, dpyh);
   XFreePixmap(dpy, drawable);
   XFreeGC(dpy, rootgc);
-  //XFreeGC(dpy, wksgc);
-  //XFreeGC(dpy, statusgc);
   XFreeFont(dpy, fn);
 }
 
@@ -74,15 +68,29 @@ void refresh_rootw(const unsigned X0, const unsigned Y0, const unsigned X1,
   XCopyArea(dpy, drawable, rootw, rootgc, X0, Y0, X1, Y1, 0, 0);
 }
 
-void draw_element(const char* S, const GC GC, const size_t FG, const size_t BG,
-  unsigned *x, const unsigned X, const unsigned Y) {
+int vh() {
+  return bh;
+}
+
+unsigned string_len(const char* S) {
   const unsigned SLEN = { strlen(S) };
-  const unsigned SW = { XTextWidth(fn, S, SLEN) + 2};
-  XSetForeground(dpy, GC, BG);
-  XFillRectangle(dpy, rootw, GC, *x, Y - bh, X, Y);
+  return XTextWidth(fn, S, SLEN);
+}
+
+void fill_element(const GC GC, const size_t COL, const int X, const int Y, 
+  const int W, const int H) {
+  XSetForeground(dpy, GC, COL);
+  XFillRectangle(dpy, rootw, GC, X, Y, W, H);
+}
+
+void draw_string(const char* S, const Window W, const GC GC, const size_t FG,
+  const int X, const int Y) {
   XSetForeground(dpy, GC, FG);
-  XDrawString(dpy, rootw, GC, *x + 2, Y - fn->descent, S, SLEN);
-  *x += SW;
+  XDrawString(dpy, W, GC, X, Y - fn->descent, S, strlen(S));
+}
+
+void draw_element() {
+
 }
 
 Pixmap create_pixmap(char* data, const unsigned W, const unsigned H,

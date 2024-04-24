@@ -102,21 +102,22 @@ int main(const int ARGC, const char* ARGV[]) {
       init_msgevent(&MSGEV[i]);
   }
 
+  /*
   if (!init_dbus())
     fprintf(stderr,
       "Warning: Initialization with DBus error (Won't provide DBus comms.)\n");
-
-  init_wm();
-  dbus_send("Status", "cwm2 initialized", CRITICAL, 1500);
+  */
+  init_wm(XRootWindow(dpy, DefaultScreen(dpy)));
+  //dbus_send("Status", "cwm2 initialized", CRITICAL, 1500);
   while (sig_status == 0) {
     const ev_t* EV = { event(dpy) };
     EV->evfn(EV->DATA[0], EV->DATA[1], EV->DATA[2]);
   }
 
   // Cleanup
-  dbus_send("Status", "cwm2 exit", CRITICAL, 1500);
+  //dbus_send("Status", "cwm2 exit", CRITICAL, 1500);
   deinit_wm();
-  deinit_dbus();
+  //deinit_dbus();
   deinit_draw();
   deinit_monitors();
   deinit_wks();

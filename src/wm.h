@@ -8,7 +8,7 @@ bool init_wks();
 void deinit_wks();
 bool init_monitors();
 void deinit_monitors();
-void init_wm();
+void init_wm(const Window);
 void deinit_wm();
 void noop(const long, const long, const long);
 void mapnotify(const long, const long, const long);
@@ -25,6 +25,8 @@ void propertynotify(const long, const long, const long);
 void exposeroot(const long, const long, const long);
 
 void switch_wks(const long, const long, const long);
+void get_name(char*, const size_t, const Window);
+void get_icon(char*, const size_t, const Window);
 
 void unfocus(const Window);
 void focus(const Window);

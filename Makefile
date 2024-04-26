@@ -13,29 +13,24 @@ LIBSPATH = -L $(LOCAL)/ -Wl,-R$(LOCAL)/ '-Wl,-R$$ORIGIN' \
   -L /usr/lib64 \
   -L /usr/local/lib
 
-LIBS = -l c -l X11 -l Xinerama -l dbus-1
+LIBS = -l X11 -l Xinerama -l dbus-1
 
 CC = clang
-CC_FLAGS = -std=c2x -Wall -fPIE -fPIC -pedantic
-REL_CFLAGS = -O3
-REL_LDFLAGS = -s
+FLAGS = -std=c2x -Wall -fPIE -fPIC -pedantic
 #DBG_CFLAGS = -O1 -g -fsanitize=address -fno-omit-frame-pointer
 #DBG_LDFLAGS = -g -fsanitize=address
-DBG_CFLAGS = -O1 -g -fno-omit-frame-pointer
-DBG_LDFLAGS =
 
-CFLAGS = $(REL_CFLAGS)
-LDFLAGS = $(REL_LDFLAGS)
+CFLAGS = -O3
+LDFLAGS = -s
 EXEC = cwm2.bin
-DBG_EXEC = cwm2~dbg.bin
 
 .if "$(DEBUG)" == "1"
-  CFLAGS = $(DBG_CFLAGS)
-  LDFLAGS = $(DBG_LDFLAGS)
-  EXEC = $(DBG_EXEC)
+  CFLAGS = -O1 -g -fno-omit-frame-pointer
+  LDFLAGS =
+  EXEC = cwm2~dbg.bin
 .endif
 
-SRC = src/main.c src/lib.c src/Xlib.c src/atoms.c src/ev.c src/wm.c src/draw.c src/dbus.c
+SRC = src/main.c src/Xlib.c src/wm.c src/atoms.c src/ev.c src/lib.c src/draw.c
 OBJ = $(SRC:.c=.o)
 
 .POSIX:
@@ -44,11 +39,11 @@ all: $(EXEC)
 .SUFFIXES: .c .o
 .c.o: config.h
 	@echo Build $< "-->" $@ ...
-	@$(CC) $(CC_FLAGS) -c $(CFLAGS) $(INCS) $< -o $@
+	@$(CC) $(FLAGS) -c $(CFLAGS) $(INCS) $< -o $@
 
 $(EXEC): $(OBJ)
 	@echo Linking...
-	@$(CC) $(CC_FLAGS) $(LIBSPATH) $(LIBS) $(LDFLAGS) $(OBJ) -o $@
+	@$(CC) $(FLAGS) $(LIBSPATH) $(LIBS) $(LDFLAGS) $(OBJ) -o $@
 	@echo $(EXEC)
 
 clean:

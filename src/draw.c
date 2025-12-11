@@ -1,8 +1,9 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <string.h>
-#include <draw.h>
-#include <palette.h>
+
+#include "draw.h"
+#include "palette.h"
 
 static Display* dpy;
 static Window rootw;

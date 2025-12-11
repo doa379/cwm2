@@ -3,9 +3,11 @@
 #include <X11/extensions/Xinerama.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <atoms.h>
+
+#include "props.h"
 
 static Display* dpy;
 static Window rootw;

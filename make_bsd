@@ -1,0 +1,49 @@
+.include "config.mk"
+
+FLAG=Release
+CFLAGS=${REL_CFLAGS}
+LFLAGS=${REL_LFLAGS}
+EXEC=${.CURDIR}/${REL}
+
+.if "$(DEBUG)" == "1"
+FLAG=Debug
+CFLAGS=${DBG_CFLAGS}
+LFLAGS=${DBG_LFLAGS}
+EXEC=${.CURDIR}/${DBG}
+.endif
+
+OBJ=${SRC:.c=.o}
+
+.SUFFIXES: .c .h .o
+# These paths must pre-exist
+.PATH.c: ${.CURDIR}/src
+.PATH.h: ${.CURDIR}/src
+.PATH.o: ${.CURDIR}/obj
+.OBJDIR: ${.CURDIR}/obj
+
+.POSIX:
+
+all: init ${EXEC}
+
+init:
+	@echo Build ${FLAG}
+	@mkdir -p obj
+
+.cpp.o:
+	@echo CC    ${.TARGET}
+	@${CC} ${FLAGS} ${CFLAGS} ${INCS} ${.IMPSRC} -c -o ${.TARGET}
+
+${OBJ}: ${HDR_CONFIG} ${HDR_SRC}
+
+${EXEC}: ${OBJ}
+	@echo Linking...
+	@${CC} ${FLAGS} ${LIBSPATH} ${LIBS} ${LFLAGS} ${OBJ} -o ${.TARGET}
+	@echo $@
+
+clean:
+	@echo Cleaning...
+	rm -rf obj/
+	rm -f ${.CURDIR}/${REL}
+	rm -f ${.CURDIR}/${DBG}
+
+.PHONY: all init clean

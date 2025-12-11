@@ -1,0 +1,4 @@
+#define max_8x8_width 8
+#define max_8x8_height 8
+static unsigned char max_8x8_bits[] = {
+   0x00, 0x7e, 0x81, 0x81, 0x81, 0x81, 0x42, 0x00 };

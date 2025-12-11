@@ -2,7 +2,10 @@
 
 #include <X11/Xutil.h>
 #include <X11/XF86keysym.h>
-#include <palette.h>
+
+#include "src/palette.h"
+#include "src/input.h"
+#include "src/calls.h"
 
 /*
 KeySym {
@@ -90,131 +93,82 @@ Modifiers {
   ShiftMask,
   ControlMask,
   LockMask
+}
 */
 
-static const char* WMNAME = { "cwm2" };
-static const char* WMVER = { "-0.0" };
-static const int NWKS = { 8 };
-static const int WKSFG = { Gray1 };
-static const int WKSBG = { Cyan40 };
-static const int FG0 = { Gray1 };
-static const int BG0 = { Cyan60 };
-static const int FG1 = { Gray1 };
-static const int BG1 = { Cyan10 };
-static const int FG2 = { Gray80 };
-static const int BG2 = { Cyan30 };
-static const int ACTBDR = { RedAlt };
-static const int INACTBDR = { Cyan };
-static const int FTBDR = { Yellow };
-static const int WINGAP = { 0 };
-static const int MOVESTEP_PX = { 5 };
-static const int BDR_PX = { 4 };
-static const bool SLOPPY_FOCUS = { true };
+char const WMNAME[] = "cwm2-0.1";
+unsigned const nwks = 4;
+char const* font = "Fixed:size=12";
+/* Values in px */
+unsigned const bdrw = 2;
+unsigned const trayw = 100;
+int const COLORS[] = { 
+/* Color Scheme { BG, ACT, SEL } */
+  Cyan10, Cyan50, Yellow };
 
-typedef enum {
-  // Declare pool of calls
-  WKS0,
-  WKS1,
-  WKS2,
-  WKS3,
-  WKS4,
-  WKS5,
-  WKS6,
-  WKS7,
-  WKS8,
-  WKS9,
-  MON0,
-  MON1,
-  MON2,
-  MON3,
-  MON4,
-  MON5,
-  MON6,
-  MON7,
-  MON8,
-  MON9,
-  UNMAPALL,
-  REMAPALL,
-  KILL,
-  SWFOCUS,
-  TOGGLEMODE,
-  PREVCLI,
-  NEXTCLI,
-  SELTOGGLE,
-  SELCLEAR,
-  MOVEUP,
-  MOVEDOWN,
-  MOVELEFT,
-  MOVERIGHT,
-  RESIZEVINC,
-  RESIZEVDEC,
-  RESIZEHDEC,
-  RESIZEHINC,
-  QUIT,
-  SELECT,
-  RESIZE,
-  STATE,
-} calls_enum;
-
-typedef struct {
-  int mod, key;
-  union {
-    calls_enum call;
-    const char* cmd;
-  };
-} input_t;
-
-static const input_t KBD[] = {
-  { Mod4Mask, XK_1, { WKS1 } },
-  { Mod4Mask, XK_2, { WKS2 } },
-  { Mod4Mask, XK_3, { WKS3 } },
-  { Mod4Mask, XK_4, { WKS4 } },
-  { Mod4Mask, XK_5, { WKS5 } },
-  { Mod4Mask, XK_6, { WKS6 } },
-  { Mod4Mask, XK_7, { WKS7 } },
-  { Mod4Mask, XK_8, { WKS8 } },
-  { Mod4Mask, XK_9, { WKS9 } },
-  { Mod4Mask, XK_0, { WKS0 } },
-  { Mod4Mask, XK_u, { UNMAPALL } },
-  { Mod4Mask, XK_v, { REMAPALL } },
-  { Mod4Mask, XK_Tab, { SWFOCUS } },
-  { Mod4Mask, XK_m, { TOGGLEMODE } },
-  { Mod4Mask, XK_o, { PREVCLI } },
-  { Mod4Mask, XK_p, { NEXTCLI } },
-  { Mod4Mask, XK_space, { SELTOGGLE } },
-  { Mod4Mask, XK_c, { SELCLEAR } },
-  { Mod4Mask | ShiftMask, XK_1, { MON1 } },
-  { Mod4Mask | ShiftMask, XK_2, { MON2 } },
-  { Mod4Mask | ShiftMask, XK_3, { MON3 } },
-  { Mod4Mask | ShiftMask, XK_4, { MON4 } },
-  { Mod4Mask | ShiftMask, XK_5, { MON5 } },
-  { Mod4Mask | ShiftMask, XK_6, { MON6 } },
-  { Mod4Mask | ShiftMask, XK_7, { MON7 } },
-  { Mod4Mask | ShiftMask, XK_8, { MON8 } },
-  { Mod4Mask | ShiftMask, XK_9, { MON9 } },
-  { Mod4Mask | ShiftMask, XK_0, { MON0 } },
-  { Mod4Mask | ShiftMask, XK_k, { KILL } },
-  { Mod4Mask | ShiftMask, XK_Up, { MOVEUP } },
-  { Mod4Mask | ShiftMask, XK_Down, { MOVEDOWN } },
-  { Mod4Mask | ShiftMask, XK_Left, { MOVELEFT } },
-  { Mod4Mask | ShiftMask, XK_Right, { MOVERIGHT } },
-  { Mod4Mask | ControlMask, XK_Up, { RESIZEVINC } },
-  { Mod4Mask | ControlMask, XK_Down, { RESIZEVDEC } },
-  { Mod4Mask | ControlMask, XK_Left, { RESIZEHDEC } },
-  { Mod4Mask | ControlMask, XK_Right, { RESIZEHINC } },
-  { Mod4Mask | ShiftMask | ControlMask, XK_q, { QUIT } },
-  // Shell Bindings
-  { Mod4Mask, XK_n, { .cmd = "notify-send \"Test Key\"" } },
-  { Mod4Mask, XK_Escape, { .cmd = "dmenu_run" } },
-  { Mod4Mask, XK_l, { .cmd = "slock" } },
-  { Mod4Mask, XF86XK_Sleep, { .cmd = "slock & yyy M" } },
-  { Mod4Mask, XK_c, { .cmd = "xconsole" } },
-  { Mod4Mask, XK_d, { .cmd = "xclock" } },
-  { Mod4Mask, XK_Return, { .cmd = "xterm" } },
+input_t const KBD[] = {
+  /* Keyboard bindings */
+  { Mod4Mask, XK_Escape, .cmd = "dmenu_run" },
+  /**/
+  { Mod4Mask, XK_t, .cmd = "xclock" },
+  { Mod4Mask, XK_e, .cmd = "xeyes" },
+  /**/
+  { Mod4Mask, XK_F1, .call = calls_mon0 },
+  { Mod4Mask, XK_F2, .call = calls_mon1 },
+  { Mod4Mask, XK_F3, .call = calls_mon2 },
+  { Mod4Mask, XK_F4, .call = calls_mon3 },
+  { Mod4Mask, XK_grave, .call = calls_cli_last },
+  { Mod4Mask, XK_0, .call = calls_cli0 },
+  { Mod4Mask, XK_1, .call = calls_cli1 },
+  { Mod4Mask, XK_2, .call = calls_cli2 },
+  { Mod4Mask, XK_3, .call = calls_cli3 },
+  { Mod4Mask, XK_4, .call = calls_cli4 },
+  { Mod4Mask, XK_5, .call = calls_cli5 },
+  { Mod4Mask, XK_6, .call = calls_cli6 },
+  { Mod4Mask, XK_7, .call = calls_cli7 },
+  { Mod4Mask, XK_8, .call = calls_cli8 },
+  { Mod4Mask, XK_9, .call = calls_cli9 },
+  { Mod4Mask, XK_Tab, .call = NULL },
+  { Mod4Mask, XK_minus, .call = calls_cli_prev },
+  { Mod4Mask, XK_equal, .call = calls_cli_next },
+  { Mod4Mask, XK_r, .call = calls_cli_raise_toggle },
+  { Mod4Mask, XK_a, .call = calls_arrange },
+  { Mod4Mask, XK_c, .call = calls_sel_clear },
+  { Mod4Mask, XK_m, .call = calls_cli_mode_toggle },
+  { Mod4Mask, XK_space, .call = calls_sel_toggle },
+  { ShiftMask | Mod4Mask, XK_grave, 
+    .call = calls_wk_last },
+  { ShiftMask | Mod4Mask, XK_0, .call = calls_wk0 },
+  { ShiftMask | Mod4Mask, XK_1, .call = calls_wk1 },
+  { ShiftMask | Mod4Mask, XK_2, .call = calls_wk2 },
+  { ShiftMask | Mod4Mask, XK_3, .call = calls_wk3 },
+  { ShiftMask | Mod4Mask, XK_4, .call = calls_wk4 },
+  { ShiftMask | Mod4Mask, XK_5, .call = calls_wk5 },
+  { ShiftMask | Mod4Mask, XK_6, .call = calls_wk6 },
+  { ShiftMask | Mod4Mask, XK_7, .call = calls_wk7 },
+  { ShiftMask | Mod4Mask, XK_8, .call = calls_wk8 },
+  { ShiftMask | Mod4Mask, XK_9, .call = calls_wk9 },
+  { ShiftMask | Mod4Mask, XK_d, .call = calls_kill },
+  { ShiftMask | Mod4Mask, XK_q, .call = calls_wk_unmap },
+  { ShiftMask | Mod4Mask, XK_w, .call = calls_wk_map },
+  { ShiftMask | Mod4Mask, XK_minus, 
+    .call = calls_wk_prev },
+  { ShiftMask | Mod4Mask, XK_equal, 
+    .call = calls_wk_next },
+  { ControlMask | Mod4Mask, XK_minus, 
+    .call = calls_wk_cli_move_prev },
+  { ControlMask | Mod4Mask, XK_equal,
+    .call = calls_wk_cli_move_next },
+  { ShiftMask | ControlMask | Mod4Mask, XK_q, 
+    .call = calls_quit },
+  { Mod4Mask, XK_z, .call = calls_debug },
 };
 
-static const input_t BTN[] = {
-  // Mouse Bindings
-  { 0, Button1, { SELECT } },
-  { Mod4Mask, Button3, { RESIZE } },
+input_t const BTN[] = {
+  /* Mouse Bindings */
+  { Mod4Mask, Button1, .call = calls_move },
+  { Mod4Mask, Button3, .call = calls_resize },
 };
+
+size_t const kbdlen = sizeof KBD / sizeof KBD[0];
+size_t const btnlen = sizeof BTN / sizeof BTN[0];

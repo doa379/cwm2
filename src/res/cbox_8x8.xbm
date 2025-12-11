@@ -1,0 +1,4 @@
+#define cbox_8x8_width 8
+#define cbox_8x8_height 8
+static unsigned char cbox_8x8_bits[] = {
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0xff };

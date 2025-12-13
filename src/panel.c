@@ -111,9 +111,9 @@ void panel_icos_arrange(void) {
 void panel_arrange(void) {
   for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     if (wk == currwk)
-      wk_wg_focus(&wk->wg);
+      wk_wg_focus(&wk->wg, ACT);
     else {
-      wk_wg_unfocus(&wk->wg);
+      wk_wg_focus(&wk->wg, BG);
       if (wk->clis.size) {
         cli_t* const c = wk->currc;
         XMoveWindow(dpy, c->ico.win, 0, 0);

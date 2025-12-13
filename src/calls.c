@@ -50,7 +50,8 @@ void calls_wk_next(void) {
 }
 
 void calls_wk_last(void) {
-  
+  size_t const n = cblk_dist(&wks, prevwk);
+  calls_wk_switch(n + 1);
 }
 
 void calls_wk0(void) {
@@ -101,9 +102,9 @@ void calls_wk_map(void) {
 }
 
 void calls_wk_unmap(void) {
-  if (wk_unmap() == 0) {
-    panel_icos_arrange();
-    panel_arrange();
+  if (wk_unmap(currwk) == 0) {
+    size_t const n = cblk_dist(&wks, currwk);
+    calls_wk_switch(n + 1);
   }
 }
 
@@ -138,7 +139,7 @@ void calls_cli_next(void) {
 }
 
 void calls_cli_last(void) {
-  
+  wm_cli_focus(currwk->prevc); 
 }
 
 void calls_cli_raise_toggle(void) {
@@ -273,19 +274,7 @@ void calls_quit(void) {
 void calls_kill(void) {
   cli_t* const c = currwk->currc;
   if (c) {
-    cli_t* const nextc = c == cblk_back(&c->wk->clis) ?
-      cblk_prev(&c->wk->clis, c) : c;
-    XReparentWindow(dpy, c->win, DefaultRootWindow(dpy), 
-        0, 0);
-    XDestroyWindow(dpy, c->win);
-    cli_deinit(c);
-    if (currwk->clis.size == 0)
-      currwk->prevc = currwk->currc = NULL;
-    else {
-      wm_cli_focus(nextc);
-      currwk->currc = nextc;
-    }
-
+    wm_cli_kill(c);
     panel_icos_arrange();
     panel_arrange();
   }

@@ -84,55 +84,18 @@ static void ev_map_request(void) {
   static XWindowAttributes wa;
   if (XGetWindowAttributes(dpy, win, &wa) == 0)
     return;
-  
-  static unsigned const CLIMASK =
-    SubstructureRedirectMask |
-    SubstructureNotifyMask |
-    ButtonPressMask |
-    ButtonReleaseMask |
-    PointerMotionMask |
-    EnterWindowMask |
-    LeaveWindowMask |
-    PropertyChangeMask;
-  static unsigned const BTNMASK =
-    EnterWindowMask |
-    ButtonPressMask |
-    ButtonReleaseMask |
-    ExposureMask;
-  
-  if (wa.override_redirect) {
+  else if (wa.override_redirect) {
+    /* Still need to dress these up */
     XMapRaised(dpy, win);
     XSetInputFocus(dpy, win, RevertToPointerRoot,
       CurrentTime);
-    /* Still need to dress these up */
   } else {
-    cli_t const c = cli_init(win);
-    /* Ptrs will invalidate after mapping/realloc */
-    int const currc = currwk->clis.size ? 
-      cblk_dist(&currwk->clis, currwk->currc) : -1;
-    cli_t* const nextc = cblk_map(&currwk->clis, &c);
-    if (nextc) {
-      XSelectInput(dpy, nextc->par.win, CLIMASK);
-      XSelectInput(dpy, nextc->hdr.win, BTNMASK);
-      XSelectInput(dpy, nextc->min.win, BTNMASK);
-      XSelectInput(dpy, nextc->max.win, BTNMASK);
-      XSelectInput(dpy, nextc->cls.win, BTNMASK);
-      XSelectInput(dpy, nextc->ico.win, BTNMASK);
-      XMapWindow(dpy, nextc->par.win);
-      XMapWindow(dpy, nextc->win);
-      wg_str_set(&nextc->ico, prop_ico(win));
-      wg_str_set(&nextc->hdr, prop_name(win));
-      cli_conf(nextc, wa.width, wa.height);
-      currwk->currc = currc > -1 ? 
-        cblk_itr(&currwk->clis, currc) : NULL;
-      if (currwk->currc) {
-        int const x = currwk->currc->par.x;
-        int const y = currwk->currc->par.y;
-        cli_arrange(nextc, x, y);
-      } else if (wa.x && wa.y) 
-        cli_arrange(nextc, wa.x, wa.y);
-
-      wm_cli_focus(nextc);
+    cli_t* c = wm_cli_map(win, wa.x, wa.y);
+    if (c) {
+      wg_str_set(&c->ico, prop_ico(win));
+      wg_str_set(&c->hdr, prop_name(win));
+      wm_cli_focus(c);
+      cli_conf(c, wa.width, wa.height);
       panel_icos_arrange();
       panel_arrange();
     }
@@ -144,8 +107,7 @@ static void ev_destroy_notify(void) {
   Window const win = xev.xdestroywindow.window;
   cli_t* const c = cli(win);
   if (c) {
-    cli_switch(-2);
-    cli_deinit(c);
+    wm_cli_kill(c);
     panel_icos_arrange();
     panel_arrange();
   }

@@ -10,9 +10,8 @@ typedef struct {
   wg_t wg;
 } wk_t;
 
-void wk_wg_unfocus(wg_t* const);
-void wk_wg_focus(wg_t* const);
 wk_t* wk_init(void);
 void wk_deinit(wk_t*);
-int wk_unmap(void);
+void wk_wg_focus(wg_t* const, unsigned const);
+int wk_unmap(wk_t* const);
 int wk_switch(int const);

@@ -1,6 +1,7 @@
 #include <X11/Xlib.h>
 #include <string.h>
 
+#include "panel.h"
 #include "mon.h"
 #include "wk.h"
 #include "cli.h"
@@ -21,20 +22,7 @@ static unsigned wkw;
 
 wg_t status;
 wg_t panel;
-/*********************************/  
-void panel_status_unfocus(void) {
-  wg_win_setbg(status.win, BG);
-  wg_str_draw(&status, BG, 0);
-}
 
-void panel_status_focus(void) {
-  wg_win_setbg(status.win, ACT);
-  wg_str_draw(&status, ACT, 0);
-  if (XResizeWindow(dpy, status.win, status.str.ext, 
-        status.h))
-    status.w = status.str.ext;
-}
-/*********************************/  
 void panel_init(void) {
   panel = wg_init(DefaultRootWindow(dpy), 0, 0, 
       1, ch, 0);
@@ -50,12 +38,20 @@ void panel_init(void) {
     ExposureMask;
   XSelectInput(dpy, status.win, STATUSMASK);
   wg_win_setbg(status.win, BG);
-  panel_status_focus();
+  panel_status_focus(ACT);
 }
 
 void panel_deinit(void) {
   wg_deinit(&status);
   wg_deinit(&panel);
+}
+
+void panel_status_focus(unsigned const clr) {
+  wg_win_setbg(status.win, clr);
+  wg_str_draw(&status, clr, 0);
+  if (XResizeWindow(dpy, status.win, status.str.ext, 
+        status.h))
+    status.w = status.str.ext;
 }
 
 void panel_icos_arrange(void) {
@@ -129,6 +125,92 @@ void panel_arrange(void) {
   mon_t const* mon = mons.beg;
   arrange_sel_map(&status);
   arrange_sel_adj(4);
+}
+
+void panel_icos_arrange_all(void) {
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+    if (XResizeWindow(dpy, wk->wg.win, wk->wg.w0, wk->wg.h))
+      wk->wg.w = wk->wg.w0;
+
+  unsigned n = 0;
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+    n += wk->clis.size;
+  
+  if (n) {
+    unsigned w = n * wkw + status.w;
+    while (w > panel.w) {
+      n--;
+      w = n * wkw + status.w;
+    }
+
+    if (XResizeWindow(dpy, ((wk_t*) wks.beg)->wg.win, 
+          n * wkw, ((wk_t*) wks.beg)->wg.h))
+      ((wk_t*) wks.beg)->wg.w = n * wkw;
+  }
+
+
+  /*
+  cli_t* beg = currwk->clis.beg;
+  cli_t const* end = currwk->clis.end;
+  if (n < currwk->clis.size) {
+    int d = cblk_dist(&currwk->clis, currwk->currc) - 
+      0.5 * n;
+    if (d < 0)
+      d = 0;
+    
+    while (d + n > currwk->clis.size)
+      d--;
+
+    beg = cblk_itr(&currwk->clis, d);
+    end = cblk_itr(&currwk->clis, d + n);
+  }
+  */
+
+
+
+
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++) {
+      if (c == currwk->currc) {
+        wg_win_setbg(c->ico.win, ACT);
+        wg_win_setbdr(c->ico.win, ACT);
+        wg_str_draw(&c->ico, ACT, 0);
+      } else {
+        wg_win_setbg(c->ico.win, BG);
+        wg_win_setbdr(c->ico.win, BG);
+        wg_str_draw(&c->ico, BG, 0);
+      }
+
+      arrange_sel_map(&c->ico);
+    }
+
+  arrange_sel_adj(0);
+}
+
+void panel_arrange_all(void) {
+  /*
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
+    if (wk == currwk)
+      wk_wg_focus(&wk->wg, ACT);
+    else {
+      wk_wg_focus(&wk->wg, BG);
+      if (wk->clis.size) {
+        cli_t* const c = wk->currc;
+        XMoveWindow(dpy, c->ico.win, 0, 0);
+        wg_win_setbg(c->ico.win, BG);
+        wg_win_setbdr(c->ico.win, BG);
+        wg_str_draw(&c->ico, BG, 0);
+      }
+    }
+    
+    arrange_sel_map(&wk->wg);
+  }
+  */
+
+  arrange_sel_map(&((wk_t*) wks.beg)->wg);
+  mon_t const* mon = mons.beg;
+  arrange_sel_map(&status);
+  arrange_sel_adj(1);
 }
 
 void panel_conf(void) {

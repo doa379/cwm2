@@ -49,22 +49,45 @@ void wk_wg_focus(wg_t* const wg, unsigned const clr) {
   wg_win_setbg(wg->win, clr);
 }
 
-static void wk_focus(char const n) {
-  for (cli_t* c = currwk->clis.beg; 
-      c != currwk->clis.end; c++)
-    XUnmapWindow(dpy, c->par.win);
+int wk_focus(wk_t* const wk) {
+  if (wk == currwk)
+    return -1;
+
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
+      XUnmapWindow(dpy, c->par.win);
   
   prevwk = currwk;
-  currwk = n == -2 ? cblk_prev(&wks, currwk) :
-    n == -1 ? cblk_next(&wks, currwk) :
-    cblk_itr(&wks, n - 1);
+  currwk = wk;
   if (currwk->clis.size) {
     for (cli_t* c = currwk->clis.beg; 
         c != currwk->clis.end; c++)
       XMapWindow(dpy, c->par.win);
 
+    cli_t* const c = wk->currc;
+    wm_cli_focus(c);
+  }
+
+  return 0;
+}
+
+void wk_focus_all(void) {
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
+      XMapWindow(dpy, c->par.win);
+   
+  if (currwk->clis.size) {
     cli_t* const c = currwk->currc;
     wm_cli_focus(c);
+  } else if (prevwk->clis.size) {
+    cli_t* const c = prevwk->currc;
+    wm_cli_focus(c);
+  } else {
+    for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+      if (wk->clis.size) {
+        cli_t* const c = wk->currc;
+        wm_cli_focus(c);
+      }
   }
 }
 
@@ -83,7 +106,8 @@ int wk_unmap(wk_t* const wk) {
     size_t const currc = nextwk->clis.size == 0 ?
       cblk_dist(&wk->clis, wk->currc) :
       cblk_dist(&nextwk->clis, nextwk->currc);
-    while (wk->clis.size) {
+
+    do {
       cli_t* const c = wk->clis.beg;
       cli_t* const nextc = cblk_map(&nextwk->clis, c);
       if (nextc) {
@@ -92,7 +116,7 @@ int wk_unmap(wk_t* const wk) {
             nextwk->wg.win, c->ico.x, c->ico.y);
         cblk_unmap(&wk->clis, c);
       }
-    }
+    } while (wk->clis.size);
 
     nextwk->prevc = cblk_itr(&nextwk->clis, prevc);
     nextwk->currc = cblk_itr(&nextwk->clis, currc);
@@ -104,18 +128,5 @@ int wk_unmap(wk_t* const wk) {
   if (wks.size == 1)
     prevwk = currwk;
   
-  return 0;
-}
-
-int wk_switch(int const n) {
-  /* n == -2 --> prev
-   * n == -1 --> next
-   * n >= 0  --> index
-   */
-  if (n == 0 || n > (int) wks.size || 
-      n - 1 == cblk_dist(&wks, currwk))
-    return -1;
-
-  wk_focus(n);
   return 0;
 }

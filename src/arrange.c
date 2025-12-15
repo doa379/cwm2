@@ -1,5 +1,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <math.h>
 
 #include "cblk.h"
 #include "wg.h"
@@ -45,15 +46,63 @@ void arrange_sel_adj(int const gap) {
 
   cblk_clear(&sel);
 }
+
 /* Arrange only on currently selected mon */
-void arrange_sel_tile(void) {
-  for (wg_t** wg = sel.beg; wg != sel.end; wg++)
-    ;
+void arrange_sel_tile(unsigned const w, unsigned const h) {
+  /* Arrange within contraint (w, h) */
+  size_t const n = sel.size;
+  /* no of */
+	unsigned nc = 0;
+	for (; nc <= 0.5 * n; nc++)
+		if (nc * nc >= n)
+			break;
+
+	if (n == 5)
+		nc = 2;
+
+	unsigned nr = n / nc;
+	unsigned const currw = nc ? w / nc : w;
+  /* (c, r) nos */
+	unsigned cn = 0;
+	unsigned rn = 0;
+  for (wg_t** wg = sel.beg; wg != sel.end; wg++) {
+    size_t i = cblk_dist(&sel, *wg);
+		if (i / nr + 1 > nc - n % nc)
+			nr = n / nc + 1;
+		
+    unsigned const currh = nr ? w / nr : h;
+		unsigned const currx = cn * currw;
+		unsigned const curry = rn * currh;
+    Window const win = (*wg)->win;
+    int const prevw = (*wg)->w;
+    int const prevh = (*wg)->h;
+    if (XResizeWindow(dpy, win, currw, currh)) {
+      (*wg)->w0 = prevw;
+      (*wg)->h0 = prevh;
+      (*wg)->w = currw;
+      (*wg)->h = currh;
+      int const prevx = (*wg)->x;
+      int const prevy = (*wg)->y;
+      if (XMoveWindow(dpy, win, currx, curry)) {
+        (*wg)->x0 = prevx;
+        (*wg)->y0 = prevy;
+        (*wg)->x = currx;
+        (*wg)->y = curry;
+      }
+    }
+
+		rn++;
+		if (rn >= nr) {
+			rn = 0;
+			cn++;
+		}
+  }
 
   cblk_clear(&sel);
 }
 
-void arrange_sel_casc(void) {
+void arrange_sel_casc(unsigned const w, unsigned const h) {
+  /* Arrange within contraint (w, h) */
   for (wg_t** wg = sel.beg; wg != sel.end; wg++)
     ;
   

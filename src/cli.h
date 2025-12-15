@@ -30,7 +30,6 @@ void cli_wg_focus(cli_t* const, unsigned const);
 void cli_focus(cli_t* const);
 
 void cli_currmon_move(void);
-cli_t* cli_switch(int const);
 
 void cli_conf(cli_t* const, int const, int const);
 void cli_arrange(cli_t* const, int const, int const);

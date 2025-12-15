@@ -205,7 +205,7 @@ static void ev_property_notify(void) {
   fprintf(stdout, "EV: Prop Notify Window %ld\n", win);
   if (win == DefaultRootWindow(dpy)) {
     wg_str_set(&status, prop_root());
-    panel_status_focus();
+    panel_status_focus(ACT);
     panel_arrange();
     return;
   }
@@ -226,7 +226,7 @@ static void ev_expose(void) {
   if (c)
     cli_wg_focus(c, c == currwk->currc ? ACT : BG);
   else if (win == status.win)
-    panel_status_focus();
+    panel_status_focus(ACT);
 }
 
 void ev_init(void) {

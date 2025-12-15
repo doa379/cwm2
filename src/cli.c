@@ -207,24 +207,6 @@ void cli_currmon_move(void) {
       }
 }
 
-cli_t* cli_switch(int const n) {
-  /* n == -2 --> prev
-   * n == -1 --> next
-   * n >= 0  --> index
-   */
-  if (n == 0 || 
-      currwk->clis.size < 2 || 
-      n > (int) currwk->clis.size ||
-      n - 1 == cblk_dist(&currwk->clis, currwk->currc))
-    return NULL;
-  
-  cli_t* currc = currwk->currc;
-  return n == -2 ? 
-    cblk_prev(&currwk->clis, currc) :
-      n == -1 ? cblk_next(&currwk->clis, currc) : 
-      cblk_itr(&currwk->clis, n - 1);
-}
-
 void cli_conf(cli_t* const c, int const w, int const h) {
   if (XResizeWindow(dpy, c->par.win, w, h + ch)) {
     c->par.w0 = c->par.w;

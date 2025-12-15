@@ -37,6 +37,6 @@ void wg_str_set(wg_t* const, char const*);
 void wg_str_draw(wg_t* const, unsigned const, 
     unsigned const);
 
-  void wg_win_setbg(Window const, unsigned const);
+void wg_win_setbg(Window const, unsigned const);
 void wg_win_setbdr(Window const, unsigned const);
 void wg_gc_setbg(GC const, unsigned const);

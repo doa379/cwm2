@@ -34,64 +34,105 @@ void calls_mon3(void) {
 
 }
 
-static void calls_wk_switch(int const n) {
-  if (wk_switch(n) == 0) {
+void calls_wk_prev(void) {
+  wk_t* const wk = cblk_prev(&wks, currwk);
+  if (wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
 }
 
-void calls_wk_prev(void) {
-  calls_wk_switch(-2);
-}
-
 void calls_wk_next(void) {
-  calls_wk_switch(-1);
+  wk_t* const wk = cblk_next(&wks, currwk);
+  if (wk_focus(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
 }
 
 void calls_wk_last(void) {
-  size_t const n = cblk_dist(&wks, prevwk);
-  calls_wk_switch(n + 1);
+  if (wk_focus(prevwk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
 }
 
 void calls_wk0(void) {
-
+  wk_focus_all();
+  panel_icos_arrange_all();
+  panel_arrange_all();
 }
 
 void calls_wk1(void) {
-  calls_wk_switch(1);
+  wk_t* const wk = cblk_itr(&wks, 0);
+  if (wk_focus(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
 }
 
 void calls_wk2(void) {
-  calls_wk_switch(2);
+  wk_t* const wk = cblk_itr(&wks, 1);
+  if (wk && wk_focus(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
 }
 
 void calls_wk3(void) {
-  calls_wk_switch(3);
+  wk_t* const wk = cblk_itr(&wks, 2);
+  if (wk && wk_focus(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
 }
 
 void calls_wk4(void) {
-  calls_wk_switch(4);
+  wk_t* const wk = cblk_itr(&wks, 3);
+  if (wk && wk_focus(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
 }
 
 void calls_wk5(void) {
-  calls_wk_switch(5);
+  wk_t* const wk = cblk_itr(&wks, 4);
+  if (wk && wk_focus(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
 }
 
 void calls_wk6(void) {
-  calls_wk_switch(6);
+  wk_t* const wk = cblk_itr(&wks, 5);
+  if (wk && wk_focus(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
 }
 
 void calls_wk7(void) {
-  calls_wk_switch(7);
+  wk_t* const wk = cblk_itr(&wks, 6);
+  if (wk && wk_focus(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
 }
 
 void calls_wk8(void) {
-  calls_wk_switch(8);
+  wk_t* const wk = cblk_itr(&wks, 7);
+  if (wk && wk_focus(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
 }
 
 void calls_wk9(void) {
-  calls_wk_switch(9);
+  wk_t* const wk = cblk_itr(&wks, 8);
+  if (wk && wk_focus(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
 }
 
 void calls_wk_map(void) {
@@ -102,44 +143,123 @@ void calls_wk_map(void) {
 }
 
 void calls_wk_unmap(void) {
-  if (wk_unmap(currwk) == 0) {
-    size_t const n = cblk_dist(&wks, currwk);
-    calls_wk_switch(n + 1);
-  }
-}
-
-void calls_wk_cli_move_prev(void) {
-  if (wm_cli_move(-2) == 0) {
+  if (wk_unmap(currwk) == 0 && wk_focus(currwk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
 }
 
-void calls_wk_cli_move_next(void) {
-  if (wm_cli_move(-1) == 0) {
+void calls_cli_wk_prev_move(void) {
+  wk_t* const wk = cblk_prev(&wks, currwk);
+  if (wk && wm_cli_move(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
+}
+
+void calls_cli_wk_next_move(void) {
+  wk_t* const wk = cblk_next(&wks, currwk);
+  if (wk && wm_cli_move(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
+}
+
+void calls_cli_wk1_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 0);
+  if (wk && wm_cli_move(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
+}
+
+void calls_cli_wk2_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 1);
+  if (wk && wm_cli_move(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
+}
+
+void calls_cli_wk3_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 2);
+  if (wk && wm_cli_move(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
+}
+
+void calls_cli_wk4_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 3);
+  if (wk && wm_cli_move(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
+}
+
+void calls_cli_wk5_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 4);
+  if (wk && wm_cli_move(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
+}
+
+void calls_cli_wk6_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 5);
+  if (wk && wm_cli_move(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
+}
+
+void calls_cli_wk7_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 6);
+  if (wk && wm_cli_move(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
+}
+
+void calls_cli_wk8_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 7);
+  if (wk && wm_cli_move(wk) == 0) {
+    panel_icos_arrange();
+    panel_arrange();
+  }
+}
+
+void calls_cli_wk9_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 8);
+  if (wk && wm_cli_move(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
 }
 
 void calls_cli_prev(void) {
-  cli_t* const c = cli_switch(-2);
-  if (c) {
+  cli_t* const c = cblk_prev(&currwk->clis, 
+      currwk->currc);
+  if (c && c != currwk->currc) {
     wm_cli_focus(c);
     panel_icos_arrange();
   }
 }
 
 void calls_cli_next(void) {
-  cli_t* const c = cli_switch(-1);
-  if (c) {
+  cli_t* const c = cblk_next(&currwk->clis, 
+      currwk->currc);
+  if (c && c != currwk->currc) {
     wm_cli_focus(c);
     panel_icos_arrange();
   }
 }
 
 void calls_cli_last(void) {
-  wm_cli_focus(currwk->prevc); 
+  if (currwk->prevc != currwk->currc) {
+    wm_cli_focus(currwk->prevc);
+    panel_icos_arrange();
+  }
 }
 
 void calls_cli_raise_toggle(void) {
@@ -160,81 +280,88 @@ void calls_cli0(void) {
 }
 
 void calls_cli1(void) {
-  cli_t* const c = cli_switch(1);
-  if (c) {
+  cli_t* const c = cblk_itr(&currwk->clis, 0);
+  if (c && c != currwk->currc) {
     wm_cli_focus(c);
     panel_icos_arrange();
   }
 }
 
 void calls_cli2(void) {
-  cli_t* const c = cli_switch(2);
-  if (c) {
+  cli_t* const c = cblk_itr(&currwk->clis, 1);
+  if (c && c != currwk->currc) {
     wm_cli_focus(c);
     panel_icos_arrange();
   }
 }
 
 void calls_cli3(void) {
-  cli_t* const c = cli_switch(3);
-  if (c) {
+  cli_t* const c = cblk_itr(&currwk->clis, 2);
+  if (c && c != currwk->currc) {
     wm_cli_focus(c);
     panel_icos_arrange();
   }
 }
 
 void calls_cli4(void) {
-  cli_t* const c = cli_switch(4);
-  if (c) {
+  cli_t* const c = cblk_itr(&currwk->clis, 3);
+  if (c && c != currwk->currc) {
     wm_cli_focus(c);
     panel_icos_arrange();
   }
 }
 
 void calls_cli5(void) {
-  cli_t* const c = cli_switch(5);
-  if (c) {
+  cli_t* const c = cblk_itr(&currwk->clis, 4);
+  if (c && c != currwk->currc) {
     wm_cli_focus(c);
     panel_icos_arrange();
   }
 }
 
 void calls_cli6(void) {
-  cli_t* const c = cli_switch(6);
-  if (c) {
+  cli_t* const c = cblk_itr(&currwk->clis, 5);
+  if (c && c != currwk->currc) {
     wm_cli_focus(c);
     panel_icos_arrange();
   }
 }
 
 void calls_cli7(void) {
-  cli_t* const c = cli_switch(7);
-  if (c) {
+  cli_t* const c = cblk_itr(&currwk->clis, 6);
+  if (c && c != currwk->currc) {
     wm_cli_focus(c);
     panel_icos_arrange();
   }
 }
 
 void calls_cli8(void) {
-  cli_t* const c = cli_switch(8);
-  if (c) {
+  cli_t* const c = cblk_itr(&currwk->clis, 7);
+  if (c && c != currwk->currc) {
     wm_cli_focus(c);
     panel_icos_arrange();
   }
 }
 
 void calls_cli9(void) {
-  cli_t* const c = cli_switch(-9);
-  if (c) {
+  cli_t* const c = cblk_itr(&currwk->clis, 8);
+  if (c && c != currwk->currc) {
     wm_cli_focus(c);
     panel_icos_arrange();
   }
 }
 
-void calls_arrange(void) {
-  /* Cycle through global Modes: 
-      Grid, Cascade, Floating
-  */
+void calls_grid_arrange(void) {
+  for (cli_t* c = currwk->clis.beg; 
+      c != currwk->clis.end; c++)
+    arrange_sel_map(&c->par);
+
+  mon_t const* mon = mons.beg;
+  (void) mon;
+  arrange_sel_tile(300, 200);
+  for (cli_t* c = currwk->clis.beg; 
+      c != currwk->clis.end; c++)
+    cli_conf(c, c->par.w, c->par.h);
 }
 
 void calls_cli_mode_toggle(void) {
@@ -261,10 +388,7 @@ void calls_sel_clear(void) {
 }
 
 void calls_sel_toggle(void) {
-  /*
-  wm_cli_t const* c = wm_curr_cli();
-  arrange_map_sel(c->parwin);
-  */
+
 }
 
 void calls_quit(void) {

@@ -99,33 +99,20 @@ void wm_cli_focus(cli_t* const c) {
     CurrentTime);
 }
 
-int wm_cli_move(int const n) {
-  /* n == -2 --> prev
-   * n == -1 --> next
-   * n >= 0  --> index
-   */
+int wm_cli_move(wk_t* const wk) {
   cli_t* const currc = currwk->currc;
-  if (n == 0 || n > (int) wks.size || 
-      n - 1 == cblk_dist(&wks, currwk) ||
-      currc == NULL)
-    return -1;
-
-  wk_t* const nextwk = n == -2 ? 
-      cblk_prev(&wks, currwk) :
-        n == -1 ? cblk_next(&wks, currwk) :
-          cblk_itr(&wks, n - 1);
-  cli_t* const c = cblk_map(&nextwk->clis, currc);
+  cli_t* const c = cblk_map(&wk->clis, currc);
   if (c == NULL)
     return -1;
   
-  c->wk = nextwk;
-  nextwk->prevc = nextwk->currc;
-  nextwk->currc = c;
-  XReparentWindow(dpy, c->ico.win, nextwk->wg.win,
+  c->wk = wk;
+  wk->prevc = wk->currc;
+  wk->currc = c;
+  XReparentWindow(dpy, c->ico.win, wk->wg.win,
       currc->ico.x, currc->ico.y);
-  if (nextwk->clis.size == 1)
-    nextwk->prevc = nextwk->currc;
-  
+  if (wk->clis.size == 1)
+    wk->prevc = wk->currc;
+
   cli_t* const nextc = 
     currwk->clis.size == 1 ? NULL :
     currc == cblk_back(&currwk->clis) ?

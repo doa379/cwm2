@@ -54,6 +54,6 @@ void calls_kill(void);
 void calls_rotate_next(void);
 void calls_rotate_prev(void);
 */
-void calls_move(void);
-void calls_resize(void);
+void calls_cli_move(void);
+void calls_cli_resize(void);
 void calls_debug(void);

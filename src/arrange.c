@@ -52,27 +52,27 @@ void arrange_sel_tile(unsigned const w, unsigned const h) {
   /* Arrange within contraint (w, h) */
   size_t const n = sel.size;
   /* no of */
-	unsigned nc = 0;
-	for (; nc <= 0.5 * n; nc++)
-		if (nc * nc >= n)
-			break;
+  unsigned nc = 0;
+  for (; nc <= 0.5 * n; nc++)
+    if (nc * nc >= n)
+      break;
 
-	if (n == 5)
-		nc = 2;
+  if (n == 5)
+    nc = 2;
 
-	unsigned nr = n / nc;
-	unsigned const currw = nc ? w / nc : w;
+  unsigned nr = n / nc;
+  unsigned const currw = nc ? w / nc : w;
   /* (c, r) nos */
-	unsigned cn = 0;
-	unsigned rn = 0;
+  unsigned cn = 0;
+  unsigned rn = 0;
   for (wg_t** wg = sel.beg; wg != sel.end; wg++) {
     size_t i = cblk_dist(&sel, *wg);
-		if (i / nr + 1 > nc - n % nc)
-			nr = n / nc + 1;
-		
+    if (i / nr + 1 > nc - n % nc)
+      nr = n / nc + 1;
+
     unsigned const currh = nr ? w / nr : h;
-		unsigned const currx = cn * currw;
-		unsigned const curry = rn * currh;
+    unsigned const currx = cn * currw;
+    unsigned const curry = rn * currh;
     Window const win = (*wg)->win;
     int const prevw = (*wg)->w;
     int const prevh = (*wg)->h;
@@ -91,11 +91,11 @@ void arrange_sel_tile(unsigned const w, unsigned const h) {
       }
     }
 
-		rn++;
-		if (rn >= nr) {
-			rn = 0;
-			cn++;
-		}
+    rn++;
+    if (rn >= nr) {
+      rn = 0;
+      cn++;
+    }
   }
 
   cblk_clear(&sel);

@@ -30,22 +30,16 @@ wg_t wg_init(Window const parwin,
     .h = h,
     .bdrw = bdrw,
     .pixmap = 0,
+    .gc = XCreateGC(dpy, win, 0, NULL),
     .xft = xft,
   };
-
-  for (size_t i = 0; i < sizeof wg.gc / sizeof wg.gc[0]; 
-      i++)
-    wg.gc[i] = XCreateGC(dpy, win, 0, NULL);
 
   return wg;
 }
 
 void wg_deinit(wg_t* const wg) {
   XftDrawDestroy(wg->xft);
-  for (size_t i = 0; i < sizeof wg->gc / sizeof wg->gc[0]; 
-      i++)
-    XFreeGC(dpy, wg->gc[i]);
-
+  XFreeGC(dpy, wg->gc);
   if (wg->pixmap)
     XFreePixmap(dpy, wg->pixmap);
 
@@ -84,9 +78,14 @@ void wg_win_setbdr(Window const win, unsigned const clr) {
 }
 
 void wg_gc_setbg(GC const gc, unsigned const clr) {
-  if (clr > ACT)
-    return;
-
   XSetBackground(dpy, gc, CLR[clr].pix);
   XSetForeground(dpy, gc, CLR[clr + 3].pix);
+}
+
+void wg_pixmap_fill(wg_t const* wg, unsigned const clr) {
+  wg_gc_setbg(wg->gc, clr);
+  XFillRectangle(dpy, wg->win, wg->gc, 
+      wg->x, wg->y, wg->w, wg->h);
+  XCopyPlane(dpy, wg->pixmap, wg->win, wg->gc, 
+      0, 0, wg->w, wg->h, 0, 0, 1);
 }

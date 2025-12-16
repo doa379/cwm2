@@ -18,8 +18,8 @@ static size_t const NRES = 100;
 wk_t* wk_init(void) {
   wg_t const wg = wg_init(DefaultRootWindow(dpy), 0, bdrw, 
     cw, ch - 2 * bdrw, bdrw);
-  wg_win_setbg(wg.win, BG);
-  wg_win_setbdr(wg.win, ACT);
+  wg_win_setbg(wg.win, wg_BG);
+  wg_win_setbdr(wg.win, wg_ACT);
 
   wk_t const wk = {
     .clis = cblk_init(sizeof(cli_t), NRES),
@@ -54,8 +54,10 @@ int wk_focus(wk_t* const wk) {
     return -1;
 
   for (wk_t* wk = wks.beg; wk != wks.end; wk++)
-    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
+    for (cli_t* c = wk->clis.beg; 
+        c != wk->clis.end; c++) {
       XUnmapWindow(dpy, c->par.win);
+    }
   
   prevwk = currwk;
   currwk = wk;
@@ -64,6 +66,7 @@ int wk_focus(wk_t* const wk) {
         c != currwk->clis.end; c++)
       XMapWindow(dpy, c->par.win);
 
+    XSync(dpy, True);
     cli_t* const c = wk->currc;
     wm_cli_focus(c);
   }
@@ -95,10 +98,16 @@ int wk_unmap(wk_t* const wk) {
   if (wks.size == 1)
     return -1;
 
+  size_t const wk_ = wk == cblk_back(&wks) ?
+    wks.size - 2 : cblk_dist(&wks, wk);
+
   wk_t* nextwk = wk == wks.beg ? 
     cblk_next(&wks, wk) : cblk_prev(&wks, wk);
+
   size_t const nextwk_ = cblk_dist(&wks, nextwk);
   size_t const prevwk_ = cblk_dist(&wks, prevwk);
+  
+
   if (wk->clis.size) {
     size_t const prevc = nextwk->clis.size == 0 ?
       cblk_dist(&wk->clis, wk->prevc) :
@@ -123,8 +132,10 @@ int wk_unmap(wk_t* const wk) {
   }
 
   wk_deinit(wk);
-  currwk = cblk_itr(&wks, nextwk_);
+  
+  currwk = cblk_itr(&wks, wk_);
   prevwk = cblk_itr(&wks, prevwk_);
+  
   if (wks.size == 1)
     prevwk = currwk;
   

@@ -58,28 +58,20 @@ cli_t cli_init(Window const win) {
   wg_t hdr = wg_init(par.win, 0, 0, 1, 1, 0);
   hdr.pixmap = XCreateBitmapFromData(dpy, hdr.win, 
     (char*) stipple_8x8, 8, 8);
-  XSetStipple(dpy, hdr.gc[BG], hdr.pixmap);
-  XSetFillStyle(dpy, hdr.gc[BG], FillStippled);
-  XSetStipple(dpy, hdr.gc[ACT], hdr.pixmap);
-  XSetFillStyle(dpy, hdr.gc[ACT], FillStippled);
+  XSetStipple(dpy, hdr.gc, hdr.pixmap);
+  XSetFillStyle(dpy, hdr.gc, FillStippled);
   /* Init min */
   wg_t min = wg_init(hdr.win, 0, 0, btnw, btnh, 0);
   min.pixmap = XCreateBitmapFromData(dpy, min.win, 
     (char const*) BTN[MIN], btnw, btnh);
-  wg_gc_setbg(min.gc[BG], BG);
-  wg_gc_setbg(min.gc[ACT], ACT);
   /* Init max */
   wg_t max = wg_init(hdr.win, 0, 0, btnw, btnh, 0);
   max.pixmap = XCreateBitmapFromData(dpy, max.win, 
     (char const*) BTN[MAX], btnw, btnh);
-  wg_gc_setbg(max.gc[BG], BG);
-  wg_gc_setbg(max.gc[ACT], ACT);
   /* Init cls */
   wg_t cls = wg_init(hdr.win, 0, 0, btnw, btnh, 0);
   cls.pixmap = XCreateBitmapFromData(dpy, cls.win, 
     (char const*) BTN[CLS], btnw, btnh);
-  wg_gc_setbg(cls.gc[BG], BG);
-  wg_gc_setbg(cls.gc[ACT], ACT);
   /* Init ico */
   wg_t ico = wg_init(currwk->wg.win, 0, 2 * bdrw, 
       cw - 2 * bdrw, ch - 2 * bdrw, bdrw);
@@ -153,35 +145,14 @@ void cli_wg_focus(cli_t* const c, unsigned const clr) {
   wg_win_setbg(c->par.win, clr);
   wg_win_setbdr(c->par.win, clr);
   wg_win_setbg(c->hdr.win, clr);
-  XFillRectangle(dpy, c->hdr.win, c->hdr.gc[clr],
+  wg_gc_setbg(c->hdr.gc, clr);
+  XFillRectangle(dpy, c->hdr.win, c->hdr.gc,
     c->hdr.str.ext + 4 * c->par.bdrw, 0, c->hdr.w, 
       ch - 2 * c->hdr.bdrw);
   wg_str_draw(&c->hdr, clr, 2 * c->par.bdrw);
-
-  {
-    wg_t const* wg = &c->min;
-    XFillRectangle(dpy, wg->win, wg->gc[clr], 
-        wg->x, wg->y, wg->w, wg->h);
-    XCopyPlane(dpy, wg->pixmap, wg->win, wg->gc[clr], 
-        0, 0, wg->w, wg->h, 0, 0, 1);
-  }
-  
-  {
-    wg_t const* wg = &c->max;
-    XFillRectangle(dpy, wg->win, wg->gc[clr], 
-        wg->x, wg->y, wg->w, wg->h);
-    XCopyPlane(dpy, wg->pixmap, wg->win, wg->gc[clr], 
-        0, 0, wg->w, wg->h, 0, 0, 1);
-  }
-  
-  {
-    wg_t const* wg = &c->cls;
-    XFillRectangle(dpy, wg->win, wg->gc[clr], 
-        wg->x, wg->y, wg->w, wg->h);
-    XCopyPlane(dpy, wg->pixmap, wg->win, wg->gc[clr], 
-        0, 0, wg->w, wg->h, 0, 0, 1);
-  }
-  
+  wg_pixmap_fill(&c->min, clr);
+  wg_pixmap_fill(&c->max, clr);
+  wg_pixmap_fill(&c->cls, clr);
   wg_win_setbg(c->ico.win, clr);
   wg_win_setbdr(c->ico.win, clr);
   wg_str_draw(&c->ico, clr, 0);
@@ -189,10 +160,10 @@ void cli_wg_focus(cli_t* const c, unsigned const clr) {
 
 void cli_focus(cli_t* const c) {
   if (currwk->currc) {
-    cli_wg_focus(currwk->currc, BG);
+    cli_wg_focus(currwk->currc, wg_BG);
   }
 
-  cli_wg_focus(c, ACT);
+  cli_wg_focus(c, wg_ACT);
   currwk->prevc = currwk->currc ? currwk->currc : c;
   currwk->currc = c;
 }

@@ -21,7 +21,7 @@ int tray_init(void) {
 
   tray.wg = wg_init(DefaultRootWindow(dpy), 
       0, 0, 1, 1, 0);
-  wg_win_setbg(tray.wg.win, BG);
+  wg_win_setbg(tray.wg.win, wg_BG);
   return 0;
 }
 

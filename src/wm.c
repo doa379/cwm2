@@ -56,8 +56,13 @@ cli_t* wm_cli_map(Window const win, int const x,
     EnterWindowMask |
     LeaveWindowMask |
     PropertyChangeMask;
+  static unsigned const HDRMASK =
+    ButtonPressMask |
+    ButtonReleaseMask |
+    ExposureMask;
   static unsigned const BTNMASK =
     EnterWindowMask |
+    LeaveWindowMask |
     ButtonPressMask |
     ButtonReleaseMask |
     ExposureMask;
@@ -69,7 +74,7 @@ cli_t* wm_cli_map(Window const win, int const x,
   cli_t* const nextc = cblk_map(&currwk->clis, &c);
   if (nextc) {
     XSelectInput(dpy, nextc->par.win, CLIMASK);
-    XSelectInput(dpy, nextc->hdr.win, BTNMASK);
+    XSelectInput(dpy, nextc->hdr.win, HDRMASK);
     XSelectInput(dpy, nextc->min.win, BTNMASK);
     XSelectInput(dpy, nextc->max.win, BTNMASK);
     XSelectInput(dpy, nextc->cls.win, BTNMASK);
@@ -140,4 +145,40 @@ void wm_cli_kill(cli_t* const c) {
     wk->prevc = prevc;
 
   cli_deinit(c);
+}
+
+void wm_cli_translate(cli_t* const c) {
+  fprintf(stdout, "Calling move on client\n");
+  XEvent xev;
+  static unsigned const MASK = 
+    ButtonPressMask |
+    ButtonReleaseMask |
+    PointerMotionMask |
+    ExposureMask |
+    SubstructureRedirectMask;
+
+  do {
+    XMaskEvent(dpy, MASK, &xev);
+    switch (xev.type) {
+      case ConfigureRequest:
+      case Expose:
+      case MapRequest:
+        break;
+      case MotionNotify:
+        int const x = xev.xmotion.x;
+        int const y = xev.xmotion.y;
+        int const x_root = xev.xmotion.x_root;
+        int const y_root = xev.xmotion.y_root;
+        if (XMoveWindow(dpy, c->par.win, x_root, y_root)) {
+          c->par.x0 = c->par.x;
+          c->par.x = x_root;
+          c->par.y0 = c->par.y;
+          c->par.y = y_root;
+        }
+    } 
+  } while (xev.type != ButtonRelease);
+}
+
+void wm_cli_resize(cli_t* const c) {
+  fprintf(stdout, "Calling resize on client\n");
 }

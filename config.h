@@ -184,8 +184,8 @@ input_t const KBD[] = {
 
 input_t const BTN[] = {
   /* Mouse Bindings */
-  { Mod4Mask, Button1, .call = calls_move },
-  { Mod4Mask, Button3, .call = calls_resize },
+  { Mod4Mask, Button1, .call = calls_cli_move },
+  { Mod4Mask, Button3, .call = calls_cli_resize },
 };
 
 size_t const kbdlen = sizeof KBD / sizeof KBD[0];

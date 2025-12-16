@@ -414,12 +414,14 @@ void calls_rotate_prev(void) {
 }
 */
 
-void calls_move(void) {
-
+void calls_cli_move(void) {
+  fprintf(stdout, "Call move on client\n");
+  wm_cli_translate(currwk->currc);
 }
 
-void calls_resize(void) {
-
+void calls_cli_resize(void) {
+  fprintf(stdout, "Call resize on client\n");
+  wm_cli_resize(currwk->currc);
 }
 
 void calls_debug(void) {

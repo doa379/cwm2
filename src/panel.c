@@ -26,7 +26,7 @@ wg_t panel;
 void panel_init(void) {
   panel = wg_init(DefaultRootWindow(dpy), 0, 0, 
       1, ch, 0);
-  wg_win_setbg(panel.win, BG);
+  wg_win_setbg(panel.win, wg_BG);
 
   for (wk_t* wk = wks.beg; wk != wks.end; wk++)
     XReparentWindow(dpy, wk->wg.win, panel.win, 0, 0);
@@ -37,8 +37,8 @@ void panel_init(void) {
     PropertyChangeMask |
     ExposureMask;
   XSelectInput(dpy, status.win, STATUSMASK);
-  wg_win_setbg(status.win, BG);
-  panel_status_focus(ACT);
+  wg_win_setbg(status.win, wg_BG);
+  panel_status_focus(wg_ACT);
 }
 
 void panel_deinit(void) {
@@ -89,13 +89,13 @@ void panel_icos_arrange(void) {
 
   for (cli_t* c = beg; c != end; c++) {
     if (c == currwk->currc) {
-      wg_win_setbg(c->ico.win, ACT);
-      wg_win_setbdr(c->ico.win, ACT);
-      wg_str_draw(&c->ico, ACT, 0);
+      wg_win_setbg(c->ico.win, wg_ACT);
+      wg_win_setbdr(c->ico.win, wg_ACT);
+      wg_str_draw(&c->ico, wg_ACT, 0);
     } else {
-      wg_win_setbg(c->ico.win, BG);
-      wg_win_setbdr(c->ico.win, BG);
-      wg_str_draw(&c->ico, BG, 0);
+      wg_win_setbg(c->ico.win, wg_BG);
+      wg_win_setbdr(c->ico.win, wg_BG);
+      wg_str_draw(&c->ico, wg_BG, 0);
     }
 
     arrange_sel_map(&c->ico);
@@ -107,15 +107,15 @@ void panel_icos_arrange(void) {
 void panel_arrange(void) {
   for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     if (wk == currwk)
-      wk_wg_focus(&wk->wg, ACT);
+      wk_wg_focus(&wk->wg, wg_ACT);
     else {
-      wk_wg_focus(&wk->wg, BG);
+      wk_wg_focus(&wk->wg, wg_BG);
       if (wk->clis.size) {
         cli_t* const c = wk->currc;
         XMoveWindow(dpy, c->ico.win, 0, 0);
-        wg_win_setbg(c->ico.win, BG);
-        wg_win_setbdr(c->ico.win, BG);
-        wg_str_draw(&c->ico, BG, 0);
+        wg_win_setbg(c->ico.win, wg_BG);
+        wg_win_setbdr(c->ico.win, wg_BG);
+        wg_str_draw(&c->ico, wg_BG, 0);
       }
     }
     
@@ -172,13 +172,13 @@ void panel_icos_arrange_all(void) {
   for (wk_t* wk = wks.beg; wk != wks.end; wk++)
     for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++) {
       if (c == currwk->currc) {
-        wg_win_setbg(c->ico.win, ACT);
-        wg_win_setbdr(c->ico.win, ACT);
-        wg_str_draw(&c->ico, ACT, 0);
+        wg_win_setbg(c->ico.win, wg_ACT);
+        wg_win_setbdr(c->ico.win, wg_ACT);
+        wg_str_draw(&c->ico, wg_ACT, 0);
       } else {
-        wg_win_setbg(c->ico.win, BG);
-        wg_win_setbdr(c->ico.win, BG);
-        wg_str_draw(&c->ico, BG, 0);
+        wg_win_setbg(c->ico.win, wg_BG);
+        wg_win_setbdr(c->ico.win, wg_BG);
+        wg_str_draw(&c->ico, wg_BG, 0);
       }
 
       arrange_sel_map(&c->ico);
@@ -191,15 +191,15 @@ void panel_arrange_all(void) {
   /*
   for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     if (wk == currwk)
-      wk_wg_focus(&wk->wg, ACT);
+      wk_wg_focus(&wk->wg, wg_ACT);
     else {
-      wk_wg_focus(&wk->wg, BG);
+      wk_wg_focus(&wk->wg, wg_BG);
       if (wk->clis.size) {
         cli_t* const c = wk->currc;
         XMoveWindow(dpy, c->ico.win, 0, 0);
-        wg_win_setbg(c->ico.win, BG);
-        wg_win_setbdr(c->ico.win, BG);
-        wg_str_draw(&c->ico, BG, 0);
+        wg_win_setbg(c->ico.win, wg_BG);
+        wg_win_setbdr(c->ico.win, wg_BG);
+        wg_str_draw(&c->ico, wg_BG, 0);
       }
     }
     

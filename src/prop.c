@@ -1,6 +1,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 extern Display* dpy;
@@ -28,6 +29,27 @@ static char const* prop_text(Window const win, Atom atom) {
   return BUF;
 }
 
+static char const* prop_win_prop(Window const win, 
+    Atom const atom) {
+  Atom actual_type;
+  int actual_format;
+  unsigned long nitems;
+  unsigned long bytes_after;
+  static unsigned char* data;
+  BUF[0] = '\0';
+  if (XGetWindowProperty(dpy, win, 
+    atom, 0, sizeof *data, False, 
+      AnyPropertyType, &actual_type, 
+        &actual_format, &nitems, &bytes_after, 
+          &data) == Success && actual_type != None) {
+    strncpy(BUF, (char*) data, sizeof BUF - 1);
+    BUF[sizeof BUF - 1] = '\0';
+ 	  XFree(data);
+  }
+
+  return BUF;
+}
+
 char const* prop_root(void) {
   if (prop_text(DefaultRootWindow(dpy), XA_WM_NAME)[0] ==
       '\0')
@@ -44,6 +66,7 @@ char const* prop_name(Window const win) {
 }
 
 char const* prop_ico(Window const win) {
+  /*
   BUF[0] = '\0';
   XTextProperty prop;
   if (XGetWMIconName(dpy, win, &prop) && prop.nitems > 0) {
@@ -53,33 +76,25 @@ char const* prop_ico(Window const win) {
   }
 
   return BUF;
-}
-      
-void prop_(Window const win, Atom const prop) {
-  int result;
-  Atom actual_type;
-  int actual_format;
-  unsigned long bytes_after;
-  unsigned char* data;
-  unsigned long nitems;
+  */
 
-  /*Atom prop = XInternAtom(dpy, "_NET_WM_ICON", False);*/
-  if (XGetWindowProperty(dpy, win, 
-      prop, 
-      0, ~0L, 
-      False,
-      XA_CARDINAL /*AnyPropertyType*/,
-      &actual_type, 
-      &actual_format,
-      &nitems, 
-      &bytes_after,
-      &data)) {
-    fprintf(stdout, "Success\n");
-    fprintf(stdout, "Data %s\n", data);
-    XFree(data);
-  }
+  prop_win_prop(win, XInternAtom(dpy, "_NET_WM_ICON", False));
+  fprintf(stdout, "prop_ico(): %s\n", BUF);
+  prop_win_prop(win, XInternAtom(dpy, "WM_ICON", False));
+  fprintf(stdout, "prop_ico(): %s\n", BUF);
+  prop_win_prop(win, XInternAtom(dpy, "_NET_WM_ICON_NAME", False));
+  fprintf(stdout, "prop_ico(): %s\n", BUF);
+  prop_win_prop(win, XInternAtom(dpy, "WM_ICON_NAME", False));
+  fprintf(stdout, "prop_ico(): %s\n", BUF);
+
+  if (prop_win_prop(win, 
+        XInternAtom(dpy, "_NET_WM_ICON_NAME", False))[0] != '\0' || 
+      prop_win_prop(win, 
+        XInternAtom(dpy, "WM_ICON_NAME", False)));
+
+  return BUF;
 }
-      
+
 void prop_hints(Window const win, GC const gc) {
   XWMHints* wm_hints = XGetWMHints(dpy, win);
   if (wm_hints) {

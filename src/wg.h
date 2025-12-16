@@ -22,12 +22,12 @@ typedef struct {
   int h;
   int bdrw;
   Pixmap pixmap;
-  GC gc[2];
+  GC gc;
   XftDraw* xft;
   wg_str_t str;
 } wg_t;
 
-enum colors { BG, ACT, SEL };
+enum colors { wg_BG, wg_ACT, wg_SEL };
 
 wg_t wg_init(Window const parwin, int const, 
     int const, int const, int const, int const);
@@ -40,3 +40,4 @@ void wg_str_draw(wg_t* const, unsigned const,
 void wg_win_setbg(Window const, unsigned const);
 void wg_win_setbdr(Window const, unsigned const);
 void wg_gc_setbg(GC const, unsigned const);
+void wg_pixmap_fill(wg_t const*, unsigned const);

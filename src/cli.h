@@ -21,14 +21,11 @@ typedef struct cli_s {
 enum mode { MIN, MAX, RES, CLS };
 
 void cli_wg_init(void);
-cli_t cli_init(Window const);
+cli_t cli_init(Window const, wk_t* const);
 void cli_deinit(cli_t* const);
-cli_t* currwk_cli(Window const);
-cli_t* cli(Window const);
+cli_t* cli(Window const, wk_t* const);
 wg_t* cli_wg(cli_t* const, Window const);
-void cli_wg_btn_focus(cli_t* const, unsigned const);
 void cli_wg_focus(cli_t* const, unsigned const);
-void cli_focus(cli_t* const);
 
 void cli_currmon_move(void);
 

@@ -18,9 +18,6 @@
 #include "res/cx_24x24.xbm"
 
 extern Display* dpy;
-extern cblk_t mons;
-extern cblk_t wks;
-extern wk_t* currwk;
 
 extern unsigned ch;
 extern unsigned cw;
@@ -48,7 +45,7 @@ void cli_wg_init(void) {
   btny = 0.5 * (ch - btnh);
 }
 
-cli_t cli_init(Window const win) {
+cli_t cli_init(Window const win, wk_t* const wk) {
   /* Init parent */
   wg_t const par = wg_init(DefaultRootWindow(dpy), 
       0, 0, 1, 1, bdrw);
@@ -73,11 +70,11 @@ cli_t cli_init(Window const win) {
   cls.pixmap = XCreateBitmapFromData(dpy, cls.win, 
     (char const*) BTN[CLS], btnw, btnh);
   /* Init ico */
-  wg_t ico = wg_init(currwk->wg.win, 0, 2 * bdrw, 
+  wg_t ico = wg_init(wk->wg.win, 0, 2 * bdrw, 
       cw - 2 * bdrw, ch - 2 * bdrw, bdrw);
 
   return (cli_t) {
-    .wk = currwk,
+    .wk = wk,
     .mon = currmon,
     .win = win,
     .par = par,
@@ -101,8 +98,8 @@ void cli_deinit(cli_t* const c) {
   cblk_unmap(&c->wk->clis, c);
 }
 
-cli_t* currwk_cli(Window const win) {
-  for (cli_t* c = currwk->clis.beg; c != currwk->clis.end; c++)
+cli_t* cli(Window const win, wk_t* const wk) {
+  for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
     if (c->win == win ||
         c->par.win == win ||
         c->hdr.win == win ||
@@ -112,22 +109,6 @@ cli_t* currwk_cli(Window const win) {
         c->shd.win == win ||
         c->ico.win == win)
       return c;
-  
-  return NULL;
-}
-
-cli_t* cli(Window const win) {
-  for (wk_t const* wk = wks.beg; wk != wks.end; wk++)
-    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
-      if (c->win == win ||
-          c->par.win == win ||
-          c->hdr.win == win ||
-          c->min.win == win ||
-          c->max.win == win ||
-          c->cls.win == win ||
-          c->shd.win == win ||
-          c->ico.win == win)
-        return c;
   
   return NULL;
 }
@@ -157,17 +138,7 @@ void cli_wg_focus(cli_t* const c, unsigned const clr) {
   wg_win_setbdr(c->ico.win, clr);
   wg_str_draw(&c->ico, clr, 0);
 }
-
-void cli_focus(cli_t* const c) {
-  if (currwk->currc) {
-    cli_wg_focus(currwk->currc, wg_BG);
-  }
-
-  cli_wg_focus(c, wg_ACT);
-  currwk->prevc = currwk->currc ? currwk->currc : c;
-  currwk->currc = c;
-}
-
+/*
 void cli_currmon_move(void) {
   for (wk_t* wk = wks.beg; wk != wks.end; wk++)
     for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
@@ -177,6 +148,7 @@ void cli_currmon_move(void) {
         c->mon = currmon;
       }
 }
+*/
 
 void cli_conf(cli_t* const c, int const w, int const h) {
   if (XResizeWindow(dpy, c->par.win, w, h + ch)) {

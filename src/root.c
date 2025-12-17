@@ -75,7 +75,7 @@ void root_query_(void) {
   XFree(wins);
 }
 
-void root_send_maps(void) {
+void root_maps_send(void) {
   for (Window* c = clis.beg; c != clis.end; c++) {
     XEvent xev = {
       .xmaprequest = (XMapRequestEvent) {

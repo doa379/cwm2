@@ -36,7 +36,7 @@ static unsigned input_cleanmask(unsigned const mask) {
        Mod5Mask);
 }
 
-void input_keys_grab(long const win) {
+void input_keys_grab(Window const win) {
   input_update_numlockmask();
 	unsigned const modifiers[] = {
     0, LockMask, numlockmask, numlockmask | LockMask
@@ -63,8 +63,7 @@ void input_keys_grab(long const win) {
  	XFree(syms);
 }
 
-void input_btns_grab(long const win) {
-  /* Call this func when win gains focus */
+void input_btns_grab(Window const win) {
   input_update_numlockmask();
 	unsigned const modifiers[] = {
     0, LockMask, numlockmask, numlockmask | LockMask
@@ -78,8 +77,7 @@ void input_btns_grab(long const win) {
             GrabModeAsync, GrabModeSync, None, None);
 }
 
-void input_btns_ungrab(long const win) {
-  /* Call this func when win loses focus */
+void input_btns_ungrab(Window const win) {
   XUngrabButton(dpy, AnyButton, AnyModifier, win);
   XGrabButton(dpy, AnyButton, AnyModifier, win,
     false, ButtonPressMask | ButtonReleaseMask, 
@@ -104,11 +102,12 @@ void input_key(unsigned const mask, unsigned const code) {
     }
 }
 
-void input_btn(unsigned const mask, unsigned const code) {
-  unsigned const mod = input_cleanmask(mask);
+void input_btn(unsigned const state, 
+    unsigned const code) {
+  unsigned const mod = input_cleanmask(state);
   for (size_t i = 0; i < btnlen; i++)
     if (input_cleanmask(BTN[i].mod) == mod &&
-        XKeysymToKeycode(dpy, BTN[i].sym) == code) {
+          BTN[i].sym == code) {
       BTN[i].call();
       break;
     }

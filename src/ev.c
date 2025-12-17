@@ -13,6 +13,7 @@
 #include "prop.h"
 
 extern Display* dpy;
+extern cblk_t wks;
 extern wk_t* currwk;
 extern wg_t status;
 
@@ -48,7 +49,7 @@ static void ev_configure_notify(void) {
   if (win == DefaultRootWindow(dpy)) {
     /* Configure root window */
     mon_conf();
-    cli_currmon_move();
+    /*cli_currmon_move();*/
     panel_conf();
     panel_icos_arrange();
     panel_arrange();
@@ -84,11 +85,14 @@ static void ev_map_request(void) {
 
 static void ev_destroy_notify(void) {
   Window const win = xev.xdestroywindow.window;
-  cli_t* const c = cli(win);
-  if (c) {
-    wm_cli_kill(c);
-    panel_icos_arrange();
-    panel_arrange();
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
+    cli_t* const c = cli(win, wk);
+    if (c) {
+      wm_cli_kill(c);
+      panel_icos_arrange();
+      panel_arrange();
+      break;
+    }
   }
 }
 
@@ -148,12 +152,14 @@ static void ev_key_press(void) {
 static void ev_btn_press(void) {
   fprintf(stdout, "EV: Btn Press\n");
   Window const win = xev.xbutton.window;
-  cli_t* const c = currwk_cli(win);
+  cli_t* const c = cli(win, currwk);
+  /*
   if (c && c->hdr.win == win)
     wm_cli_translate(c);
   else if (c && c->par.win == win)
     wm_cli_resize(c);
-  else if (c) {
+  */
+  if (c) {
     unsigned const state = xev.xbutton.state;
     unsigned const code = xev.xbutton.button;
     input_btn(state, code);
@@ -163,7 +169,7 @@ static void ev_btn_press(void) {
 static void ev_enter_notify(void) {
   Window const win = xev.xcrossing.window;
   fprintf(stdout, "EV: Enter Notify window 0x%lx\n", win);
-  cli_t* const c = currwk_cli(win);
+  cli_t* const c = cli(win, currwk);
   if (c) {
     if (win == c->min.win)
       wg_pixmap_fill(&c->min, wg_SEL);
@@ -179,7 +185,7 @@ static void ev_enter_notify(void) {
 static void ev_leave_notify(void) {
   Window const win = xev.xcrossing.window;
   fprintf(stdout, "EV: Leave Notify window 0x%lx\n", win);
-  cli_t* const c = currwk_cli(win);
+  cli_t* const c = cli(win, currwk);
   if (c) {
     unsigned const clr = c == currwk->currc ? wg_ACT : 
       wg_BG;
@@ -200,9 +206,13 @@ static void ev_focus_change(void) {
   int const detail = xfocus->detail;
   (void) detail;
   fprintf(stdout, "EV: Focus Change Window 0x%lx\n", win);
-  cli_t* const c = cli(win);
-  if (c)
-    wm_cli_focus(c);
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
+    cli_t* const c = cli(win, wk);
+    if (c) {
+      wm_cli_focus(c);
+      break;
+    }
+  }
 }
 
 static void ev_property_notify(void) {
@@ -215,12 +225,15 @@ static void ev_property_notify(void) {
     return;
   }
 
-  cli_t* const c = cli(win);
-  if (c) {
-    wg_str_set(&c->hdr, prop_name(win));
-    wg_str_draw(&c->hdr, c == currwk->currc ? wg_ACT : 
-        wg_BG,
-      c->par.bdrw);
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
+    cli_t* const c = cli(win, wk);
+    if (c) {
+      wg_str_set(&c->hdr, prop_name(win));
+      wg_str_draw(&c->hdr, c == currwk->currc ? wg_ACT : 
+          wg_BG,
+        c->par.bdrw);
+      break;
+    }
   }
 }
 
@@ -228,11 +241,19 @@ static void ev_expose(void) {
   Window const win = xev.xexpose.window;
   /* This excludes exposing override_redirects */
   fprintf(stdout, "EV: Expose Window 0x%lx\n", win);
-  cli_t* const c = cli(win);
-  if (c)
-    cli_wg_focus(c, c == currwk->currc ? wg_ACT : wg_BG);
-  else if (win == status.win)
+
+  if (win == status.win) {
     panel_status_focus(wg_ACT);
+    return;
+  }
+
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
+    cli_t* const c = cli(win, wk);
+    if (c) {
+      cli_wg_focus(c, c == wk->currc ? wg_ACT : wg_BG);
+      break;
+    }
+  }
 }
 
 void ev_init(void) {

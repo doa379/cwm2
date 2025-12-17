@@ -1,7 +1,6 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
 
 extern Display* dpy;

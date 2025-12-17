@@ -65,6 +65,7 @@ int main(int const ARGC, char const* ARGV[]) {
     return -1;
   }
 
+  font_cursor_init();
   mon_conf();
   tray_conf();
   cli_wg_init();
@@ -77,6 +78,7 @@ int main(int const ARGC, char const* ARGV[]) {
   while (sig_status == 0)
     ev_call();
 
+  font_cursor_deinit();
   wm_deinit();
   panel_deinit();
   clr_deinit();

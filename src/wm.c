@@ -4,8 +4,11 @@
 
 #include "wk.h"
 #include "cli.h"
+#include "input.h"
+#include "font.h"
 
 extern Display* dpy;
+extern font_crs_t font_crs;
 
 cblk_t wks;
 wk_t* prevwk;
@@ -67,13 +70,16 @@ cli_t* wm_cli_map(Window const win, int const x,
     ButtonReleaseMask |
     ExposureMask;
   
-  cli_t const c = cli_init(win);
+  cli_t const c = cli_init(win, currwk);
   /* Ptrs will invalidate after mapping/realloc */
   int const currc = currwk->clis.size ? 
     cblk_dist(&currwk->clis, currwk->currc) : -1;
   cli_t* const nextc = cblk_map(&currwk->clis, &c);
   if (nextc) {
+    XUngrabButton(dpy, AnyButton, AnyModifier, win);
     XSelectInput(dpy, nextc->par.win, CLIMASK);
+    XUngrabButton(dpy, AnyButton, AnyModifier, 
+      nextc->par.win);
     XSelectInput(dpy, nextc->hdr.win, HDRMASK);
     XSelectInput(dpy, nextc->min.win, BTNMASK);
     XSelectInput(dpy, nextc->max.win, BTNMASK);
@@ -97,11 +103,19 @@ cli_t* wm_cli_map(Window const win, int const x,
 }
 
 void wm_cli_focus(cli_t* const c) {
-  cli_focus(c);
+  if (currwk->currc) {
+    input_btns_ungrab(currwk->currc->par.win);
+    cli_wg_focus(currwk->currc, wg_BG);
+  }
+  
   XRaiseWindow(dpy, c->par.win);
   XRaiseWindow(dpy, c->ico.win);
   XSetInputFocus(dpy, c->par.win, RevertToPointerRoot,
     CurrentTime);
+  input_btns_grab(c->par.win);
+  cli_wg_focus(c, wg_ACT);
+  currwk->prevc = currwk->currc ? currwk->currc : c;
+  currwk->currc = c;
 }
 
 int wm_cli_move(wk_t* const wk) {
@@ -150,35 +164,49 @@ void wm_cli_kill(cli_t* const c) {
 void wm_cli_translate(cli_t* const c) {
   fprintf(stdout, "Calling move on client\n");
   XEvent xev;
-  static unsigned const MASK = 
+  static unsigned const MOUSEMASK = 
     ButtonPressMask |
     ButtonReleaseMask |
-    PointerMotionMask |
+    PointerMotionMask;
+  if (XGrabPointer(dpy, DefaultRootWindow(dpy), False, 
+        MOUSEMASK, GrabModeAsync, GrabModeAsync, None, 
+          font_crs.move, CurrentTime) != GrabSuccess)
+    return;
+
+  static unsigned const MASK = 
+    MOUSEMASK |
     ExposureMask |
     SubstructureRedirectMask;
-
   do {
     XMaskEvent(dpy, MASK, &xev);
-    switch (xev.type) {
-      case ConfigureRequest:
-      case Expose:
-      case MapRequest:
-        break;
-      case MotionNotify:
-        int const x = xev.xmotion.x;
-        int const y = xev.xmotion.y;
-        int const x_root = xev.xmotion.x_root;
-        int const y_root = xev.xmotion.y_root;
-        if (XMoveWindow(dpy, c->par.win, x_root, y_root)) {
-          c->par.x0 = c->par.x;
-          c->par.x = x_root;
-          c->par.y0 = c->par.y;
-          c->par.y = y_root;
-        }
-    } 
+    if (xev.type == MotionNotify) {
+      int const x = xev.xmotion.x;
+      int const y = xev.xmotion.y;
+      int const x_root = xev.xmotion.x_root;
+      int const y_root = xev.xmotion.y_root;
+      if (XMoveWindow(dpy, c->par.win, x_root, y_root)) {
+        c->par.x0 = c->par.x;
+        c->par.x = x_root;
+        c->par.y0 = c->par.y;
+        c->par.y = y_root;
+      }
+    } else
+      break;
   } while (xev.type != ButtonRelease);
+  XUngrabPointer(dpy, CurrentTime);
 }
 
 void wm_cli_resize(cli_t* const c) {
   fprintf(stdout, "Calling resize on client\n");
+  static unsigned const MOUSEMASK = 
+    ButtonPressMask |
+    ButtonReleaseMask |
+    PointerMotionMask;
+  if (XGrabPointer(dpy, DefaultRootWindow(dpy), False, 
+        MOUSEMASK, GrabModeAsync, GrabModeAsync, None, 
+          font_crs.resize, CurrentTime) != GrabSuccess)
+    return;
+ 
+
+  XUngrabPointer(dpy, CurrentTime);
 }

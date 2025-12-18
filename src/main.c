@@ -58,14 +58,13 @@ int main(int const ARGC, char const* ARGV[]) {
       clr_init()        != 0 ||
       arrange_init()    != 0 ||
       mon_mons_init(1)  != 0 ||
-      wm_init(nwks)     != 0 ||
-      tray_init()       != 0 ||
-      root_init()       != 0) {
+      wm_init(num_wks)  != 0 ||
+      tray_init()       != 0) {
     XCloseDisplay(dpy);
     return -1;
   }
 
-  font_cursor_init();
+  root_init();
   mon_conf();
   tray_conf();
   cli_wg_init();
@@ -78,12 +77,11 @@ int main(int const ARGC, char const* ARGV[]) {
   while (sig_status == 0)
     ev_call();
 
-  font_cursor_deinit();
+  root_deinit();
   wm_deinit();
   panel_deinit();
   clr_deinit();
   font_deinit();
-  root_deinit();
   XCloseDisplay(dpy);
   return 0;
 }

@@ -3,46 +3,38 @@
 #include <stdio.h>
 
 #include "input.h"
+#include "font.h"
 #include "cblk.h"
 
 extern Display* dpy;
+extern font_t font;
 
 static cblk_t clis;
 
 int root_init(void) {
-  {
-    XSetWindowAttributes wa = {
-      .cursor = XCreateFontCursor(dpy, XC_left_ptr)
-    };
-  
-    XChangeWindowAttributes(dpy, DefaultRootWindow(dpy),
-      CWEventMask | CWCursor, &wa);
-    XFreeCursor(dpy, wa.cursor);
-  }
+  XSetWindowAttributes wa = {
+    .cursor = font.crs.ptr,
+    .event_mask = SubstructureRedirectMask |
+      SubstructureNotifyMask |
+      ButtonPressMask |
+      PointerMotionMask |
+      EnterWindowMask |
+      LeaveWindowMask |
+      StructureNotifyMask |
+      PropertyChangeMask,
+  };
 
-  XSelectInput(dpy, DefaultRootWindow(dpy),
-    SubstructureRedirectMask |
-    SubstructureNotifyMask |
-    ButtonPressMask |
-    ButtonReleaseMask |
-    PointerMotionMask |
-    EnterWindowMask |
-    LeaveWindowMask |
-    StructureNotifyMask |
-    PropertyChangeMask |
-    ExposureMask);
-
+  XChangeWindowAttributes(dpy, DefaultRootWindow(dpy),
+    CWEventMask | CWCursor, &wa);
+  XSelectInput(dpy, DefaultRootWindow(dpy), 
+      wa.event_mask);
   input_keys_grab(DefaultRootWindow(dpy));
-  XDeleteProperty(dpy, DefaultRootWindow(dpy), 
-    XInternAtom(dpy, "_NET_CLIENT_LIST", False));
   return 0;
 }
 
 void root_deinit(void) {
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot,
       CurrentTime);
-  XDeleteProperty(dpy, DefaultRootWindow(dpy), 
-    XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False));
 }
 
 int root_query_init(void) {

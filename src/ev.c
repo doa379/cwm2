@@ -153,12 +153,11 @@ static void ev_btn_press(void) {
   fprintf(stdout, "EV: Btn Press\n");
   Window const win = xev.xbutton.window;
   cli_t* const c = cli(win, currwk);
-  /*
   if (c && c->hdr.win == win)
     wm_cli_translate(c);
   else if (c && c->par.win == win)
     wm_cli_resize(c);
-  */
+  
   if (c) {
     unsigned const state = xev.xbutton.state;
     unsigned const code = xev.xbutton.button;

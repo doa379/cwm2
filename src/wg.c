@@ -3,10 +3,11 @@
 #include <stddef.h>
 
 #include "wg.h"
+#include "font.h"
 #include "clr.h"
 
 extern Display* dpy;
-extern XftFont* xftfont;
+extern font_t font;
 extern clr_t CLR[];
 
 wg_t wg_init(Window const parwin, 
@@ -51,7 +52,7 @@ void wg_str_set(wg_t* const wg, char const* str) {
   wg->str.len = strlen(str);
   if (wg->str.len) {
     XGlyphInfo extents;
-    XftTextExtentsUtf8(dpy, xftfont, 
+    XftTextExtentsUtf8(dpy, font.xft, 
       (XftChar8*) wg->str.data, wg->str.len, &extents);
     wg->str.ext = extents.xOff;
   }
@@ -60,11 +61,11 @@ void wg_str_set(wg_t* const wg, char const* str) {
 void wg_str_draw(wg_t* const wg, unsigned const clr, 
     unsigned const tx) {
   if (wg->str.len) {
-    int const ty = 0.5 * 
-      (wg->h - 
-       2 * wg->bdrw + xftfont->ascent - xftfont->descent);
-    XftDrawStringUtf8(wg->xft, &CLR[clr + 3].xft, xftfont,
-      tx, ty, (XftChar8*) wg->str.data, wg->str.len);
+    int const ty = 
+      0.5 * (wg->h - 2 * wg->bdrw + font.scent);
+    XftDrawStringUtf8(wg->xft, &CLR[clr + 3].xft, 
+        font.xft, tx, ty, 
+          (XftChar8*) wg->str.data, wg->str.len);
   }
 }
 

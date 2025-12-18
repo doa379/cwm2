@@ -11,11 +11,11 @@ typedef struct cli_s {
   wg_t hdr;
   wg_t min;
   wg_t max;
+  wg_t res;
   wg_t cls;
   wg_t shd;
   wg_t ico;
   int mode;
-  int fs;
 } cli_t;
 
 enum mode { MIN, MAX, RES, CLS };

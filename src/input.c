@@ -14,12 +14,12 @@ extern size_t const kbdlen;
 extern size_t const btnlen;
 static unsigned numlockmask;
 
-static void input_update_numlockmask(void) {
+static void input_numlockmask_update(void) {
 	XModifierKeymap* modmap = XGetModifierMapping(dpy);
 	for (unsigned i = 0; i < 8; i++)
 		for (unsigned j = 0; j < modmap->max_keypermod; j++)
-			if (modmap->modifiermap[i * modmap->max_keypermod + j]
-				== XKeysymToKeycode(dpy, XK_Num_Lock))
+			if (modmap->modifiermap[i * modmap->max_keypermod +
+            j] == XKeysymToKeycode(dpy, XK_Num_Lock))
 				numlockmask = (1 << i);
 
   XFreeModifiermap(modmap);
@@ -37,7 +37,7 @@ static unsigned input_cleanmask(unsigned const mask) {
 }
 
 void input_keys_grab(Window const win) {
-  input_update_numlockmask();
+  input_numlockmask_update();
 	unsigned const modifiers[] = {
     0, LockMask, numlockmask, numlockmask | LockMask
   };
@@ -58,29 +58,30 @@ void input_keys_grab(Window const win) {
       if (KBD[i].sym == syms[(k - start) * skip])
  				for (int j = 0; j < 4; j++)
  					XGrabKey(dpy, k, KBD[i].mod | modifiers[j], 
-            win, true, GrabModeAsync, GrabModeAsync);
+            win, True, GrabModeAsync, GrabModeAsync);
 
  	XFree(syms);
 }
 
 void input_btns_grab(Window const win) {
-  input_update_numlockmask();
+  input_numlockmask_update();
 	unsigned const modifiers[] = {
     0, LockMask, numlockmask, numlockmask | LockMask
   };
 
+  XUngrabButton(dpy, AnyButton, AnyModifier, win);
   for (size_t i = 0; i < btnlen; i++)
     for (int j = 0; j < 4; j++)
       XGrabButton(dpy, BTN[i].sym, 
         BTN[i].mod | modifiers[j],
-          win, false, ButtonPressMask | ButtonReleaseMask, 
+          win, False, ButtonPressMask | ButtonReleaseMask, 
             GrabModeAsync, GrabModeSync, None, None);
 }
 
 void input_btns_ungrab(Window const win) {
   XUngrabButton(dpy, AnyButton, AnyModifier, win);
   XGrabButton(dpy, AnyButton, AnyModifier, win,
-    false, ButtonPressMask | ButtonReleaseMask, 
+    False, ButtonPressMask | ButtonReleaseMask, 
       GrabModeSync, GrabModeSync, None, None);
 }
 

@@ -97,10 +97,11 @@ Modifiers {
 */
 
 char const WMNAME[] = "cwm2-0.1";
-unsigned const nwks = 4;
-char const* font = "Fixed:size=12";
+unsigned const num_wks = 4;
+char const* font_name = "Fixed:size=12";
 /* Values in px */
 unsigned const bdrw = 2;
+unsigned const gaps = 0;
 unsigned const trayw = 100;
 int const COLORS[] = { 
 /* Color Scheme { BG, ACT, SEL } */

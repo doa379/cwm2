@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "panel.h"
+#include "font.h"
 #include "mon.h"
 #include "wk.h"
 #include "cli.h"
@@ -14,8 +15,7 @@ extern wk_t* prevwk;
 extern wk_t* currwk;
 extern cblk_t mons;
 
-extern unsigned ch;
-extern unsigned cw;
+extern font_t font;
 extern unsigned const bdrw;
 
 static unsigned wkw;
@@ -25,14 +25,14 @@ wg_t panel;
 
 void panel_init(void) {
   panel = wg_init(DefaultRootWindow(dpy), 0, 0, 
-      1, ch, 0);
+      1, font.ch, 0);
   wg_win_setbg(panel.win, wg_BG);
 
   for (wk_t* wk = wks.beg; wk != wks.end; wk++)
     XReparentWindow(dpy, wk->wg.win, panel.win, 0, 0);
 
-  wkw = cw;
-  status = wg_init(panel.win, 0, 0, 1, ch, 0);
+  wkw = font.cw;
+  status = wg_init(panel.win, 0, 0, 1, font.ch, 0);
   static unsigned const STATUSMASK = 
     PropertyChangeMask |
     ExposureMask;

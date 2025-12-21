@@ -11,6 +11,8 @@
 #include "panel.h"
 #include "tray.h"
 #include "prop.h"
+#include "root.h"
+#include "mascot.h"
 
 extern Display* dpy;
 extern cblk_t wks;
@@ -54,6 +56,7 @@ static void ev_configure_notify(void) {
     panel_icos_arrange();
     panel_arrange();
     tray_conf();
+    mascot_draw();
   }
 }
 
@@ -240,8 +243,10 @@ static void ev_expose(void) {
   Window const win = xev.xexpose.window;
   /* This excludes exposing override_redirects */
   fprintf(stdout, "EV: Expose Window 0x%lx\n", win);
-
-  if (win == status.win) {
+  if (win == DefaultRootWindow(dpy)) {
+    mascot_draw();
+    return;
+  } else if (win == status.win) {
     panel_status_focus(wg_ACT);
     return;
   }

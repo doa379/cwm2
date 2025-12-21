@@ -4,6 +4,11 @@
 
 int wm_init(unsigned const);
 void wm_deinit(void);
+wk_t* wm_wk_map(void);
+void wm_wk_deinit(wk_t* const);
+int wm_wk_unmap(wk_t* const);
+int wm_wk_focus(wk_t* const);
+void wm_wk_focus_all(void);
 cli_t* wm_cli_map(Window const, int const, int const);
 void wm_cli_focus(cli_t* const);
 int wm_cli_move(wk_t* const);

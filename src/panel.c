@@ -107,9 +107,9 @@ void panel_icos_arrange(void) {
 void panel_arrange(void) {
   for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     if (wk == currwk)
-      wk_wg_focus(&wk->wg, wg_ACT);
+      wk_wg_focus(wk, wg_ACT);
     else {
-      wk_wg_focus(&wk->wg, wg_BG);
+      wk_wg_focus(wk, wg_BG);
       if (wk->clis.size) {
         cli_t* const c = wk->currc;
         XMoveWindow(dpy, c->ico.win, 0, 0);
@@ -191,9 +191,9 @@ void panel_arrange_all(void) {
   /*
   for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     if (wk == currwk)
-      wk_wg_focus(&wk->wg, wg_ACT);
+      wk_wg_focus(wk, wg_ACT);
     else {
-      wk_wg_focus(&wk->wg, wg_BG);
+      wk_wg_focus(wk, wg_BG);
       if (wk->clis.size) {
         cli_t* const c = wk->currc;
         XMoveWindow(dpy, c->ico.win, 0, 0);

@@ -1,13 +1,14 @@
 #include <X11/Xlib.h>
-#include <X11/cursorfont.h>
 #include <stdio.h>
 
+#include "root.h"
 #include "input.h"
 #include "font.h"
 #include "cblk.h"
 
 extern Display* dpy;
 extern font_t font;
+extern int rootbg;
 
 static cblk_t clis;
 
@@ -21,7 +22,8 @@ int root_init(void) {
       EnterWindowMask |
       LeaveWindowMask |
       StructureNotifyMask |
-      PropertyChangeMask,
+      PropertyChangeMask |
+      ExposureMask,
   };
 
   XChangeWindowAttributes(dpy, DefaultRootWindow(dpy),
@@ -29,10 +31,13 @@ int root_init(void) {
   XSelectInput(dpy, DefaultRootWindow(dpy), 
       wa.event_mask);
   input_keys_grab(DefaultRootWindow(dpy));
+  XSetWindowBackground(dpy, DefaultRootWindow(dpy), rootbg);
+  XClearWindow(dpy, DefaultRootWindow(dpy));
   return 0;
 }
 
 void root_deinit(void) {
+  XClearWindow(dpy, DefaultRootWindow(dpy));
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot,
       CurrentTime);
 }

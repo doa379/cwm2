@@ -43,6 +43,7 @@ SRC=main.c \
 	tray.c \
 	arrange.c \
 	prop.c \
+	mascot.c \
 	clib.c \
 	cblk.c \
 	cstring.c

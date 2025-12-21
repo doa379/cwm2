@@ -36,7 +36,7 @@ void calls_mon3(void) {
 
 void calls_wk_prev(void) {
   wk_t* const wk = cblk_prev(&wks, currwk);
-  if (wk_focus(wk) == 0) {
+  if (wm_wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
@@ -44,28 +44,28 @@ void calls_wk_prev(void) {
 
 void calls_wk_next(void) {
   wk_t* const wk = cblk_next(&wks, currwk);
-  if (wk_focus(wk) == 0) {
+  if (wm_wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
 }
 
 void calls_wk_last(void) {
-  if (wk_focus(prevwk) == 0) {
+  if (wm_wk_focus(prevwk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
 }
 
 void calls_wk0(void) {
-  wk_focus_all();
+  wm_wk_focus_all();
   panel_icos_arrange_all();
   panel_arrange_all();
 }
 
 void calls_wk1(void) {
   wk_t* const wk = cblk_itr(&wks, 0);
-  if (wk_focus(wk) == 0) {
+  if (wm_wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
@@ -73,7 +73,7 @@ void calls_wk1(void) {
 
 void calls_wk2(void) {
   wk_t* const wk = cblk_itr(&wks, 1);
-  if (wk && wk_focus(wk) == 0) {
+  if (wk && wm_wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
@@ -81,7 +81,7 @@ void calls_wk2(void) {
 
 void calls_wk3(void) {
   wk_t* const wk = cblk_itr(&wks, 2);
-  if (wk && wk_focus(wk) == 0) {
+  if (wk && wm_wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
@@ -89,7 +89,7 @@ void calls_wk3(void) {
 
 void calls_wk4(void) {
   wk_t* const wk = cblk_itr(&wks, 3);
-  if (wk && wk_focus(wk) == 0) {
+  if (wk && wm_wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
@@ -97,7 +97,7 @@ void calls_wk4(void) {
 
 void calls_wk5(void) {
   wk_t* const wk = cblk_itr(&wks, 4);
-  if (wk && wk_focus(wk) == 0) {
+  if (wk && wm_wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
@@ -105,7 +105,7 @@ void calls_wk5(void) {
 
 void calls_wk6(void) {
   wk_t* const wk = cblk_itr(&wks, 5);
-  if (wk && wk_focus(wk) == 0) {
+  if (wk && wm_wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
@@ -113,7 +113,7 @@ void calls_wk6(void) {
 
 void calls_wk7(void) {
   wk_t* const wk = cblk_itr(&wks, 6);
-  if (wk && wk_focus(wk) == 0) {
+  if (wk && wm_wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
@@ -121,7 +121,7 @@ void calls_wk7(void) {
 
 void calls_wk8(void) {
   wk_t* const wk = cblk_itr(&wks, 7);
-  if (wk && wk_focus(wk) == 0) {
+  if (wk && wm_wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
@@ -129,21 +129,22 @@ void calls_wk8(void) {
 
 void calls_wk9(void) {
   wk_t* const wk = cblk_itr(&wks, 8);
-  if (wk && wk_focus(wk) == 0) {
+  if (wk && wm_wk_focus(wk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }
 }
 
 void calls_wk_map(void) {
-  if (wk_init()) {
+  if (wm_wk_map()) {
     panel_icos_arrange();
     panel_arrange();
   }
 }
 
 void calls_wk_unmap(void) {
-  if (wk_unmap(currwk) == 0 && wk_focus(currwk) == 0) {
+  if (wm_wk_unmap(currwk) == 0 && 
+        wm_wk_focus(currwk) == 0) {
     panel_icos_arrange();
     panel_arrange();
   }

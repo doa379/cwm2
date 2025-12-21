@@ -8,7 +8,7 @@
 
 extern Display* dpy;
 extern font_t font;
-extern clr_t CLR[];
+extern clr_pair_t clr_pair[];
 
 wg_t wg_init(Window const parwin, 
   int const x, int const y, int const w, int const h, 
@@ -63,24 +63,24 @@ void wg_str_draw(wg_t* const wg, unsigned const clr,
   if (wg->str.len) {
     int const ty = 
       0.5 * (wg->h - 2 * wg->bdrw + font.scent);
-    XftDrawStringUtf8(wg->xft, &CLR[clr + 3].xft, 
+    XftDrawStringUtf8(wg->xft, &clr_pair[clr].fg.xft, 
         font.xft, tx, ty, 
           (XftChar8*) wg->str.data, wg->str.len);
   }
 }
 
 void wg_win_setbg(Window const win, unsigned const clr) {
-  XSetWindowBackground(dpy, win, CLR[clr].pix);
+  XSetWindowBackground(dpy, win, clr_pair[clr].bg.pix);
   XClearWindow(dpy, win);
 }
 
 void wg_win_setbdr(Window const win, unsigned const clr) {
-  XSetWindowBorder(dpy, win, CLR[clr].pix);
+  XSetWindowBorder(dpy, win, clr_pair[clr].bg.pix);
 }
 
 void wg_gc_setbg(GC const gc, unsigned const clr) {
-  XSetBackground(dpy, gc, CLR[clr].pix);
-  XSetForeground(dpy, gc, CLR[clr + 3].pix);
+  XSetBackground(dpy, gc, clr_pair[clr].bg.pix);
+  XSetForeground(dpy, gc, clr_pair[clr].fg.pix);
 }
 
 void wg_pixmap_fill(wg_t const* wg, unsigned const clr) {

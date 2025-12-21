@@ -6,95 +6,36 @@
 #include "cli.h"
 
 extern Display* dpy;
-extern cblk_t wks;
-extern wk_t* prevwk;
-extern wk_t* currwk;
-
 extern font_t font;
 extern unsigned const bdrw;
 
 static size_t const NRES = 100;
 
-wk_t* wk_init(void) {
+wk_t wk_init(void) {
   wg_t const wg = wg_init(DefaultRootWindow(dpy), 0, 
       bdrw, font.cw, font.ch - 2 * bdrw, bdrw);
   wg_win_setbg(wg.win, wg_BG);
   wg_win_setbdr(wg.win, wg_ACT);
 
-  wk_t const wk = {
+  return (wk_t) {
     .clis = cblk_init(sizeof(cli_t), NRES),
     .prevc = NULL,
     .currc = NULL,
     .wg = wg
   };
-
-  size_t const currwk_ = cblk_dist(&wks, currwk);
-  wk_t* const nextwk = cblk_map(&wks, &wk);
-  if (nextwk) {
-    prevwk = cblk_itr(&wks, currwk_);
-    currwk = nextwk;
-    return currwk;
-  }
-
-  return NULL;
 }
 
-void wk_deinit(wk_t* wk) {
+void wk_deinit(wk_t* const wk) {
   wg_deinit(&wk->wg);
   cblk_deinit(&wk->clis);
-  cblk_unmap(&wks, wk);
 }
 
-void wk_wg_focus(wg_t* const wg, unsigned const clr) {
-  wg_win_setbg(wg->win, clr);
-}
-
-int wk_focus(wk_t* const wk) {
-  if (wk == currwk)
-    return -1;
-
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
-    for (cli_t* c = wk->clis.beg; 
-        c != wk->clis.end; c++) {
-      XUnmapWindow(dpy, c->par.win);
-    }
-  
-  prevwk = currwk;
-  currwk = wk;
-  if (currwk->clis.size) {
-    for (cli_t* c = currwk->clis.beg; 
-        c != currwk->clis.end; c++)
-      XMapWindow(dpy, c->par.win);
-
-    XSync(dpy, True);
-    cli_t* const c = wk->currc;
-    wm_cli_focus(c);
-  }
-
-  return 0;
-}
-
-void wk_focus_all(void) {
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
-    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
-      XMapWindow(dpy, c->par.win);
-   
-  if (currwk->clis.size) {
-    cli_t* const c = currwk->currc;
-    wm_cli_focus(c);
-  } else if (prevwk->clis.size) {
-    cli_t* const c = prevwk->currc;
-    wm_cli_focus(c);
-  } else {
-    for (wk_t* wk = wks.beg; wk != wks.end; wk++)
-      if (wk->clis.size) {
-        cli_t* const c = wk->currc;
-        wm_cli_focus(c);
-      }
-  }
+void wk_wg_focus(wk_t* const wk, unsigned const clr) {
+  wg_win_setbg(wk->wg.win, clr);
 }
 
 int wk_unmap(wk_t* const wk) {
+  /*
   if (wks.size == 1)
     return -1;
 
@@ -131,13 +72,13 @@ int wk_unmap(wk_t* const wk) {
     nextwk->currc = cblk_itr(&nextwk->clis, currc);
   }
 
-  wk_deinit(wk);
+  wm_wk_unmap(wk);
   
   currwk = cblk_itr(&wks, wk_);
   prevwk = cblk_itr(&wks, prevwk_);
   
   if (wks.size == 1)
     prevwk = currwk;
-  
+  */
   return 0;
 }

@@ -9,5 +9,10 @@ typedef struct {
   XftColor xft;
 } clr_t;
 
+typedef struct {
+  clr_t bg;
+  clr_t fg;
+} clr_pair_t;
+
 int clr_init(void);
 void clr_deinit(void);

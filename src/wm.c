@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <X11/Xlib.h>
 
+#include "wm.h"
 #include "wk.h"
 #include "cli.h"
 #include "input.h"
@@ -22,7 +23,10 @@ int wm_init(unsigned const n) {
   }
 
   for (unsigned i = 0; i < n; i++)
-    wk_init();
+    if (wm_wk_map() == NULL) {
+      fprintf(stderr, "Failed to alloc wk\n");
+      return -1;
+    }
 
   prevwk = currwk = wks.beg;
   return 0;
@@ -43,10 +47,80 @@ void wm_deinit(void) {
       cli_deinit(c);
     }
 
-    wk_deinit(wk);
+    wm_wk_deinit(wk);
   }
   
   cblk_deinit(&wks);
+}
+
+wk_t* wm_wk_map(void) {
+  wk_t const wk = wk_init();
+  size_t const currwk_ = cblk_dist(&wks, currwk);
+  wk_t* const nextwk = cblk_map(&wks, &wk);
+  if (nextwk) {
+    prevwk = cblk_itr(&wks, currwk_);
+    currwk = nextwk;
+    return currwk;
+  }
+
+  return NULL;
+}
+
+void wm_wk_deinit(wk_t* const wk) {
+  wk_deinit(wk);
+  cblk_unmap(&wks, wk);
+}
+
+int wm_wk_unmap(wk_t* const wk) {
+  if (wks.size == 1)
+    return -1;
+
+  return 0;
+}
+
+int wm_wk_focus(wk_t* const wk) {
+  if (wk == currwk)
+    return -1;
+
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+    for (cli_t* c = wk->clis.beg; 
+        c != wk->clis.end; c++) {
+      XUnmapWindow(dpy, c->par.win);
+    }
+  
+  prevwk = currwk;
+  currwk = wk;
+  if (currwk->clis.size) {
+    for (cli_t* c = currwk->clis.beg; 
+        c != currwk->clis.end; c++)
+      XMapWindow(dpy, c->par.win);
+
+    XSync(dpy, True);
+    cli_t* const c = wk->currc;
+    wm_cli_focus(c);
+  }
+
+  return 0;
+}
+
+void wm_wk_focus_all(void) {
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
+      XMapWindow(dpy, c->par.win);
+   
+  if (currwk->clis.size) {
+    cli_t* const c = currwk->currc;
+    wm_cli_focus(c);
+  } else if (prevwk->clis.size) {
+    cli_t* const c = prevwk->currc;
+    wm_cli_focus(c);
+  } else {
+    for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+      if (wk->clis.size) {
+        cli_t* const c = wk->currc;
+        wm_cli_focus(c);
+      }
+  }
 }
 
 cli_t* wm_cli_map(Window const win, int const x, 
@@ -168,11 +242,6 @@ void wm_cli_translate(cli_t* const c) {
           font.crs.move, CurrentTime) != GrabSuccess)
     return;
 
-  static unsigned const MASK = 
-    MOUSEMASK |
-    ExposureMask |
-    SubstructureRedirectMask;
-  (void) MASK;
   do {
     XMaskEvent(dpy, MOUSEMASK, &xev);
     if (xev.type == MotionNotify) {
@@ -186,10 +255,7 @@ void wm_cli_translate(cli_t* const c) {
         c->par.y0 = c->par.y;
         c->par.y = y_root;
       }
-    } else if (xev.type == ConfigureRequest ||
-                xev.type == Expose || 
-                xev.type == MapRequest)
-        break;
+    }
   } while (xev.type != ButtonRelease);
   XUngrabPointer(dpy, CurrentTime);
 }

@@ -14,6 +14,7 @@
 #include "prop.h"
 #include "tray.h"
 #include "panel.h"
+#include "mascot.h"
 #include "../config.h"
 
 static int xerror;
@@ -72,11 +73,14 @@ int main(int const ARGC, char const* ARGV[]) {
   panel_conf();
   panel_icos_arrange();
   panel_arrange();
+  mascot_init();
+  mascot_draw();
   ev_init();
   XSync(dpy, False);
   while (sig_status == 0)
     ev_call();
 
+  mascot_deinit();
   root_deinit();
   wm_deinit();
   panel_deinit();

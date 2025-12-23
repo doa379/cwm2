@@ -2,19 +2,19 @@
 #include <X11/Xutil.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <unistd.h>
 
 #include "input.h"
-#include "calls.h"
 
 extern Display* dpy;
 extern input_t const KBD[];
 extern input_t const BTN[];
 extern size_t const kbdlen;
 extern size_t const btnlen;
+
 static unsigned numlockmask;
 
-static void input_numlockmask_update(void) {
+static void 
+input_numlockmask_update(void) {
 	XModifierKeymap* modmap = XGetModifierMapping(dpy);
 	for (unsigned i = 0; i < 8; i++)
 		for (unsigned j = 0; j < modmap->max_keypermod; j++)
@@ -25,7 +25,8 @@ static void input_numlockmask_update(void) {
   XFreeModifiermap(modmap);
 }
 
-static unsigned input_cleanmask(unsigned const mask) {
+static unsigned 
+input_cleanmask(unsigned const mask) {
   return mask & ~(numlockmask | LockMask) & 
       (ShiftMask |
        ControlMask |
@@ -36,7 +37,8 @@ static unsigned input_cleanmask(unsigned const mask) {
        Mod5Mask);
 }
 
-void input_keys_grab(Window const win) {
+void 
+input_keys_grab(Window const win) {
   input_numlockmask_update();
 	unsigned const modifiers[] = {
     0, LockMask, numlockmask, numlockmask | LockMask
@@ -63,7 +65,8 @@ void input_keys_grab(Window const win) {
  	XFree(syms);
 }
 
-void input_btns_grab(Window const win) {
+void
+input_btns_grab(Window const win) {
   input_numlockmask_update();
 	unsigned const modifiers[] = {
     0, LockMask, numlockmask, numlockmask | LockMask
@@ -78,38 +81,32 @@ void input_btns_grab(Window const win) {
             GrabModeAsync, GrabModeSync, None, None);
 }
 
-void input_btns_ungrab(Window const win) {
+void
+input_btns_ungrab(Window const win) {
   XUngrabButton(dpy, AnyButton, AnyModifier, win);
   XGrabButton(dpy, AnyButton, AnyModifier, win,
     False, ButtonPressMask | ButtonReleaseMask, 
       GrabModeSync, GrabModeSync, None, None);
 }
 
-void input_key(unsigned const mask, unsigned const code) {
+input_t const* 
+input_key(unsigned const mask, unsigned const code) {
   unsigned const mod = input_cleanmask(mask);
   for (size_t i = 0; i < kbdlen; i++)
     if (input_cleanmask(KBD[i].mod) == mod && 
-        XKeysymToKeycode(dpy, KBD[i].sym) == code) {
-      if (KBD[i].cmd) {
-        if (fork() == 0) {
-          close(ConnectionNumber(dpy));
-          char* const args[] = { NULL };
-          execvp(KBD[i].cmd, args);
-        }
-      } else if (KBD[i].call)
-          KBD[i].call();
-
-      break;
-    }
+        XKeysymToKeycode(dpy, KBD[i].sym) == code)
+      return &KBD[i];
+  
+  return NULL;
 }
 
-void input_btn(unsigned const state, 
-    unsigned const code) {
+input_t const* 
+input_btn(unsigned const state, unsigned const code) {
   unsigned const mod = input_cleanmask(state);
   for (size_t i = 0; i < btnlen; i++)
     if (input_cleanmask(BTN[i].mod) == mod &&
-          BTN[i].sym == code) {
-      BTN[i].call();
-      break;
-    }
+          BTN[i].sym == code)
+      return &BTN[i];
+  
+  return NULL;
 }

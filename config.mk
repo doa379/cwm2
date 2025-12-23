@@ -36,10 +36,12 @@ SRC=main.c \
 	wk.c \
 	cli.c \
 	ev.c \
+	evcalls.c \
 	input.c \
 	calls.c \
 	wg.c \
 	panel.c \
+	status.c \
 	tray.c \
 	arrange.c \
 	prop.c \

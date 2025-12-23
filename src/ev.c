@@ -1,41 +1,33 @@
 #include <X11/Xlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
 #include <X11/Xatom.h>
+#include <stdio.h>
 
+#include "evcalls.h"
 #include "input.h"
-#include "mon.h"
-#include "wm.h"
-#include "wk.h"
-#include "panel.h"
-#include "tray.h"
-#include "prop.h"
-#include "root.h"
-#include "mascot.h"
 
 extern Display* dpy;
-extern cblk_t wks;
-extern wk_t* currwk;
-extern wg_t status;
 
 static XEvent xev;
 static void (*EV[LASTEvent])(void);
 
-static void ev_noop(void) {
+static void
+ev_noop(void) {
 
 }
 
-static void ev_map_notify(void) {
+static void
+ev_map_notify(void) {
 
 }
 
-static void ev_unmap_notify(void) {
+static void
+ev_unmap_notify(void) {
   Window const win = xev.xunmap.window;
   (void) win;
 }
 
-static void ev_client_message(void) {
+static void
+ev_client_message(void) {
   Window const win = xev.xclient.window;
   Atom const prop = xev.xclient.message_type;
   if (win == DefaultRootWindow(dpy))
@@ -44,23 +36,16 @@ static void ev_client_message(void) {
       xev.xclient.data.l[0]);
 }
 
-static void ev_configure_notify(void) {
+static void
+ev_configure_notify(void) {
   Window const win = xev.xconfigure.window;
   int const w = xev.xconfigure.width;
   int const h = xev.xconfigure.height;
-  if (win == DefaultRootWindow(dpy)) {
-    /* Configure root window */
-    mon_conf();
-    /*cli_currmon_move();*/
-    panel_conf();
-    panel_icos_arrange();
-    panel_arrange();
-    tray_conf();
-    mascot_draw();
-  }
+  evcalls_configure_notify(win);
 }
 
-static void ev_map_request(void) {
+static void
+ev_map_request(void) {
   Window const parwin = xev.xmaprequest.parent;
   (void) parwin;
   Window const win = xev.xmaprequest.window;
@@ -68,38 +53,21 @@ static void ev_map_request(void) {
   static XWindowAttributes wa;
   if (XGetWindowAttributes(dpy, win, &wa) == 0)
     return;
-  else if (wa.override_redirect) {
-    /* Still need to dress these up */
-    XMapRaised(dpy, win);
-    XSetInputFocus(dpy, win, RevertToPointerRoot,
-      CurrentTime);
-  } else {
-    cli_t* c = wm_cli_map(win, wa.x, wa.y);
-    if (c) {
-      wg_str_set(&c->ico, prop_ico(win));
-      wg_str_set(&c->hdr, prop_name(win));
-      wm_cli_focus(c);
-      cli_conf(c, wa.width, wa.height);
-      panel_icos_arrange();
-      panel_arrange();
-    }
-  }
+  else if (wa.override_redirect)
+    evcalls_map_override_redirect(win);
+  else 
+    evcalls_map_request(win, wa.x, wa.y, wa.width, 
+      wa.height);
 }
 
-static void ev_destroy_notify(void) {
+static void
+ev_destroy_notify(void) {
   Window const win = xev.xdestroywindow.window;
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
-    cli_t* const c = cli(win, wk);
-    if (c) {
-      wm_cli_kill(c);
-      panel_icos_arrange();
-      panel_arrange();
-      break;
-    }
-  }
+  evcalls_destroy_notify(win);
 }
 
-static void ev_configure_request(void) {
+static void
+ev_configure_request(void) {
   XConfigureRequestEvent const* conf =
     &xev.xconfigurerequest;
   XWindowChanges wc = {
@@ -116,26 +84,18 @@ static void ev_configure_request(void) {
     &wc);
 }
 
-static void ev_motion_notify(void) {
+static void
+ev_motion_notify(void) {
   Window const win = xev.xmotion.window;
   int const x = xev.xmotion.x;
   int const y = xev.xmotion.y;
   int const x_root = xev.xmotion.x_root;
   int const y_root = xev.xmotion.y_root;
-  static int prev_x_root;
-  static int prev_y_root;
-  if (win == DefaultRootWindow(dpy)) {
-    if (abs(x_root - prev_x_root) > 100 ||
-      abs(y_root - prev_y_root) > 100) {
-      prev_x_root = x_root;
-      prev_y_root = y_root;
-      unsigned const currmon = 
-        mon_currmon(x_root, y_root);
-    }
-  }
+  evcalls_motion_notify(win, x, y, x_root, y_root);
 }
 
-static void ev_mapping_notify(void) {
+static void
+ev_mapping_notify(void) {
   XMappingEvent* ev = &xev.xmapping;
   Window const win = xev.xmapping.window;
   XRefreshKeyboardMapping(ev);
@@ -143,64 +103,41 @@ static void ev_mapping_notify(void) {
     input_keys_grab(win);
 }
 
-static void ev_key_press(void) {
+static void
+ev_key_press(void) {
   fprintf(stdout, "EV: Key Press\n");
   Window const win = xev.xkey.window;
   (void) win;
   unsigned const state = xev.xkey.state;
-  unsigned const code = xev.xkey.keycode;
-  input_key(state, code);
+  unsigned const keycode = xev.xkey.keycode;
+  evcalls_key_press(state, keycode);
 }
 
-static void ev_btn_press(void) {
+static void
+ev_btn_press(void) {
   fprintf(stdout, "EV: Btn Press\n");
   Window const win = xev.xbutton.window;
-  cli_t* const c = cli(win, currwk);
-  if (c && c->hdr.win == win)
-    wm_cli_translate(c);
-  else if (c && c->par.win == win)
-    wm_cli_resize(c);
-  
-  if (c) {
-    unsigned const state = xev.xbutton.state;
-    unsigned const code = xev.xbutton.button;
-    input_btn(state, code);
-  }
+  unsigned const state = xev.xbutton.state;
+  unsigned const button = xev.xbutton.button;
+  evcalls_btn_press(win, state, button);
 }
 
-static void ev_enter_notify(void) {
+static void
+ev_enter_notify(void) {
   Window const win = xev.xcrossing.window;
   fprintf(stdout, "EV: Enter Notify window 0x%lx\n", win);
-  cli_t* const c = cli(win, currwk);
-  if (c) {
-    if (win == c->min.win)
-      wg_pixmap_fill(&c->min, wg_SEL);
-    else if (win == c->max.win)
-      wg_pixmap_fill(&c->max, wg_SEL);
-    else if (win == c->cls.win)
-      wg_pixmap_fill(&c->cls, wg_SEL);
-    else 
-      wm_cli_focus(c);
-  }
+  evcalls_enter_notify(win);
 }
 
-static void ev_leave_notify(void) {
+static void
+ev_leave_notify(void) {
   Window const win = xev.xcrossing.window;
   fprintf(stdout, "EV: Leave Notify window 0x%lx\n", win);
-  cli_t* const c = cli(win, currwk);
-  if (c) {
-    unsigned const clr = c == currwk->currc ? wg_ACT : 
-      wg_BG;
-    if (win == c->min.win)
-      wg_pixmap_fill(&c->min, clr);
-    else if (win == c->max.win)
-      wg_pixmap_fill(&c->max, clr);
-    else if (win == c->cls.win)
-      wg_pixmap_fill(&c->cls, clr);
-  }
+  evcalls_leave_notify(win);
 }
 
-static void ev_focus_change(void) {
+static void
+ev_focus_change(void) {
   XFocusChangeEvent const* xfocus = &xev.xfocus;
   Window const win = xfocus->window;
   int const mode = xfocus->mode;
@@ -208,59 +145,25 @@ static void ev_focus_change(void) {
   int const detail = xfocus->detail;
   (void) detail;
   fprintf(stdout, "EV: Focus Change Window 0x%lx\n", win);
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
-    cli_t* const c = cli(win, wk);
-    if (c) {
-      wm_cli_focus(c);
-      break;
-    }
-  }
+  evcalls_focus_change(win);
 }
 
-static void ev_property_notify(void) {
+static void
+ev_property_notify(void) {
   Window const win = xev.xproperty.window;
   fprintf(stdout, "EV: Prop Notify Window %ld\n", win);
-  if (win == DefaultRootWindow(dpy)) {
-    wg_str_set(&status, prop_root());
-    panel_status_focus(wg_ACT);
-    panel_arrange();
-    return;
-  }
-
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
-    cli_t* const c = cli(win, wk);
-    if (c) {
-      wg_str_set(&c->hdr, prop_name(win));
-      wg_str_draw(&c->hdr, c == currwk->currc ? wg_ACT : 
-          wg_BG,
-        c->par.bdrw);
-      break;
-    }
-  }
+  evcalls_property_notify(win);
 }
 
-static void ev_expose(void) {
+static void
+ev_expose(void) {
   Window const win = xev.xexpose.window;
-  /* This excludes exposing override_redirects */
   fprintf(stdout, "EV: Expose Window 0x%lx\n", win);
-  if (win == DefaultRootWindow(dpy)) {
-    mascot_draw();
-    return;
-  } else if (win == status.win) {
-    panel_status_focus(wg_ACT);
-    return;
-  }
-
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
-    cli_t* const c = cli(win, wk);
-    if (c) {
-      cli_wg_focus(c, c == wk->currc ? wg_ACT : wg_BG);
-      break;
-    }
-  }
+  evcalls_expose(win);
 }
 
-void ev_init(void) {
+void
+ev_init(void) {
   for (size_t i = 0; i < LASTEvent; i++)
     EV[i] = ev_noop;
 
@@ -282,10 +185,10 @@ void ev_init(void) {
   EV[Expose] = ev_expose;
 }
 
-void ev_call(void) {
+void
+ev_call(void) {
   if (XNextEvent(dpy, &xev) == 0)
     EV[xev.type]();
 
   XSync(dpy, False);
 }
-

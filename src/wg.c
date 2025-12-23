@@ -10,9 +10,9 @@ extern Display* dpy;
 extern font_t font;
 extern clr_pair_t clr_pair[];
 
-wg_t wg_init(Window const parwin, 
-  int const x, int const y, int const w, int const h, 
-  int const bdrw) {
+wg_t
+wg_init(Window const parwin, int const x, int const y, 
+  int const w, int const h, int const bdrw) {
   Window const win = XCreateSimpleWindow(dpy, parwin, 
       x, y, w, h, bdrw, 0, 0);
   XMapRaised(dpy, win);
@@ -38,7 +38,8 @@ wg_t wg_init(Window const parwin,
   return wg;
 }
 
-void wg_deinit(wg_t* const wg) {
+void
+wg_deinit(wg_t* const wg) {
   XftDrawDestroy(wg->xft);
   XFreeGC(dpy, wg->gc);
   if (wg->pixmap)
@@ -47,7 +48,8 @@ void wg_deinit(wg_t* const wg) {
   XDestroyWindow(dpy, wg->win);
 }
 
-void wg_str_set(wg_t* const wg, char const* str) {
+void
+wg_str_set(wg_t* const wg, char const* str) {
   strncpy(wg->str.data, str, sizeof wg->str.data - 1);
   wg->str.len = strlen(str);
   if (wg->str.len) {
@@ -58,7 +60,8 @@ void wg_str_set(wg_t* const wg, char const* str) {
   }
 }
 
-void wg_str_draw(wg_t* const wg, unsigned const clr, 
+void
+wg_str_draw(wg_t* const wg, unsigned const clr, 
     unsigned const tx) {
   if (wg->str.len) {
     int const ty = 
@@ -69,21 +72,25 @@ void wg_str_draw(wg_t* const wg, unsigned const clr,
   }
 }
 
-void wg_win_setbg(Window const win, unsigned const clr) {
+void
+wg_win_setbg(Window const win, unsigned const clr) {
   XSetWindowBackground(dpy, win, clr_pair[clr].bg.pix);
   XClearWindow(dpy, win);
 }
 
-void wg_win_setbdr(Window const win, unsigned const clr) {
+void
+wg_win_setbdr(Window const win, unsigned const clr) {
   XSetWindowBorder(dpy, win, clr_pair[clr].bg.pix);
 }
 
-void wg_gc_setbg(GC const gc, unsigned const clr) {
+void
+wg_gc_setbg(GC const gc, unsigned const clr) {
   XSetBackground(dpy, gc, clr_pair[clr].bg.pix);
   XSetForeground(dpy, gc, clr_pair[clr].fg.pix);
 }
 
-void wg_pixmap_fill(wg_t const* wg, unsigned const clr) {
+void
+wg_pixmap_fill(wg_t const* wg, unsigned const clr) {
   wg_gc_setbg(wg->gc, clr);
   XFillRectangle(dpy, wg->win, wg->gc, 
       wg->x, wg->y, wg->w, wg->h);

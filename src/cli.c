@@ -8,9 +8,6 @@
 #include "cli.h"
 #include "arrange.h"
 
-#include "res/cbox_8x8.xbm"
-#include "res/cboxf_8x8.xbm"
-#include "res/cx_8x8.xbm"
 #include "res/cbox_16x16.xbm"
 #include "res/cboxf_16x16.xbm"
 #include "res/cboxff_16x16.xbm"
@@ -38,7 +35,8 @@ static unsigned btnx;
 static unsigned btny;
 static unsigned char* BTN[4];
 
-void cli_wg_init(void) {
+void
+cli_wg_init(void) {
   BTN[MIN] = font.ch < 20 ? 
     cbox_16x16_bits : cbox_24x24_bits;
   BTN[MAX] = font.ch < 20 ? 
@@ -52,7 +50,8 @@ void cli_wg_init(void) {
   btny = 0.5 * (font.ch - btnh);
 }
 
-cli_t cli_init(Window const win, wk_t* const wk) {
+cli_t
+cli_init(Window const win, wk_t* const wk) {
   /* Init parent */
   wg_t const par = wg_init(DefaultRootWindow(dpy), 
       0, 0, 1, 1, bdrw);
@@ -99,7 +98,8 @@ cli_t cli_init(Window const win, wk_t* const wk) {
   };
 }
 
-void cli_deinit(cli_t* const c) {
+void
+cli_deinit(cli_t* const c) {
   wg_deinit(&c->cls);
   wg_deinit(&c->res);
   wg_deinit(&c->max);
@@ -110,7 +110,8 @@ void cli_deinit(cli_t* const c) {
   cblk_unmap(&c->wk->clis, c);
 }
 
-cli_t* cli(Window const win, wk_t* const wk) {
+cli_t*
+cli(Window const win, wk_t* const wk) {
   for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
     if (c->win == win ||
         c->par.win == win ||
@@ -126,7 +127,8 @@ cli_t* cli(Window const win, wk_t* const wk) {
   return NULL;
 }
 
-wg_t* cli_wg(cli_t* const c, Window const win) {
+wg_t*
+cli_wg(cli_t* const c, Window const win) {
   return c->par.win == win ? &c->par :
     c->hdr.win == win ? &c->hdr :
     c->min.win == win ? &c->min :
@@ -136,7 +138,8 @@ wg_t* cli_wg(cli_t* const c, Window const win) {
     &c->ico;
 }
 
-void cli_wg_focus(cli_t* const c, unsigned const clr) {
+void
+cli_wg_focus(cli_t* const c, unsigned const clr) {
   wg_win_setbg(c->par.win, clr);
   wg_win_setbdr(c->par.win, clr);
   wg_win_setbg(c->hdr.win, clr);
@@ -165,7 +168,8 @@ void cli_currmon_move(void) {
 }
 */
 
-void cli_conf(cli_t* const c, int const w, int const h) {
+void
+cli_conf(cli_t* const c, int const w, int const h) {
   if (XResizeWindow(dpy, c->par.win, w, h + font.ch)) {
     c->par.w0 = c->par.w;
     c->par.w = w;
@@ -191,7 +195,8 @@ void cli_conf(cli_t* const c, int const w, int const h) {
   }
 }
 
-void cli_arrange(cli_t* const c, int const x, 
+void
+cli_arrange(cli_t* const c, int const x, 
     int const y) {
   if (XMoveWindow(dpy, c->par.win, x + font.cw, 
         y + font.ch)) {

@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "panel.h"
+#include "status.h"
 #include "font.h"
 #include "mon.h"
 #include "wk.h"
@@ -15,15 +16,16 @@ extern wk_t* prevwk;
 extern wk_t* currwk;
 extern cblk_t mons;
 
+extern wg_t status;
 extern font_t font;
 extern unsigned const bdrw;
 
 static unsigned wkw;
 
-wg_t status;
 wg_t panel;
 
-void panel_init(void) {
+void
+panel_init(void) {
   panel = wg_init(DefaultRootWindow(dpy), 0, 0, 
       1, font.ch, 0);
   wg_win_setbg(panel.win, wg_BG);
@@ -32,29 +34,17 @@ void panel_init(void) {
     XReparentWindow(dpy, wk->wg.win, panel.win, 0, 0);
 
   wkw = font.cw;
-  status = wg_init(panel.win, 0, 0, 1, font.ch, 0);
-  static unsigned const STATUSMASK = 
-    PropertyChangeMask |
-    ExposureMask;
-  XSelectInput(dpy, status.win, STATUSMASK);
-  wg_win_setbg(status.win, wg_BG);
-  panel_status_focus(wg_ACT);
+  status_init(panel.win);
 }
 
-void panel_deinit(void) {
-  wg_deinit(&status);
+void
+panel_deinit(void) {
+  status_deinit();
   wg_deinit(&panel);
 }
 
-void panel_status_focus(unsigned const clr) {
-  wg_win_setbg(status.win, clr);
-  wg_str_draw(&status, clr, 0);
-  if (XResizeWindow(dpy, status.win, status.str.ext, 
-        status.h))
-    status.w = status.str.ext;
-}
-
-void panel_icos_arrange(void) {
+void
+panel_icos_arrange(void) {
   for (wk_t* wk = wks.beg; wk != wks.end; wk++)
     if (XResizeWindow(dpy, wk->wg.win, wk->wg.w0, wk->wg.h))
       wk->wg.w = wk->wg.w0;
@@ -104,7 +94,8 @@ void panel_icos_arrange(void) {
   arrange_sel_adj(0);
 }
 
-void panel_arrange(void) {
+void
+panel_arrange(void) {
   for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     if (wk == currwk)
       wk_wg_focus(wk, wg_ACT);
@@ -127,7 +118,8 @@ void panel_arrange(void) {
   arrange_sel_adj(4);
 }
 
-void panel_icos_arrange_all(void) {
+void
+panel_icos_arrange_all(void) {
   for (wk_t* wk = wks.beg; wk != wks.end; wk++)
     if (XResizeWindow(dpy, wk->wg.win, wk->wg.w0, wk->wg.h))
       wk->wg.w = wk->wg.w0;
@@ -187,7 +179,8 @@ void panel_icos_arrange_all(void) {
   arrange_sel_adj(0);
 }
 
-void panel_arrange_all(void) {
+void
+panel_arrange_all(void) {
   /*
   for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     if (wk == currwk)
@@ -207,13 +200,16 @@ void panel_arrange_all(void) {
   }
   */
 
+/*
   arrange_sel_map(&((wk_t*) wks.beg)->wg);
   mon_t const* mon = mons.beg;
   arrange_sel_map(&status);
   arrange_sel_adj(1);
+*/
 }
 
-void panel_conf(void) {
+void
+panel_conf(void) {
   mon_t const* mon = mons.beg;
   if (XResizeWindow(dpy, panel.win, mon->w, panel.h)) {
     panel.w = mon->w;

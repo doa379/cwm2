@@ -11,7 +11,8 @@ extern unsigned const bdrw;
 
 static size_t const NRES = 100;
 
-wk_t wk_init(void) {
+wk_t
+wk_init(void) {
   wg_t const wg = wg_init(DefaultRootWindow(dpy), 0, 
       bdrw, font.cw, font.ch - 2 * bdrw, bdrw);
   wg_win_setbg(wg.win, wg_BG);
@@ -25,12 +26,14 @@ wk_t wk_init(void) {
   };
 }
 
-void wk_deinit(wk_t* const wk) {
+void
+wk_deinit(wk_t* const wk) {
   wg_deinit(&wk->wg);
   cblk_deinit(&wk->clis);
 }
 
-void wk_wg_focus(wk_t* const wk, unsigned const clr) {
+void
+wk_wg_focus(wk_t* const wk, unsigned const clr) {
   wg_win_setbg(wk->wg.win, clr);
 }
 

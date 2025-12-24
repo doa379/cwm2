@@ -6,6 +6,7 @@
 #include "input.h"
 
 extern Display* dpy;
+
 extern input_t const KBD[];
 extern input_t const BTN[];
 extern size_t const kbdlen;

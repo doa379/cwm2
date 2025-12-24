@@ -18,16 +18,21 @@ extern wk_t* currwk;
 extern wg_t status;
 
 void
-evcalls_configure_notify(Window const win) {
+evcalls_configure_notify(Window const win, int const w,
+int const h) {
   if (win == DefaultRootWindow(dpy)) {
     /* Configure root window */
     mon_conf();
     /*cli_currmon_move();*/
     panel_conf();
-    panel_icos_arrange();
-    panel_arrange();
+    panel_icos_arrange(currwk);
+    panel_arrange(currwk);
     tray_conf();
     mascot_draw();
+  } else {
+    cli_t* const c = wm_cli(win);
+    if (c && win == c->win)
+      cli_conf(c, w, h);
   }
 }
 
@@ -45,10 +50,13 @@ int const y, int const w, int const h) {
   if (c) {
     wg_str_set(&c->ico, prop_ico(win));
     wg_str_set(&c->hdr, prop_name(win));
+    if (currwk->currc)
+      wm_cli_unfocus(currwk->currc);
+
     wm_cli_focus(c);
     cli_conf(c, w, h);
-    panel_icos_arrange();
-    panel_arrange();
+    panel_icos_arrange(currwk);
+    panel_arrange(currwk);
   }
 }
 
@@ -57,8 +65,8 @@ evcalls_destroy_notify(Window const win) {
   cli_t* const c = wm_cli(win);
   if (c) {
     wm_cli_kill(c);
-    panel_icos_arrange();
-    panel_arrange();
+    panel_icos_arrange(currwk);
+    panel_arrange(currwk);
   }
 }
 
@@ -120,8 +128,10 @@ evcalls_enter_notify(Window const win) {
       wg_pixmap_fill(&c->max, wg_SEL);
     else if (win == c->cls.win)
       wg_pixmap_fill(&c->cls, wg_SEL);
-    else 
+    else {
+      wm_cli_unfocus(currwk->currc);
       wm_cli_focus(c);
+    }
   }
 }
 
@@ -142,11 +152,15 @@ evcalls_leave_notify(Window const win) {
 
 void
 evcalls_focus_change(Window const win) {
-  /*
   cli_t* const c = wm_cli(win);
-  if (c)
+  if (c && c != currwk->currc) {
+    /* send notif, don't switch focus */
+
+    /*
+    wm_cli_unfocus(c->wk->currc);
     wm_cli_focus(c);
-  */
+    */
+  }
 }
 
 void
@@ -155,15 +169,14 @@ evcalls_property_notify(Window const win) {
     /* Changes to root name propagate to status */
     status_str_set(prop_root());
     status_focus(wg_ACT);
-    panel_arrange();
-    return;
-  }
-
-  cli_t* const c = wm_cli(win);
-  if (c) {
-    wg_str_set(&c->hdr, prop_name(win));
-    wg_str_draw(&c->hdr, c == c->wk->currc ? wg_ACT : 
+    panel_arrange(currwk);
+  } else {
+    cli_t* const c = wm_cli(win);
+    if (c) {
+      wg_str_set(&c->hdr, prop_name(win));
+      wg_str_draw(&c->hdr, c == c->wk->currc ? wg_ACT : 
         wg_BG, c->par.bdrw);
+    }
   }
 }
 
@@ -171,13 +184,11 @@ void
 evcalls_expose(Window const win) {
   if (win == DefaultRootWindow(dpy)) {
     mascot_draw();
-    return;
   } else if (win == status.win) {
     status_focus(wg_ACT);
-    return;
+  } else {
+    cli_t* const c = wm_cli(win);
+    if (c)
+      cli_wg_focus(c, c == c->wk->currc ? wg_ACT : wg_BG);
   }
-
-  cli_t* const c = wm_cli(win);
-  if (c)
-    cli_wg_focus(c, c == c->wk->currc ? wg_ACT : wg_BG);
 }

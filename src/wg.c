@@ -64,8 +64,8 @@ void
 wg_str_draw(wg_t* const wg, unsigned const clr, 
     unsigned const tx) {
   if (wg->str.len) {
-    int const ty = 
-      0.5 * (wg->h - 2 * wg->bdrw + font.scent);
+    int const ty = 0.5 * 
+      (wg->h - 2 * wg->bdrw + font.scent);
     XftDrawStringUtf8(wg->xft, &clr_pair[clr].fg.xft, 
         font.xft, tx, ty, 
           (XftChar8*) wg->str.data, wg->str.len);

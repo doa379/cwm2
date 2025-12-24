@@ -41,7 +41,7 @@ ev_configure_notify(void) {
   Window const win = xev.xconfigure.window;
   int const w = xev.xconfigure.width;
   int const h = xev.xconfigure.height;
-  evcalls_configure_notify(win);
+  evcalls_configure_notify(win, w, h);
 }
 
 static void

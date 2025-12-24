@@ -11,7 +11,8 @@ static size_t const NRES = 100;
 static unsigned mode;
 static cblk_t sel;
 
-int arrange_init(void) {
+int
+arrange_init(void) {
   sel = cblk_init(sizeof(wg_t*), NRES);
   if (sel.beg == NULL) {
     fprintf(stderr, "Failed to alloc arrangements\n");
@@ -21,19 +22,23 @@ int arrange_init(void) {
   return 0;
 }
 
-void arrange_deinit(void) {
+void
+arrange_deinit(void) {
   cblk_deinit(&sel); 
 }
 
-void arrange_sel_map(wg_t const* wg) {
+void
+arrange_sel_map(wg_t const* wg) {
   cblk_map(&sel, &wg);
 }
 
-void arrange_sel_clear(void) {
+void
+arrange_sel_clear(void) {
   cblk_clear(&sel);
 }
 
-void arrange_sel_adj(int const gap) {
+void
+arrange_sel_adj(int const gap) {
   int x = 0;
   for (wg_t** wg = sel.beg; wg != sel.end; wg++) {
     int const X = x;
@@ -48,7 +53,9 @@ void arrange_sel_adj(int const gap) {
 }
 
 /* Arrange only on currently selected mon */
-void arrange_sel_tile(unsigned const w, unsigned const h) {
+
+void
+arrange_sel_tile(unsigned const w, unsigned const h) {
   /* Arrange within contraint (w, h) */
   size_t const n = sel.size;
   /* no of */
@@ -101,7 +108,8 @@ void arrange_sel_tile(unsigned const w, unsigned const h) {
   cblk_clear(&sel);
 }
 
-void arrange_sel_casc(unsigned const w, unsigned const h) {
+void
+arrange_sel_casc(unsigned const w, unsigned const h) {
   /* Arrange within contraint (w, h) */
   for (wg_t** wg = sel.beg; wg != sel.end; wg++)
     ;

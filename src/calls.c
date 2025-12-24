@@ -39,142 +39,115 @@ calls_mon3(void) {
 }
 
 void
-calls_wk_prev(void) {
-  wk_t* const wk = cblk_prev(&wks, currwk);
-  if (wm_wk_focus(wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
-}
-
-void
-calls_wk_next(void) {
-  wk_t* const wk = cblk_next(&wks, currwk);
-  if (wm_wk_focus(wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
-}
-
-void
-calls_wk_last(void) {
-  if (wm_wk_focus(prevwk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
-}
-
-void
 calls_wk0(void) {
   wm_wk_focus_all();
   panel_icos_arrange_all();
   panel_arrange_all();
 }
 
+static void
+calls_wk(wk_t* const wk) {
+  if (wk && wk != currwk) {
+    wm_wk_unfocus(currwk);
+    wm_wk_focus(wk);
+    panel_icos_arrange(currwk);
+    panel_arrange(currwk);
+  }
+}
+
+void
+calls_wk_prev(void) {
+  wk_t* const wk = cblk_prev(&wks, currwk);
+  calls_wk(wk);
+}
+
+void
+calls_wk_next(void) {
+  wk_t* const wk = cblk_next(&wks, currwk);
+  calls_wk(wk);
+}
+
+void
+calls_wk_last(void) {
+  calls_wk(prevwk);
+}
+
 void
 calls_wk1(void) {
   wk_t* const wk = cblk_itr(&wks, 0);
-  if (wm_wk_focus(wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
+  calls_wk(wk);
 }
 
 void
 calls_wk2(void) {
   wk_t* const wk = cblk_itr(&wks, 1);
-  if (wk && wm_wk_focus(wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
+  calls_wk(wk);
 }
 
 void
 calls_wk3(void) {
   wk_t* const wk = cblk_itr(&wks, 2);
-  if (wk && wm_wk_focus(wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
+  calls_wk(wk);
 }
 
 void
 calls_wk4(void) {
   wk_t* const wk = cblk_itr(&wks, 3);
-  if (wk && wm_wk_focus(wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
+  calls_wk(wk);
 }
 
 void
 calls_wk5(void) {
   wk_t* const wk = cblk_itr(&wks, 4);
-  if (wk && wm_wk_focus(wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
+  calls_wk(wk);
 }
 
 void
 calls_wk6(void) {
   wk_t* const wk = cblk_itr(&wks, 5);
-  if (wk && wm_wk_focus(wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
+  calls_wk(wk);
 }
 
 void
 calls_wk7(void) {
   wk_t* const wk = cblk_itr(&wks, 6);
-  if (wk && wm_wk_focus(wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
+  calls_wk(wk);
 }
 
 void
 calls_wk8(void) {
   wk_t* const wk = cblk_itr(&wks, 7);
-  if (wk && wm_wk_focus(wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
+  calls_wk(wk);
 }
 
 void
 calls_wk9(void) {
   wk_t* const wk = cblk_itr(&wks, 8);
-  if (wk && wm_wk_focus(wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
-  }
+  calls_wk(wk);
 }
 
 void
 calls_wk_map(void) {
   if (wm_wk_map()) {
-    panel_icos_arrange();
-    panel_arrange();
+    panel_icos_arrange(currwk);
+    panel_arrange(currwk);
   }
 }
 
 void
 calls_wk_unmap(void) {
-  if (wm_wk_unmap(currwk) == 0 && 
-        wm_wk_focus(currwk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
+  if (wm_wk_unmap(currwk) == 0) {
+    panel_icos_arrange(currwk);
+    panel_arrange(currwk);
   }
 }
 
 static void
 calls_cli_wk_move(cli_t* const c, wk_t* const wk) {
-  if (wk && wk != c->wk && 
-      wm_cli_move(c->wk->currc, wk) == 0) {
-    panel_icos_arrange();
-    panel_arrange();
+  if (c && wk && wk != currwk && 
+      wm_cli_move(c, wk) == 0) {
+    panel_icos_arrange(currwk);
+    panel_arrange(currwk);
   }
 }
 
@@ -244,32 +217,90 @@ calls_cli_wk9_move(void) {
   calls_cli_wk_move(currwk->currc, wk);
 }
 
+static void
+calls_cli(cli_t* const c) {
+  if (c && c != currwk->currc) {
+    wm_cli_unfocus(currwk->currc);
+    wm_cli_focus(c);
+    panel_icos_arrange(currwk);
+  }
+}
+
 void
 calls_cli_prev(void) {
-  cli_t* const c = cblk_prev(&currwk->clis, 
-      currwk->currc);
-  if (c && c != currwk->currc) {
-    wm_cli_focus(c);
-    panel_icos_arrange();
-  }
+  cli_t* const c = cblk_prev(&currwk->clis, currwk->currc);
+  calls_cli(c);
 }
 
 void
 calls_cli_next(void) {
-  cli_t* const c = cblk_next(&currwk->clis, 
-      currwk->currc);
-  if (c && c != currwk->currc) {
-    wm_cli_focus(c);
-    panel_icos_arrange();
-  }
+  cli_t* const c = cblk_next(&currwk->clis, currwk->currc);
+  calls_cli(c);
 }
 
 void
 calls_cli_last(void) {
-  if (currwk->prevc != currwk->currc) {
-    wm_cli_focus(currwk->prevc);
-    panel_icos_arrange();
-  }
+  if (currwk->prevc != currwk->currc)
+    calls_cli(currwk->prevc);
+}
+
+void
+calls_cli0(void) {
+
+}
+
+void
+calls_cli1(void) {
+  cli_t* const c = cblk_itr(&currwk->clis, 0);
+  calls_cli(c);
+}
+
+void
+calls_cli2(void) {
+  cli_t* const c = cblk_itr(&currwk->clis, 1);
+  calls_cli(c);
+}
+
+void
+calls_cli3(void) {
+  cli_t* const c = cblk_itr(&currwk->clis, 2);
+  calls_cli(c);
+}
+
+void
+calls_cli4(void) {
+  cli_t* const c = cblk_itr(&currwk->clis, 3);
+  calls_cli(c);
+}
+
+void
+calls_cli5(void) {
+  cli_t* const c = cblk_itr(&currwk->clis, 4);
+  calls_cli(c);
+}
+
+void
+calls_cli6(void) {
+  cli_t* const c = cblk_itr(&currwk->clis, 5);
+  calls_cli(c);
+}
+
+void
+calls_cli7(void) {
+  cli_t* const c = cblk_itr(&currwk->clis, 6);
+  calls_cli(c);
+}
+
+void
+calls_cli8(void) {
+  cli_t* const c = cblk_itr(&currwk->clis, 7);
+  calls_cli(c);
+}
+
+void
+calls_cli9(void) {
+  cli_t* const c = cblk_itr(&currwk->clis, 8);
+  calls_cli(c);
 }
 
 void
@@ -284,92 +315,6 @@ calls_cli_raise_toggle(void) {
   }
 
   t %= 2;
-}
-
-void
-calls_cli0(void) {
-
-}
-
-void
-calls_cli1(void) {
-  cli_t* const c = cblk_itr(&currwk->clis, 0);
-  if (c && c != currwk->currc) {
-    wm_cli_focus(c);
-    panel_icos_arrange();
-  }
-}
-
-void
-calls_cli2(void) {
-  cli_t* const c = cblk_itr(&currwk->clis, 1);
-  if (c && c != currwk->currc) {
-    wm_cli_focus(c);
-    panel_icos_arrange();
-  }
-}
-
-void
-calls_cli3(void) {
-  cli_t* const c = cblk_itr(&currwk->clis, 2);
-  if (c && c != currwk->currc) {
-    wm_cli_focus(c);
-    panel_icos_arrange();
-  }
-}
-
-void
-calls_cli4(void) {
-  cli_t* const c = cblk_itr(&currwk->clis, 3);
-  if (c && c != currwk->currc) {
-    wm_cli_focus(c);
-    panel_icos_arrange();
-  }
-}
-
-void
-calls_cli5(void) {
-  cli_t* const c = cblk_itr(&currwk->clis, 4);
-  if (c && c != currwk->currc) {
-    wm_cli_focus(c);
-    panel_icos_arrange();
-  }
-}
-
-void
-calls_cli6(void) {
-  cli_t* const c = cblk_itr(&currwk->clis, 5);
-  if (c && c != currwk->currc) {
-    wm_cli_focus(c);
-    panel_icos_arrange();
-  }
-}
-
-void
-calls_cli7(void) {
-  cli_t* const c = cblk_itr(&currwk->clis, 6);
-  if (c && c != currwk->currc) {
-    wm_cli_focus(c);
-    panel_icos_arrange();
-  }
-}
-
-void
-calls_cli8(void) {
-  cli_t* const c = cblk_itr(&currwk->clis, 7);
-  if (c && c != currwk->currc) {
-    wm_cli_focus(c);
-    panel_icos_arrange();
-  }
-}
-
-void
-calls_cli9(void) {
-  cli_t* const c = cblk_itr(&currwk->clis, 8);
-  if (c && c != currwk->currc) {
-    wm_cli_focus(c);
-    panel_icos_arrange();
-  }
 }
 
 void
@@ -426,8 +371,8 @@ calls_kill(void) {
   cli_t* const c = currwk->currc;
   if (c) {
     wm_cli_kill(c);
-    panel_icos_arrange();
-    panel_arrange();
+    panel_icos_arrange(currwk);
+    panel_arrange(currwk);
   }
 }
 

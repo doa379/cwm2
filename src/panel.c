@@ -11,9 +11,8 @@
 #include "prop.h"
 
 extern Display* dpy;
+
 extern cblk_t wks;
-extern wk_t* prevwk;
-extern wk_t* currwk;
 extern cblk_t mons;
 
 extern wg_t status;
@@ -35,6 +34,8 @@ panel_init(void) {
 
   wkw = font.cw;
   status_init(panel.win);
+  panel_icos_arrange(wks.beg);
+  panel_arrange(wks.beg);
 }
 
 void
@@ -44,12 +45,12 @@ panel_deinit(void) {
 }
 
 void
-panel_icos_arrange(void) {
+panel_icos_arrange(wk_t* const wk) {
   for (wk_t* wk = wks.beg; wk != wks.end; wk++)
     if (XResizeWindow(dpy, wk->wg.win, wk->wg.w0, wk->wg.h))
       wk->wg.w = wk->wg.w0;
 
-  unsigned n = currwk->clis.size;
+  unsigned n = wk->clis.size;
   if (n) {
     unsigned w = (wks.size - 1 + n) * wkw + status.w;
     while (w > panel.w) {
@@ -57,45 +58,32 @@ panel_icos_arrange(void) {
       w = (wks.size - 1 + n) * wkw + status.w;
     }
 
-    if (XResizeWindow(dpy, currwk->wg.win, 
-          n * wkw, currwk->wg.h))
-      currwk->wg.w = n * wkw;
+    if (XResizeWindow(dpy, wk->wg.win, n * wkw, wk->wg.h))
+      wk->wg.w = n * wkw;
   }
 
-  cli_t* beg = currwk->clis.beg;
-  cli_t const* end = currwk->clis.end;
-  if (n < currwk->clis.size) {
-    int d = cblk_dist(&currwk->clis, currwk->currc) - 
-      0.5 * n;
+  cli_t* beg = wk->clis.beg;
+  cli_t const* end = wk->clis.end;
+  if (n < wk->clis.size) {
+    int d = cblk_dist(&wk->clis, wk->currc) - 0.5 * n;
     if (d < 0)
       d = 0;
     
-    while (d + n > currwk->clis.size)
+    while (d + n > wk->clis.size)
       d--;
 
-    beg = cblk_itr(&currwk->clis, d);
-    end = cblk_itr(&currwk->clis, d + n);
+    beg = cblk_itr(&wk->clis, d);
+    end = cblk_itr(&wk->clis, d + n);
   }
 
-  for (cli_t* c = beg; c != end; c++) {
-    if (c == currwk->currc) {
-      wg_win_setbg(c->ico.win, wg_ACT);
-      wg_win_setbdr(c->ico.win, wg_ACT);
-      wg_str_draw(&c->ico, wg_ACT, 0);
-    } else {
-      wg_win_setbg(c->ico.win, wg_BG);
-      wg_win_setbdr(c->ico.win, wg_BG);
-      wg_str_draw(&c->ico, wg_BG, 0);
-    }
-
+  for (cli_t* c = beg; c != end; c++)
     arrange_sel_map(&c->ico);
-  }
 
   arrange_sel_adj(0);
 }
 
 void
-panel_arrange(void) {
+panel_arrange(wk_t const* currwk) {
   for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     if (wk == currwk)
       wk_wg_focus(wk, wg_ACT);
@@ -104,9 +92,6 @@ panel_arrange(void) {
       if (wk->clis.size) {
         cli_t* const c = wk->currc;
         XMoveWindow(dpy, c->ico.win, 0, 0);
-        wg_win_setbg(c->ico.win, wg_BG);
-        wg_win_setbdr(c->ico.win, wg_BG);
-        wg_str_draw(&c->ico, wg_BG, 0);
       }
     }
     
@@ -159,8 +144,7 @@ panel_icos_arrange_all(void) {
   */
 
 
-
-
+  /*
   for (wk_t* wk = wks.beg; wk != wks.end; wk++)
     for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++) {
       if (c == currwk->currc) {
@@ -177,6 +161,7 @@ panel_icos_arrange_all(void) {
     }
 
   arrange_sel_adj(0);
+  */
 }
 
 void

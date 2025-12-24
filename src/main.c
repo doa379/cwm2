@@ -71,8 +71,6 @@ int main(int const ARGC, char const* ARGV[]) {
   cli_wg_init();
   panel_init();
   panel_conf();
-  panel_icos_arrange();
-  panel_arrange();
   mascot_init();
   mascot_draw();
   ev_init();

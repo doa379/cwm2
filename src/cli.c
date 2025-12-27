@@ -51,10 +51,11 @@ cli_wg_init(void) {
 }
 
 cli_t
-cli_init(Window const win, wk_t* const wk) {
+cli_init(Window const win, wk_t* const wk, int const x,
+int const y, int const w, int const h) {
   /* Init parent */
   wg_t const par = wg_init(DefaultRootWindow(dpy), 
-      0, 0, 1, 1, bdrw);
+      x, y, w, h, bdrw);
   XReparentWindow(dpy, win, par.win, 0, font.ch);
   XSetWindowBorderWidth(dpy, win, 0);
   /* Init header */
@@ -170,14 +171,8 @@ void cli_currmon_move(void) {
 
 void
 cli_conf(cli_t* const c, int const w, int const h) {
-  if (XResizeWindow(dpy, c->par.win, w, h + font.ch)) {
-    c->par.w0 = c->par.w;
-    c->par.w = w;
-    c->par.h0 = c->par.h;
-    c->par.h = h + font.ch;
-    if (XResizeWindow(dpy, c->hdr.win, w, font.ch)) {
-      c->hdr.w = w;
-      c->hdr.h = font.ch;
+  if (wg_win_resize(&c->par, w, h + font.ch) == 0) {
+    if (wg_win_resize(&c->hdr, w, font.ch) == 0) {
       XMoveWindow(dpy, c->hdr.win, 0, 0);
       int const y = 0.5 * (c->hdr.h - btnh);
       XMoveWindow(dpy, c->cls.win, c->hdr.w - btnw, y);
@@ -203,4 +198,26 @@ cli_arrange(cli_t* const c, int const x,
     c->par.x = x + font.cw;
     c->par.y = y + font.ch;
   }
+}
+
+void
+cli_unfocus(cli_t* const c) {
+  cli_wg_focus(c, wg_BG);
+}
+
+void
+cli_focus(cli_t* const c) {
+  XRaiseWindow(dpy, c->par.win);
+  XRaiseWindow(dpy, c->ico.win);
+  XSetInputFocus(dpy, c->par.win, RevertToPointerRoot,
+    CurrentTime);
+  cli_wg_focus(c, wg_ACT);
+}
+
+void
+cli_kill(cli_t* const c) {
+  XReparentWindow(dpy, c->win, DefaultRootWindow(dpy), 
+      0, 0);
+  XDestroyWindow(dpy, c->win);
+  cli_deinit(c);
 }

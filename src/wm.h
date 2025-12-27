@@ -10,12 +10,15 @@ int wm_wk_unmap(wk_t* const);
 void wm_wk_unfocus(wk_t* const);
 void wm_wk_focus(wk_t* const);
 void wm_wk_focus_all(void);
-cli_t* wm_cli_map(wk_t* const, Window const, int const, 
-int const);
+cli_t* wm_cli_map(wk_t* const, Window const, int const,
+int const, int const, int const);
 cli_t* wm_cli(Window const);
 void wm_cli_unfocus(cli_t* const);
 void wm_cli_focus(cli_t* const);
-int wm_cli_move(cli_t* const, wk_t* const);
+cli_t* wm_cli_move(cli_t* const, wk_t* const);
 void wm_cli_kill(cli_t* const);
 void wm_cli_translate(cli_t* const);
 void wm_cli_resize(cli_t* const);
+void wm_cli_kill(cli_t* const);
+void wm_cli_switch(cli_t* const);
+void wm_wk_switch(wk_t* const);

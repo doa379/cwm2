@@ -37,51 +37,35 @@ wk_wg_focus(wk_t* const wk, unsigned const clr) {
   wg_win_setbg(wk->wg.win, clr);
 }
 
-int wk_unmap(wk_t* const wk) {
-  /*
-  if (wks.size == 1)
-    return -1;
+void
+wk_unfocus(wk_t* const wk) {
+  for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++) {
+    if (c == wk->currc)
+      cli_unfocus(c);
 
-  size_t const wk_ = wk == cblk_back(&wks) ?
-    wks.size - 2 : cblk_dist(&wks, wk);
-
-  wk_t* nextwk = wk == wks.beg ? 
-    cblk_next(&wks, wk) : cblk_prev(&wks, wk);
-
-  size_t const nextwk_ = cblk_dist(&wks, nextwk);
-  size_t const prevwk_ = cblk_dist(&wks, prevwk);
-  
-
-  if (wk->clis.size) {
-    size_t const prevc = nextwk->clis.size == 0 ?
-      cblk_dist(&wk->clis, wk->prevc) :
-      cblk_dist(&nextwk->clis, nextwk->prevc);
-    size_t const currc = nextwk->clis.size == 0 ?
-      cblk_dist(&wk->clis, wk->currc) :
-      cblk_dist(&nextwk->clis, nextwk->currc);
-
-    do {
-      cli_t* const c = wk->clis.beg;
-      cli_t* const nextc = cblk_map(&nextwk->clis, c);
-      if (nextc) {
-        nextc->wk = nextwk;
-        XReparentWindow(dpy, nextc->ico.win, 
-            nextwk->wg.win, c->ico.x, c->ico.y);
-        cblk_unmap(&wk->clis, c);
-      }
-    } while (wk->clis.size);
-
-    nextwk->prevc = cblk_itr(&nextwk->clis, prevc);
-    nextwk->currc = cblk_itr(&nextwk->clis, currc);
+    XUnmapWindow(dpy, c->par.win);
   }
-
-  wm_wk_unmap(wk);
   
-  currwk = cblk_itr(&wks, wk_);
-  prevwk = cblk_itr(&wks, prevwk_);
-  
-  if (wks.size == 1)
-    prevwk = currwk;
-  */
-  return 0;
+  wk_wg_focus(wk, wg_BG);
 }
+
+void
+wk_focus(wk_t* const wk) {
+  if (wk->clis.size) {
+    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++) {
+      /* Disable any transient events within this op */
+      XWindowAttributes wa;
+      if (XGetWindowAttributes(dpy, c->par.win, &wa) == 0)
+        return;
+
+      XSelectInput(dpy, c->par.win, 0);
+      XMapWindow(dpy, c->par.win);
+      XSelectInput(dpy, c->par.win, wa.your_event_mask);
+    }
+
+    cli_focus(wk->currc);
+  }
+  
+  wk_wg_focus(wk, wg_ACT);
+}
+

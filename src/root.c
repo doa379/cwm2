@@ -116,3 +116,12 @@ void root_query(void) {
 
   XFree(wins);
 }
+
+int
+root_ptr(int* const x, int* const y) {
+  int di;
+  unsigned dui;
+  Window dummy;
+  return XQueryPointer(dpy, DefaultRootWindow(dpy), &dummy, 
+    &dummy, x, y, &di, &di, &dui);
+}

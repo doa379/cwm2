@@ -44,11 +44,10 @@ panel_deinit(void) {
   wg_deinit(&panel);
 }
 
-void
-panel_icos_arrange(wk_t* const wk) {
+static void
+panel_icos_arrange_(wk_t* const wk) {
   for (wk_t* wk = wks.beg; wk != wks.end; wk++)
-    if (XResizeWindow(dpy, wk->wg.win, wk->wg.w0, wk->wg.h))
-      wk->wg.w = wk->wg.w0;
+    wg_win_resize(&wk->wg, wk->wg.w0, wk->wg.h);
 
   unsigned n = wk->clis.size;
   if (n) {
@@ -58,8 +57,7 @@ panel_icos_arrange(wk_t* const wk) {
       w = (wks.size - 1 + n) * wkw + status.w;
     }
 
-    if (XResizeWindow(dpy, wk->wg.win, n * wkw, wk->wg.h))
-      wk->wg.w = n * wkw;
+    wg_win_resize(&wk->wg, n * wkw, wk->wg.h);
   }
 
   cli_t* beg = wk->clis.beg;
@@ -83,7 +81,15 @@ panel_icos_arrange(wk_t* const wk) {
 }
 
 void
+panel_icos_arrange(wk_t* const wk) {
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+    panel_icos_arrange_(wk);
+
+}
+
+void
 panel_arrange(wk_t const* currwk) {
+  /*
   for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     if (wk == currwk)
       wk_wg_focus(wk, wg_ACT);
@@ -95,6 +101,10 @@ panel_arrange(wk_t const* currwk) {
       }
     }
     
+    arrange_sel_map(&wk->wg);
+  }
+  */
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     arrange_sel_map(&wk->wg);
   }
 

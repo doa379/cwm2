@@ -50,7 +50,7 @@ ev_map_request(void) {
   (void) parwin;
   Window const win = xev.xmaprequest.window;
   fprintf(stdout, "MapRequest Window 0x%lx\n", win);
-  static XWindowAttributes wa;
+  XWindowAttributes wa;
   if (XGetWindowAttributes(dpy, win, &wa) == 0)
     return;
   else if (wa.override_redirect)

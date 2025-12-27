@@ -97,3 +97,29 @@ wg_pixmap_fill(wg_t const* wg, unsigned const clr) {
   XCopyPlane(dpy, wg->pixmap, wg->win, wg->gc, 
       0, 0, wg->w, wg->h, 0, 0, 1);
 }
+
+int
+wg_win_move(wg_t* const wg, int const x, int const y) {
+  if (XMoveWindow(dpy, wg->win, x, y)) {
+    wg->x0 = wg->x;
+    wg->x = x;
+    wg->y0 = wg->y;
+    wg->y = y;
+    return 0;
+  }
+
+  return -1;
+}
+
+int
+wg_win_resize(wg_t* const wg, int const w, int const h) {
+  if (XResizeWindow(dpy, wg->win, w, h)) {
+    wg->h0 = wg->h;
+    wg->h = h;
+    wg->w0 = wg->w;
+    wg->w = w;
+    return 0;
+  }
+
+  return -1;
+}

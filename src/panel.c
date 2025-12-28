@@ -27,7 +27,7 @@ void
 panel_init(void) {
   panel = wg_init(DefaultRootWindow(dpy), 0, 0, 
       1, font.ch, 0);
-  wg_win_setbg(panel.win, wg_BG);
+  wg_win_bgset(panel.win, wg_BG);
 
   for (wk_t* wk = wks.beg; wk != wks.end; wk++)
     XReparentWindow(dpy, wk->wg.win, panel.win, 0, 0);
@@ -206,10 +206,8 @@ panel_arrange_all(void) {
 void
 panel_conf(void) {
   mon_t const* mon = mons.beg;
-  if (XResizeWindow(dpy, panel.win, mon->w, panel.h)) {
-    panel.w = mon->w;
-    if (XMoveWindow(dpy, panel.win, 0, mon->h - panel.h)) {
-      panel.y = mon->h - panel.h;
-    }
+  if (wg_win_resize(&panel, mon->w, panel.h) == 0) {
+    if (wg_win_move(&panel, 0, mon->h - panel.h) == 0)
+      ;
   }
 }

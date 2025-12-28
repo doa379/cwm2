@@ -67,10 +67,10 @@ int main(int const ARGC, char const* ARGV[]) {
 
   root_init();
   mon_conf();
-  tray_conf();
   cli_wg_init();
   panel_init();
   panel_conf();
+  tray_conf();
   mascot_init();
   mascot_draw();
   ev_init();

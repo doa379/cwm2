@@ -8,7 +8,8 @@
 extern Display* dpy;
 cblk_t mons;
 
-int mon_mons_init(unsigned const n) {
+int
+mon_mons_init(unsigned const n) {
   mons = cblk_init(sizeof(mon_t), n);
   if (mons.beg == NULL) {
     fprintf(stderr, "Failed to init mon\n");
@@ -18,15 +19,18 @@ int mon_mons_init(unsigned const n) {
   return 0;
 }
 
-void mon_mons_deinit(void) {
+void
+mon_mons_deinit(void) {
   cblk_deinit(&mons);
 }
 
-void mon_mons_clear(void) {
+void
+mon_mons_clear(void) {
   cblk_clear(&mons);
 }
 
-static void* mon_init(int const x, int const y, 
+static void*
+mon_init(int const x, int const y, 
     int const w, int const h) {
   mon_t mon = {
     .x = x,
@@ -38,17 +42,19 @@ static void* mon_init(int const x, int const y,
   return cblk_map(&mons, &mon);
 }
 
-unsigned mon_currmon(int const x, int const y) {
+mon_t*
+mon_currmon(int const x, int const y) {
   for (mon_t* mon = mons.beg; mon != mons.end; mon++)
     if (x > mon->x && x < mon->x + mon->w &&
       y > mon->y && y < mon->y + mon->h) {
-      return cblk_dist(&mons, mon);
+      return mon;
     }
 
-  return 0;
+  return NULL;
 }
 
-void mon_conf(void) {
+void
+mon_conf(void) {
   if (XineramaIsActive(dpy)) {
     int n = 0;
     XineramaScreenInfo* inf =

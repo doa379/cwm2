@@ -9,13 +9,18 @@
 #include "evcalls.h"
 #include "font.h"
 #include "root.h"
+#include "tray.h"
 
 extern Display* dpy;
 extern font_t font;
+extern cblk_t mons;
+extern wg_t panel;
+extern tray_t tray;
 
 cblk_t wks;
 wk_t* prevwk;
 wk_t* currwk;
+mon_t* currmon;
 
 int
 wm_init(unsigned const n) {
@@ -33,6 +38,7 @@ wm_init(unsigned const n) {
 
   wk_focus(wks.beg);
   prevwk = currwk = wks.beg;
+  currmon = mons.beg;
   return 0;
 }
 
@@ -112,8 +118,8 @@ wm_wk_focus_all(void) {
 }
 
 cli_t*
-wm_cli_map(wk_t* const wk, Window const win, int const x,
-int const y, int const w, int const h) {
+wm_cli_map(mon_t* mon, wk_t* const wk, Window const win, 
+int const x, int const y, int const w, int const h) {
   static unsigned const WINMASK = FocusChangeMask;
   static unsigned const CLIMASK = StructureNotifyMask |
     EnterWindowMask |
@@ -127,7 +133,7 @@ int const y, int const w, int const h) {
     ButtonPressMask |
     ButtonReleaseMask |
     ExposureMask;
-  cli_t const c = cli_init(win, wk, x, y, w, h);
+  cli_t const c = cli_init(win, wk, mon, x, y, w, h);
   cli_t* const nextc = cblk_map(&wk->clis, &c);
   if (nextc) {
     XSelectInput(dpy, win, WINMASK);
@@ -211,6 +217,11 @@ wm_cli_translate(cli_t* const c) {
   
   int const x0 = c->par.x;
   int const y0 = c->par.y;
+  int const x1 = currmon == mons.beg ? 
+    currmon->w - tray.wg.w : currmon->w;
+  int const y1 = currmon == mons.beg ? 
+    currmon->h - panel.h : currmon->h;
+  void (*map_cb)(void) = NULL;
 
   do {
     XMaskEvent(dpy, MASK | MOUSEMASK, &xev);
@@ -219,12 +230,27 @@ wm_cli_translate(cli_t* const c) {
       int const nexty = y0 + xev.xmotion.y - y;
       if (wg_win_move(&c->par, nextx, nexty) != 0)
         break;
+      if (c->par.y + c->par.h > y1 - 2 * c->par.bdrw) {
+        if (wg_win_move(&c->par, nextx, 
+            y1 - c->par.h - 2 * c->par.bdrw) != 0)
+          break;
+      }
+      
+      if (xev.xmotion.x > x1) {
+        wg_win_bdrset(tray.wg.win, wg_SEL);
+        /* map_cb = ; */
+      }
+      else
+        wg_win_bdrset(tray.wg.win, wg_BG);
     } else if (xev.type == Expose) {
         Window const win = xev.xexpose.window;
         evcalls_expose(win);
     }
   } while (xev.type != ButtonRelease);
   XUngrabPointer(dpy, CurrentTime);
+  wg_win_bdrset(tray.wg.win, wg_BG);
+  if (map_cb)
+    map_cb();
 }
 
 void

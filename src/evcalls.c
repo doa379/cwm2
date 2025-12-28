@@ -14,6 +14,7 @@ extern Display* dpy;
 
 extern wk_t* prevwk;
 extern wk_t* currwk;
+extern mon_t* currmon;
 
 extern wg_t status;
 
@@ -47,7 +48,8 @@ evcalls_map_override_redirect(Window const win) {
 void
 evcalls_map_request(Window const win, int const x,
 int const y, int const w, int const h) {
-  cli_t* const c = wm_cli_map(currwk, win, x, y, w, h);
+  cli_t* const c = wm_cli_map(currmon, currwk, win, 
+    x, y, w, h);
   if (c) {
     wg_str_set(&c->ico, prop_ico(win));
     wg_str_set(&c->hdr, prop_name(win));
@@ -82,8 +84,7 @@ int const y, int const x_root, int const y_root) {
       abs(y_root - prev_y_root) > 100) {
       prev_x_root = x_root;
       prev_y_root = y_root;
-      unsigned const currmon = 
-        mon_currmon(x_root, y_root);
+      currmon = mon_currmon(x_root, y_root);
     }
   }
 }
@@ -158,7 +159,7 @@ evcalls_focus_change(Window const win) {
   if (c && c != currwk->currc) {
     /* notif, don't switch focus */
     if (c->wk == currwk)
-      wg_win_setbg(c->ico.win, wg_SEL);
+      wg_win_bgset(c->ico.win, wg_SEL);
     else 
       wk_wg_focus(c->wk, wg_SEL);
   }

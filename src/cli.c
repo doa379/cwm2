@@ -22,7 +22,6 @@ extern Display* dpy;
 extern font_t font;
 extern unsigned const bdrw;
 
-static unsigned currmon;
 static unsigned char const stipple_8x8[] = {
   /* Every 3rd bit */
   /* 0x11, 0x00, 0x11, 0x00, 0x11, 0x00, 0x11, 0x00 */
@@ -51,8 +50,8 @@ cli_wg_init(void) {
 }
 
 cli_t
-cli_init(Window const win, wk_t* const wk, int const x,
-int const y, int const w, int const h) {
+cli_init(Window const win, wk_t* const wk, mon_t* const mon,
+int const x, int const y, int const w, int const h) {
   /* Init parent */
   wg_t const par = wg_init(DefaultRootWindow(dpy), 
       x, y, w, h, bdrw);
@@ -86,7 +85,7 @@ int const y, int const w, int const h) {
 
   return (cli_t) {
     .wk = wk,
-    .mon = currmon,
+    .mon = mon,
     .win = win,
     .par = par,
     .hdr = hdr,
@@ -141,10 +140,10 @@ cli_wg(cli_t* const c, Window const win) {
 
 void
 cli_wg_focus(cli_t* const c, unsigned const clr) {
-  wg_win_setbg(c->par.win, clr);
-  wg_win_setbdr(c->par.win, clr);
-  wg_win_setbg(c->hdr.win, clr);
-  wg_gc_setbg(c->hdr.gc, clr);
+  wg_win_bgset(c->par.win, clr);
+  wg_win_bdrset(c->par.win, clr);
+  wg_win_bgset(c->hdr.win, clr);
+  wg_gc_bgset(c->hdr.gc, clr);
   XFillRectangle(dpy, c->hdr.win, c->hdr.gc,
     c->hdr.str.ext + 4 * c->par.bdrw, 0, c->hdr.w, 
       font.ch - 2 * c->hdr.bdrw);
@@ -153,8 +152,8 @@ cli_wg_focus(cli_t* const c, unsigned const clr) {
   wg_pixmap_fill(&c->max, clr);
   wg_pixmap_fill(&c->res, clr);
   wg_pixmap_fill(&c->cls, clr);
-  wg_win_setbg(c->ico.win, clr);
-  wg_win_setbdr(c->ico.win, clr);
+  wg_win_bgset(c->ico.win, clr);
+  wg_win_bdrset(c->ico.win, clr);
   wg_str_draw(&c->ico, clr, 0);
 }
 /*

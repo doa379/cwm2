@@ -401,6 +401,7 @@ calls_grid_arrange(void) {
 
 void
 calls_cli_mode_toggle(void) {
+  /*
   cli_t* const c = currwk->currc;
   if (c) {
     ++c->mode; 
@@ -417,6 +418,7 @@ calls_cli_mode_toggle(void) {
         cli_conf(c, mon->w, mon->h);
     }
   }
+  */
 }
 
 void

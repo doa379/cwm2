@@ -73,25 +73,25 @@ wg_str_draw(wg_t* const wg, unsigned const clr,
 }
 
 void
-wg_win_setbg(Window const win, unsigned const clr) {
+wg_win_bgset(Window const win, unsigned const clr) {
   XSetWindowBackground(dpy, win, clr_pair[clr].bg.pix);
   XClearWindow(dpy, win);
 }
 
 void
-wg_win_setbdr(Window const win, unsigned const clr) {
+wg_win_bdrset(Window const win, unsigned const clr) {
   XSetWindowBorder(dpy, win, clr_pair[clr].bg.pix);
 }
 
 void
-wg_gc_setbg(GC const gc, unsigned const clr) {
+wg_gc_bgset(GC const gc, unsigned const clr) {
   XSetBackground(dpy, gc, clr_pair[clr].bg.pix);
   XSetForeground(dpy, gc, clr_pair[clr].fg.pix);
 }
 
 void
 wg_pixmap_fill(wg_t const* wg, unsigned const clr) {
-  wg_gc_setbg(wg->gc, clr);
+  wg_gc_bgset(wg->gc, clr);
   XFillRectangle(dpy, wg->win, wg->gc, 
       wg->x, wg->y, wg->w, wg->h);
   XCopyPlane(dpy, wg->pixmap, wg->win, wg->gc, 

@@ -2,10 +2,11 @@
 
 #include "wg.h"
 #include "wk.h"
+#include "mon.h"
 
 typedef struct cli_s {
   wk_t* wk;
-  unsigned mon;
+  mon_t* mon;
   Window win;
   wg_t par;
   wg_t hdr;
@@ -21,8 +22,8 @@ typedef struct cli_s {
 enum mode { MIN, MAX, RES, CLS };
 
 void cli_wg_init(void);
-cli_t cli_init(Window const, wk_t* const, int const, 
-int const, int const, int const);
+cli_t cli_init(Window const, wk_t* const, mon_t* const, 
+int const, int const, int const, int const);
 void cli_deinit(cli_t* const);
 cli_t* cli(Window const, wk_t* const);
 wg_t* cli_wg(cli_t* const, Window const);

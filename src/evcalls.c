@@ -162,6 +162,8 @@ evcalls_focus_change(Window const win) {
       wg_win_bgset(c->ico.win, wg_SEL);
     else 
       wk_wg_focus(c->wk, wg_SEL);
+
+    wg_str_draw(&c->ico, wg_SEL, 0);
   }
 }
 

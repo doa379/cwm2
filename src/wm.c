@@ -221,7 +221,7 @@ wm_cli_translate(cli_t* const c) {
     currmon->w - tray.wg.w : currmon->w;
   int const y1 = currmon == mons.beg ? 
     currmon->h - panel.h : currmon->h;
-  void (*map_cb)(void) = NULL;
+  void (*map_cb)(cli_t* const) = NULL;
 
   do {
     XMaskEvent(dpy, MASK | MOUSEMASK, &xev);
@@ -238,10 +238,12 @@ wm_cli_translate(cli_t* const c) {
       
       if (xev.xmotion.x > x1) {
         wg_win_bdrset(tray.wg.win, wg_SEL);
-        /* map_cb = ; */
-      }
-      else
+        /* TODO tray action */
+        map_cb = NULL;
+      } else {
         wg_win_bdrset(tray.wg.win, wg_BG);
+        map_cb = NULL;
+      }
     } else if (xev.type == Expose) {
         Window const win = xev.xexpose.window;
         evcalls_expose(win);
@@ -250,7 +252,7 @@ wm_cli_translate(cli_t* const c) {
   XUngrabPointer(dpy, CurrentTime);
   wg_win_bdrset(tray.wg.win, wg_BG);
   if (map_cb)
-    map_cb();
+    map_cb(c);
 }
 
 void

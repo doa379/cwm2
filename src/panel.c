@@ -29,8 +29,9 @@ panel_init(void) {
       1, font.ch, 0);
   wg_win_bgset(panel.win, wg_BG);
 
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     XReparentWindow(dpy, wk->wg.win, panel.win, 0, 0);
+  }
 
   wkw = font.cw;
   status_init(panel.win);
@@ -42,6 +43,22 @@ void
 panel_deinit(void) {
   status_deinit();
   wg_deinit(&panel);
+}
+
+static void
+panel_wk_conf(wk_t* const wk) {
+  /* Size the workspaces to available estate */
+
+  unsigned n = 0;
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
+    n += wk->clis.size;
+
+  unsigned w = n * wkw + status.w;
+
+  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
+    wg_win_resize(&wk->wg, 
+      wk->clis.size ? wkw * wk->clis.size : wkw, wk->wg.h);
+  }
 }
 
 static void
@@ -82,13 +99,17 @@ panel_icos_arrange_(wk_t* const wk) {
 
 void
 panel_icos_arrange(wk_t* const wk) {
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
-    panel_icos_arrange_(wk);
+  /* Update wk */
+  cli_t* const beg = wk->clis.beg;
+  cli_t* const end = wk->clis.end;
+  for (cli_t* c = beg; c != end; c++)
+    arrange_sel_map(&c->ico);
 
+  arrange_sel_adj(0);
 }
 
 void
-panel_arrange(wk_t const* currwk) {
+panel_arrange(wk_t* const currwk) {
   /*
   for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     if (wk == currwk)
@@ -104,6 +125,7 @@ panel_arrange(wk_t const* currwk) {
     arrange_sel_map(&wk->wg);
   }
   */
+  panel_wk_conf(currwk);
   for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
     arrange_sel_map(&wk->wg);
   }

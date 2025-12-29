@@ -42,9 +42,7 @@ calls_mon3(void) {
 
 void
 calls_wk0(void) {
-  wm_wk_focus_all();
-  panel_icos_arrange_all();
-  panel_arrange_all();
+
 }
 
 void

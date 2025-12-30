@@ -13,5 +13,3 @@ typedef struct {
 wk_t wk_init(void);
 void wk_deinit(wk_t* const);
 void wk_wg_focus(wk_t* const, unsigned const);
-void wk_unfocus(wk_t* const);
-void wk_focus(wk_t* const);

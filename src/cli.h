@@ -8,6 +8,7 @@ typedef struct cli_s {
   wk_t* wk;
   mon_t* mon;
   Window win;
+  unsigned long mask;
   wg_t par;
   wg_t hdr;
   wg_t min;
@@ -28,11 +29,5 @@ void cli_deinit(cli_t* const);
 cli_t* cli(Window const, wk_t* const);
 wg_t* cli_wg(cli_t* const, Window const);
 void cli_wg_focus(cli_t* const, unsigned const);
-
-void cli_currmon_move(void);
-
 void cli_conf(cli_t* const, int const, int const);
 void cli_arrange(cli_t* const, int const, int const);
-void cli_unfocus(cli_t* const);
-void cli_focus(cli_t* const);
-void cli_kill(cli_t* const);

@@ -29,6 +29,8 @@ wg_init(Window const parwin, int const x, int const y,
     .w = w,
     .h0 = h,
     .h = h,
+    .x1 = x + w + 2 * bdrw,
+    .y1 = y + h + 2 * bdrw,
     .bdrw = bdrw,
     .pixmap = 0,
     .gc = XCreateGC(dpy, win, 0, NULL),
@@ -105,6 +107,8 @@ wg_win_move(wg_t* const wg, int const x, int const y) {
     wg->x = x;
     wg->y0 = wg->y;
     wg->y = y;
+    wg->x1 = wg->x + wg->w + 2 * wg->bdrw;
+    wg->y1 = wg->y + wg->h + 2 * wg->bdrw;
     return 0;
   }
 
@@ -118,6 +122,8 @@ wg_win_resize(wg_t* const wg, int const w, int const h) {
     wg->h = h;
     wg->w0 = wg->w;
     wg->w = w;
+    wg->x1 = wg->x + wg->w + 2 * wg->bdrw;
+    wg->y1 = wg->y + wg->h + 2 * wg->bdrw;
     return 0;
   }
 

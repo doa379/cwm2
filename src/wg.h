@@ -12,6 +12,7 @@ typedef struct {
 typedef struct {
 /* Widget type */
   Window win;
+  /* prev (suffix 0), curr */
   int x0;
   int x;
   int y0;
@@ -20,7 +21,11 @@ typedef struct {
   int w;
   int h0;
   int h;
+  /* lower right */
+  int x1;
+  int y1;
   int bdrw;
+  unsigned long mask;
   Pixmap pixmap;
   GC gc;
   XftDraw* xft;

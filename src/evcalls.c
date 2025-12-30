@@ -24,7 +24,7 @@ int const h) {
   if (win == DefaultRootWindow(dpy)) {
     /* Configure root window */
     mon_conf();
-    /*cli_currmon_move();*/
+    wm_cli_currmon_move();
     panel_conf();
     tray_conf();
     mascot_draw();
@@ -54,10 +54,10 @@ int const y, int const w, int const h) {
     wg_str_set(&c->ico, prop_ico(win));
     wg_str_set(&c->hdr, prop_name(win));
     wm_cli_switch(c);
-    cli_conf(c, w, h);
+    wm_cli_conf(c, w, h);
     int const prevx = c->wk->prevc->par.x;
     int const prevy = c->wk->prevc->par.y;
-    cli_arrange(c, prevx, prevy);
+    wm_cli_arrange(c, prevx, prevy);
     panel_icos_arrange(c->wk);
     panel_arrange(c->wk);
   }
@@ -109,15 +109,26 @@ void
 evcalls_btn_press(Window const win, unsigned const state,
 unsigned const button) {
   cli_t* const c = cli(win, currwk);
-  if (c && c->hdr.win == win)
-    wm_cli_translate(c);
-  else if (c && c->par.win == win)
-    wm_cli_resize(c);
-  
   if (c) {
-    input_t const* input = input_btn(state, button);
-    if (input)
-      input->call();
+    if (c->hdr.win == win)
+      wm_cli_translate(c);
+    else if (c->par.win == win)
+      wm_cli_resize(c);
+    else if (win == c->min.win)
+      wm_cli_min(c);
+    else if (win == c->max.win)
+      wm_cli_max(c);
+    else if (win == c->res.win)
+      wm_cli_res(c);
+    else if (win == c->cls.win)
+      wm_cli_kill(c);
+    else if (win == c->ico.win)
+      wm_cli_switch(c);
+    else {
+      input_t const* input = input_btn(state, button);
+      if (input)
+        input->call();
+    }
   }
 }
 
@@ -129,6 +140,8 @@ evcalls_enter_notify(Window const win) {
       wg_pixmap_fill(&c->min, wg_SEL);
     else if (win == c->max.win)
       wg_pixmap_fill(&c->max, wg_SEL);
+    else if (win == c->res.win)
+      wg_pixmap_fill(&c->res, wg_SEL);
     else if (win == c->cls.win)
       wg_pixmap_fill(&c->cls, wg_SEL);
     else if (c != c->wk->currc) {
@@ -148,6 +161,8 @@ evcalls_leave_notify(Window const win) {
       wg_pixmap_fill(&c->min, clr);
     else if (win == c->max.win)
       wg_pixmap_fill(&c->max, clr);
+    else if (win == c->res.win)
+      wg_pixmap_fill(&c->res, clr);
     else if (win == c->cls.win)
       wg_pixmap_fill(&c->cls, clr);
   }

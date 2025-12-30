@@ -130,7 +130,6 @@ panel_arrange(wk_t* const currwk) {
     arrange_sel_map(&wk->wg);
   }
 
-  mon_t const* mon = mons.beg;
   arrange_sel_map(&status);
   arrange_sel_adj(4);
 }

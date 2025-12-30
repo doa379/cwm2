@@ -156,17 +156,6 @@ cli_wg_focus(cli_t* const c, unsigned const clr) {
   wg_win_bdrset(c->ico.win, clr);
   wg_str_draw(&c->ico, clr, 0);
 }
-/*
-void cli_currmon_move(void) {
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
-    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
-      if (c->mon > mons.size - 1) {
-        mon_t const* mon = cblk_itr(&mons, currmon);
-        XMoveWindow(dpy, c->par.win, mon->x, mon->y);
-        c->mon = currmon;
-      }
-}
-*/
 
 void
 cli_conf(cli_t* const c, int const w, int const h) {
@@ -175,12 +164,23 @@ cli_conf(cli_t* const c, int const w, int const h) {
       XMoveWindow(dpy, c->hdr.win, 0, 0);
       int const y = 0.5 * (c->hdr.h - btnh);
       XMoveWindow(dpy, c->cls.win, c->hdr.w - btnw, y);
+      
+      XSelectInput(dpy, c->max.win, 0);
       XUnmapWindow(dpy, c->max.win);
+      XSelectInput(dpy, c->max.win, c->max.mask);
+
+      XSelectInput(dpy, c->res.win, 0);
       XUnmapWindow(dpy, c->res.win);
+      XSelectInput(dpy, c->res.win, c->res.mask);
+
       wg_t* const wg = c->mode == MAX ? &c->res : &c->max;
       XMoveWindow(dpy, wg->win, 
           c->hdr.w - 2 * btnw - bdrw, y);
+
+      XSelectInput(dpy, wg->win, 0);
       XMapWindow(dpy, wg->win);
+      XSelectInput(dpy, wg->win, wg->mask);
+      
       XMoveWindow(dpy, c->min.win, 
           c->hdr.w - 3 * btnw - 2 * bdrw, y);
     }
@@ -192,31 +192,5 @@ cli_conf(cli_t* const c, int const w, int const h) {
 void
 cli_arrange(cli_t* const c, int const x, 
     int const y) {
-  if (XMoveWindow(dpy, c->par.win, x + font.cw, 
-        y + font.ch)) {
-    c->par.x = x + font.cw;
-    c->par.y = y + font.ch;
-  }
-}
-
-void
-cli_unfocus(cli_t* const c) {
-  cli_wg_focus(c, wg_BG);
-}
-
-void
-cli_focus(cli_t* const c) {
-  XRaiseWindow(dpy, c->par.win);
-  XRaiseWindow(dpy, c->ico.win);
-  XSetInputFocus(dpy, c->par.win, RevertToPointerRoot,
-    CurrentTime);
-  cli_wg_focus(c, wg_ACT);
-}
-
-void
-cli_kill(cli_t* const c) {
-  XReparentWindow(dpy, c->win, DefaultRootWindow(dpy), 
-      0, 0);
-  XDestroyWindow(dpy, c->win);
-  cli_deinit(c);
+  wg_win_move(&c->par, x + font.cw, y + font.ch);
 }

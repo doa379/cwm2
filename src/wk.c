@@ -36,36 +36,3 @@ void
 wk_wg_focus(wk_t* const wk, unsigned const clr) {
   wg_win_bgset(wk->wg.win, clr);
 }
-
-void
-wk_unfocus(wk_t* const wk) {
-  for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++) {
-    if (c == wk->currc)
-      cli_unfocus(c);
-
-    XUnmapWindow(dpy, c->par.win);
-  }
-  
-  wk_wg_focus(wk, wg_BG);
-}
-
-void
-wk_focus(wk_t* const wk) {
-  if (wk->clis.size) {
-    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++) {
-      /* Disable any transient events within this op */
-      XWindowAttributes wa;
-      if (XGetWindowAttributes(dpy, c->par.win, &wa) == 0)
-        return;
-
-      XSelectInput(dpy, c->par.win, 0);
-      XMapWindow(dpy, c->par.win);
-      XSelectInput(dpy, c->par.win, wa.your_event_mask);
-    }
-
-    cli_focus(wk->currc);
-  }
-  
-  wk_wg_focus(wk, wg_ACT);
-}
-

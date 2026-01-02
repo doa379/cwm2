@@ -21,7 +21,7 @@ static int xerror;
 volatile sig_atomic_t sig_status;
 Display* dpy;
 
-static int XError_handler(Display*, XErrorEvent* xev) {
+static int XError_handler(Display* dpy, XErrorEvent* xev) {
   xerror = (xev->error_code == BadAccess ||
     xev->error_code == BadWindow);
   return 0;

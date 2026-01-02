@@ -20,7 +20,7 @@ typedef struct cli_s {
   int mode;
 } cli_t;
 
-enum mode { MIN, MAX, RES, CLS };
+enum mode { MIN, MAX, RES, CLS, FS };
 
 void cli_wg_init(void);
 cli_t cli_init(Window const, wk_t* const, mon_t* const, 

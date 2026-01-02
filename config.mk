@@ -1,51 +1,51 @@
 INCS=-I src \
-	-I /usr/X11R6/include \
   -I /usr/include \
   -I /usr/include/freetype2 \
-  -I /usr/local/include/freetype2 \
-  -I /usr/lib/dbus-1.0/include \
-  -I /usr/local/lib/dbus-1.0/include \
-  -I /usr/include/dbus-1.0 \
-  -I /usr/local/include/dbus-1.0
+  -I /usr/local/include \
+  -I /usr/local/include/freetype2
+
 LIBSPATH= -L . -Wl,-R . '-Wl,-R$$ORIGIN' \
-  -L /usr/X11R6/lib \
   -L /usr/lib \
   -L /usr/lib64 \
   -L /usr/local/lib
 
-LIBS=-l X11 -l Xinerama -l dbus-1 -l Xft -l m
+LIBS=-l X11 -l Xinerama -l Xft -l m
 
 CC=cc
-FLAGS=-std=c2x -Wall -fPIE -fPIC -pedantic
+FLAGS=-Wall -fPIE -fPIC -pedantic
 
 REL_CFLAGS=-O3
-DBG_CFLAGS=-O1 -g -fno-omit-frame-pointer
 REL_LFLAGS=-s
+REL_BIN=cwm2.bin
+
+DBG_CFLAGS=-O1 -g -fno-omit-frame-pointer
 DBG_LFLAGS=
-REL=cwm2.bin
-DBG=cwm2~dbg.bin
+DBG_BIN=cwm2~dbg.bin
+
+# Compiler optim'n to be set manually :/
+#CFLAGS=${REL_CFLAGS}
+CFLAGS=${DBG_CFLAGS}
 
 HDR_CONFIG=config.h
-HDR_SRC=
-SRC=main.c \
-	clr.c \
-	font.c \
-	root.c \
-	mon.c \
-	wm.c \
-	wk.c \
-	cli.c \
-	ev.c \
-	evcalls.c \
-	input.c \
-	calls.c \
-	wg.c \
-	panel.c \
-	status.c \
-	tray.c \
-	arrange.c \
-	prop.c \
-	mascot.c \
-	clib.c \
-	cblk.c \
-	cstring.c
+SRC=src/main.c \
+  src/clr.c \
+  src/font.c \
+  src/root.c \
+  src/mon.c \
+  src/wm.c \
+  src/wk.c \
+  src/cli.c \
+  src/ev.c \
+  src/evcalls.c \
+  src/input.c \
+  src/calls.c \
+  src/wg.c \
+  src/panel.c \
+  src/status.c \
+  src/tray.c \
+  src/arrange.c \
+  src/prop.c \
+  src/mascot.c \
+  src/clib.c \
+  src/cblk.c \
+  src/cstring.c

@@ -316,8 +316,10 @@ void
 wm_cli_unfocus(cli_t* const c) {
   cli_wg_focus(c, wg_BG);
   input_btns_ungrab(c->par.win);
+  /*
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot,
       CurrentTime);
+  */
 }
 
 void
@@ -325,8 +327,10 @@ wm_cli_focus(cli_t* const c) {
   XMapRaised(dpy, c->par.win);
   XMapRaised(dpy, c->ico.win);
   input_btns_grab(c->par.win);
+  /*
   XSetInputFocus(dpy, c->par.win, RevertToPointerRoot,
     CurrentTime);
+  */
   cli_wg_focus(c, wg_ACT);
 }
 
@@ -444,7 +448,6 @@ wm_cli_max(cli_t* const c) {
 
 void
 wm_cli_res(cli_t* const c) {
-  //wm_cli_switch(c);
   c->mode = RES;
   wm_cli_conf(c, c->par.w0, c->par.h0);
 }

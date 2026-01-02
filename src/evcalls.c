@@ -120,9 +120,12 @@ unsigned const button) {
       wm_cli_max(c);
     else if (win == c->res.win)
       wm_cli_res(c);
-    else if (win == c->cls.win)
+    else if (win == c->cls.win) {
+      wk_t* const wk = c->wk;
       wm_cli_kill(c);
-    else if (win == c->ico.win)
+      panel_icos_arrange(wk);
+      panel_arrange(wk);
+    } else if (win == c->ico.win)
       wm_cli_switch(c);
     else {
       input_t const* input = input_btn(state, button);

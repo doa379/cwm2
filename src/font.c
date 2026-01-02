@@ -1,6 +1,7 @@
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
 #include <stdio.h>
+#include <locale.h>
 
 #include "font.h"
 
@@ -38,6 +39,7 @@ int font_init(void) {
   font.ch = 1.25 * font.xft->height;
   font.cw = 2.0 * font.xft->height;
   font.crs = font_crs_init();
+  setlocale(LC_ALL, "");
   return 0;
 }
 

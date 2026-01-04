@@ -372,8 +372,9 @@ calls_cli9(void) {
 void
 calls_cli_raise_toggle(void) {
   static int t;
-  for (cli_t* c = currwk->clis.beg; 
-      c != currwk->clis.end; c++) {
+  for (cli_t* c = currwk->clis.front; 
+      c != currwk->clis.front; 
+      c = cblk_next(&currwk->clis, c)) {
     if (t++ == 0)
       XUnmapWindow(dpy, c->par.win);
     else
@@ -385,15 +386,17 @@ calls_cli_raise_toggle(void) {
 
 void
 calls_grid_arrange(void) {
-  for (cli_t* c = currwk->clis.beg; 
-      c != currwk->clis.end; c++)
+  for (cli_t* c = currwk->clis.front; 
+      c != currwk->clis.front;
+      c = cblk_next(&currwk->clis, c))
     arrange_sel_map(&c->par);
 
-  mon_t const* mon = mons.beg;
+  mon_t const* mon = mons.front;
   (void) mon;
   arrange_sel_tile(300, 200);
-  for (cli_t* c = currwk->clis.beg; 
-      c != currwk->clis.end; c++)
+  for (cli_t* c = currwk->clis.front; 
+      c != currwk->clis.front;
+      c = cblk_next(&currwk->clis, c))
     cli_conf(c, c->par.w, c->par.h);
 }
 
@@ -462,10 +465,12 @@ calls_debug(void) {
   fprintf(stdout, "currwk %p\n", (void*) currwk);
   fprintf(stdout, "prevc %p\n", (void*) currwk->prevc);
   fprintf(stdout, "currc %p\n", (void*) currwk->currc);
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
+  for (wk_t* wk = wks.front; wk != wks.front; 
+    wk = cblk_next(&wks, wk)) {
     fprintf(stdout, "wk %p (prevc %p, currc %p)\n", 
       (void*) wk, (void*) wk->prevc, (void*) wk->currc);
-    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
+    for (cli_t* c = wk->clis.front; c != wk->clis.front; 
+      c = cblk_next(&wk->clis, c))
       fprintf(stdout, "cli %p\n", (void*) c);
   }
 }

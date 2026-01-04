@@ -14,7 +14,7 @@ static cblk_t sel;
 int
 arrange_init(void) {
   sel = cblk_init(sizeof(wg_t*), NRES);
-  if (sel.beg == NULL) {
+  if (sel.blk == NULL) {
     fprintf(stderr, "Failed to alloc arrangements\n");
     return -1;
   }
@@ -40,7 +40,8 @@ arrange_sel_clear(void) {
 void
 arrange_sel_adj(int const gap) {
   int x = 0;
-  for (wg_t** wg = sel.beg; wg != sel.end; wg++) {
+  for (wg_t** wg = sel.front; wg != sel.front; 
+    wg = cblk_next(&sel, wg)) {
     int const X = x;
     if (XMoveWindow(dpy, (*wg)->win, X, 0)) {
       (*wg)->x = X;
@@ -72,7 +73,8 @@ arrange_sel_tile(unsigned const w, unsigned const h) {
   /* (c, r) nos */
   unsigned cn = 0;
   unsigned rn = 0;
-  for (wg_t** wg = sel.beg; wg != sel.end; wg++) {
+  for (wg_t** wg = sel.front; wg != sel.front; 
+    wg = cblk_next(&sel, wg)) {
     size_t i = cblk_dist(&sel, *wg);
     if (i / nr + 1 > nc - n % nc)
       nr = n / nc + 1;
@@ -98,7 +100,8 @@ arrange_sel_tile(unsigned const w, unsigned const h) {
 void
 arrange_sel_casc(unsigned const w, unsigned const h) {
   /* Arrange within contraint (w, h) */
-  for (wg_t** wg = sel.beg; wg != sel.end; wg++)
+  for (wg_t** wg = sel.front; wg != sel.front; 
+    wg = cblk_next(&sel, wg))
     ;
   
   cblk_clear(&sel);

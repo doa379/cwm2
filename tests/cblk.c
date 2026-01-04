@@ -4,18 +4,97 @@
 
 static cblk_t cblk;
 
-int main(int const argc, char const* argv[]) {
-  cblk = cblk_init(sizeof(int), 10);
-  for (int i = 0; i < 10; i++) {
-    cblk_map(&cblk, &i);
-  }
+static void print_by_val(void) {
+  void* dev = cblk.front;
+  fprintf(stdout, "Running over values: ");
+  do {
+    fprintf(stdout, "%d ", *(int32_t*) dev);
+    dev = cblk_next(&cblk, dev);
+  } while (dev != cblk.front);
+  
+  fprintf(stdout, "\n");
+}
 
-  for (int i = 0; i < cblk.size; i++) {
+static void print_by_itr(void) {
+  fprintf(stdout, "Iterating by index: ");
+
+  for (int32_t i = 0; i < cblk.size; i++) {
     void* itr = cblk_itr(&cblk, i);
-    fprintf(stdout, "%d ", *((int*) itr));
+    fprintf(stdout, "%d ", *((int32_t*) itr));
   }
 
   fprintf(stdout, "\n");
+}
+
+int main(int const argc, char const* argv[]) {
+  cblk = cblk_init(sizeof(int32_t), 10);
+  for (int32_t i = 0; i < 10; i++) {
+    cblk_map(&cblk, &i);
+  }
+
+  fprintf(stdout, "After initial mapping\n");
+  fprintf(stdout, "Front %d Back %d\n", 
+    *(int32_t*) cblk.front, *(int32_t*) cblk.back);
+
+  print_by_val();
+  print_by_itr();
+  
+  {
+    /* Remove 1st */
+    void* const rm = cblk_itr(&cblk, 0);
+    cblk_unmap(&cblk, rm);
+    fprintf(stdout, "After removal of 1st\n");
+    fprintf(stdout, "Front %d Back %d\n", 
+      *(int32_t*) cblk.front, *(int32_t*) cblk.back);
+    print_by_val();
+    print_by_itr();
+  }
+  
+  {
+    /* Add another */
+    int32_t const i = 37;
+    cblk_map(&cblk, &i);
+    fprintf(stdout, "After mapping another\n");
+    fprintf(stdout, "Front %d Back %d\n", 
+      *(int32_t*) cblk.front, *(int32_t*) cblk.back);
+    print_by_val();
+    print_by_itr();
+  }
+
+  {
+    /* Add another */
+    int32_t const i = 111;
+    cblk_map(&cblk, &i);
+    fprintf(stdout, "After mapping another\n");
+    fprintf(stdout, "Front %d Back %d\n", 
+      *(int32_t*) cblk.front, *(int32_t*) cblk.back);
+    print_by_val();
+    print_by_itr();
+  }
+  
+  {
+    /* Add a few more */
+    for (int32_t i = 500; i < 510; i++) {
+      cblk_map(&cblk, &i);
+    }
+
+    fprintf(stdout, "Front %d Back %d\n", 
+      *(int32_t*) cblk.front, *(int32_t*) cblk.back);
+    print_by_val();
+    print_by_itr();
+  }
+
+  {
+    /* Remove a few */
+    for (size_t i = 15; i < 18; i++) {
+      void* const rm = cblk_itr(&cblk, i);
+      cblk_unmap(&cblk, rm);
+      fprintf(stdout, "Front %d Back %d\n", 
+        *(int32_t*) cblk.front, *(int32_t*) cblk.back);
+      print_by_val();
+      print_by_itr();
+    }
+  }
 
   return 0;
 }

@@ -33,7 +33,7 @@ mascot_draw(void) {
   XSetBackground(dpy, gc, rootbg);
   XSetForeground(dpy, gc, palette_gray70);
   
-  mon_t const* mon = mons.beg;
+  mon_t const* mon = mons.front;
   int const y = mon->h - panel.h - mascot_height;
   XFillRectangle(dpy, DefaultRootWindow(dpy), gc, 
       0, y, mascot_width, mascot_height);

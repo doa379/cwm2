@@ -16,7 +16,7 @@ tray_t tray;
 int
 tray_init(void) {
   tray.clis = cblk_init(sizeof(Window), NRES);
-  if (tray.clis.beg == NULL) {
+  if (tray.clis.blk == NULL) {
     fprintf(stderr, "Failed to alloc tray\n");
     return -1;
   }
@@ -37,7 +37,7 @@ tray_deinit(void) {
 void
 tray_conf(void) {
   wg_t* const wg = &tray.wg;
-  mon_t const* mon = mons.beg;
+  mon_t const* mon = mons.front;
   if (wg_win_resize(wg, trayw, mon->h - 2 * wg->bdrw - 
       panel.h - 2 * panel.bdrw) == 0)
     if (wg_win_move(wg, mon->w - trayw - 2 * wg->bdrw, 0) == 

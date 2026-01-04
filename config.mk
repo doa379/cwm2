@@ -47,5 +47,6 @@ SRC=src/main.c \
   src/prop.c \
   src/mascot.c \
   src/clib.c \
+  src/cvec.c \
   src/cblk.c \
   src/cstring.c

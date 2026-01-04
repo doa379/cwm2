@@ -112,7 +112,8 @@ cli_deinit(cli_t* const c) {
 
 cli_t*
 cli(Window const win, wk_t* const wk) {
-  for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
+  for (cli_t* c = wk->clis.front; c != wk->clis.front; 
+    c = cblk_next(&wk->clis, c))
     if (c->win == win ||
         c->par.win == win ||
         c->hdr.win == win ||

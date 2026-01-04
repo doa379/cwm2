@@ -25,7 +25,7 @@ mon_t* currmon;
 int
 wm_init(unsigned const n) {
   wks = cblk_init(sizeof(wk_t), n > 0 ? n : 1);
-  if (wks.beg == NULL) {
+  if (wks.blk == NULL) {
     fprintf(stderr, "Failed to alloc wm\n");
     return -1;
   }
@@ -36,9 +36,9 @@ wm_init(unsigned const n) {
       return -1;
     }
 
-  wm_wk_focus(wks.beg);
-  prevwk = currwk = wks.beg;
-  currmon = mons.beg;
+  wm_wk_focus(wks.front);
+  prevwk = currwk = wks.front;
+  currmon = mons.front;
   return 0;
 }
 
@@ -162,7 +162,8 @@ int const x, int const y, int const w, int const h) {
 
 cli_t*
 wm_cli(Window const win) {
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
+  for (wk_t* wk = wks.front; wk != wks.front; 
+    wk = cblk_next(&wks, wk)) {
     cli_t* const c = cli(win, wk);
     if (c)
       return c;
@@ -226,9 +227,9 @@ wm_cli_translate(cli_t* const c) {
   
   int const x0 = c->par.x;
   int const y0 = c->par.y;
-  int const x1 = currmon == mons.beg ? 
+  int const x1 = currmon == mons.front ? 
     currmon->w - tray.wg.w : currmon->w;
-  int const y1 = currmon == mons.beg ? 
+  int const y1 = currmon == mons.front ? 
     currmon->h - panel.h : currmon->h;
   void (*map_cb)(cli_t* const) = NULL;
 
@@ -348,7 +349,8 @@ wm_cli_switch(cli_t* const c) {
 
 void
 wm_wk_unfocus(wk_t* const wk) {
-  for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++) {
+  for (cli_t* c = wk->clis.front; c != wk->clis.front; 
+    c = cblk_next(&wk->clis, c)) {
     if (c == wk->currc)
       wm_cli_unfocus(c);
 
@@ -361,7 +363,8 @@ wm_wk_unfocus(wk_t* const wk) {
 void
 wm_wk_focus(wk_t* const wk) {
   if (wk->clis.size) {
-    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++) {
+    for (cli_t* c = wk->clis.front; c != wk->clis.front; 
+      c = cblk_next(&wk->clis, c)) {
       /* Disable any transient events within this op */
       XSelectInput(dpy, c->par.win, 0);
       XMapWindow(dpy, c->par.win);
@@ -389,9 +392,9 @@ wm_wk_switch(wk_t* const wk) {
 void
 wm_cli_conf(cli_t* const c, int const w, int const h) {
   cli_conf(c, w, h);
-  int const w_ = currmon == mons.beg ? 
+  int const w_ = currmon == mons.front ? 
     currmon->w - tray.wg.w - 2 * tray.wg.bdrw : currmon->w;
-  int const h_ = currmon == mons.beg ? 
+  int const h_ = currmon == mons.front ? 
     currmon->h - panel.h - 2 * panel.bdrw : currmon->h;
   cli_conf(c, c->par.w + 2 * c->par.bdrw > w_ ? w_ : w, 
     c->par.h + 2 * c->par.bdrw > h_ ? h_ : h);
@@ -402,11 +405,11 @@ wm_cli_arrange(cli_t* const c, int const x, int const y) {
   cli_arrange(c, x, y);
   int const x1 = c->par.x1;
   int const y1 = c->par.y1;
-  int const x_ = currmon == mons.beg && 
+  int const x_ = currmon == mons.front && 
     x1 > currmon->w - tray.wg.w - 2 * tray.wg.bdrw ? 0 : 
       x1 > currmon->w ? 0 :
         x;
-  int const y_ = currmon == mons.beg && 
+  int const y_ = currmon == mons.front && 
     y1 > currmon->h - panel.h - 2 * panel.bdrw ? 0 : 
       y1 > currmon->h ? 0 :
         y;
@@ -415,9 +418,11 @@ wm_cli_arrange(cli_t* const c, int const x, int const y) {
 }
 
 void wm_cli_currmon_move(void) {
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
-    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
-      if (c->mon >= (mon_t*) mons.end) {
+  for (wk_t* wk = wks.front; wk != wks.front; 
+    wk = cblk_next(&wks, wk))
+    for (cli_t* c = wk->clis.front; c != wk->clis.front;
+      c = cblk_next(&wk->clis, c))
+      if (c->mon >= (mon_t*) mons.back) {
         mon_t const* mon = cblk_back(&mons);
         wg_win_move(&c->par, mon->x, mon->y);
         c->mon = currmon;
@@ -432,10 +437,10 @@ wm_cli_min(cli_t* const c) {
 
 void
 wm_cli_max(cli_t* const c) {
-  int const w = currmon == mons.beg ? 
+  int const w = currmon == mons.front ? 
     currmon->w - tray.wg.w - 2 * tray.wg.bdrw :
     currmon->w;
-  int const h = currmon == mons.beg ? 
+  int const h = currmon == mons.front ? 
     currmon->h - panel.h - 2 * panel.bdrw :
     currmon->h;
   c->mode = MAX;

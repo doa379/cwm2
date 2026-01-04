@@ -25,7 +25,7 @@ Features in a nut-shell:
 
 Build prerequisites/deps:
 
-CC, Make, lib-X11, lib-Xinerama, dbus-1
+CC, Make, lib-X11, lib-Xinerama
 
 Distribution: The ./build.sh script produces the executable cwm2.bin 
 which is all you need to run the wm (no shared/dynamic libs required 
@@ -35,4 +35,4 @@ Release: TBC
 
 Target(s): BSD UNIX, Linux
 
-(C) 2023-2025 doa379
+(C) 2023-2026 doa379

@@ -11,7 +11,7 @@ cblk_t mons;
 int
 mon_mons_init(unsigned const n) {
   mons = cblk_init(sizeof(mon_t), n);
-  if (mons.beg == NULL) {
+  if (mons.blk == NULL) {
     fprintf(stderr, "Failed to init mon\n");
     return -1;
   }
@@ -44,7 +44,8 @@ mon_init(int const x, int const y,
 
 mon_t*
 mon_currmon(int const x, int const y) {
-  for (mon_t* mon = mons.beg; mon != mons.end; mon++)
+  for (mon_t* mon = mons.front; mon != mons.front; 
+    mon = cblk_next(&mons, mon))
     if (x > mon->x && x < mon->x + mon->w &&
       y > mon->y && y < mon->y + mon->h) {
       return mon;

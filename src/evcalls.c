@@ -16,6 +16,7 @@ extern wk_t* prevwk;
 extern wk_t* currwk;
 extern mon_t* currmon;
 
+extern cblk_t mons;
 extern wg_t status;
 
 void
@@ -23,6 +24,7 @@ evcalls_configure_notify(Window const win, int const w,
 int const h) {
   if (win == DefaultRootWindow(dpy)) {
     /* Configure root window */
+    mon_mons_clear();
     mon_conf();
     wm_cli_currmon_move();
     panel_conf();
@@ -85,6 +87,10 @@ int const y, int const x_root, int const y_root) {
       prev_x_root = x_root;
       prev_y_root = y_root;
       currmon = mon_currmon(x_root, y_root);
+      char str[16];
+      sprintf(str, "Mon %lu", cblk_dist(&mons, currmon));
+      status_str_set(str);
+      status_focus(wg_ACT);
     }
   }
 }
@@ -110,9 +116,9 @@ evcalls_btn_press(Window const win, unsigned const state,
 unsigned const button) {
   cli_t* const c = cli(win, currwk);
   if (c) {
-    if (c->hdr.win == win)
+    if (c->mode == RES && c->hdr.win == win)
       wm_cli_translate(c);
-    else if (c->par.win == win)
+    else if (c->mode == RES && c->par.win == win)
       wm_cli_resize(c);
     else if (win == c->min.win)
       wm_cli_min(c);

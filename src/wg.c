@@ -51,9 +51,9 @@ wg_deinit(wg_t* const wg) {
 }
 
 void
-wg_str_set(wg_t* const wg, wchar_t const* str) {
-  wcsncpy(wg->str.data, str, sizeof wg->str.data - 1);
-  wg->str.len = wcslen(str);
+wg_str_set(wg_t* const wg, char const* str) {
+  strncpy(wg->str.data, str, sizeof wg->str.data - 1);
+  wg->str.len = strlen(str);
   if (wg->str.len) {
     XGlyphInfo extents;
     XftTextExtentsUtf8(dpy, font.xft, 
@@ -69,8 +69,8 @@ wg_str_draw(wg_t* const wg, unsigned const clr,
     int const ty = 0.5 * 
       (wg->h - 2 * wg->bdrw + font.scent);
     XftDrawStringUtf8(wg->xft, &clr_pair[clr].fg.xft, 
-        font.xft, tx, ty, 
-          (XftChar8*) wg->str.data, wg->str.len);
+      font.xft, tx, ty, (XftChar8*) wg->str.data, 
+        wg->str.len);
   }
 }
 

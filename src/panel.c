@@ -29,10 +29,11 @@ panel_init(void) {
       1, font.ch, 0);
   wg_win_bgset(panel.win, wg_BG);
 
-  for (wk_t* wk = wks.front; wk != wks.front; 
-    wk = cblk_next(&wks, wk)) {
+  wk_t* wk = wks.front;
+  do {
     XReparentWindow(dpy, wk->wg.win, panel.win, 0, 0);
-  }
+    wk = cblk_next(&wks, wk);
+  } while (wk != wks.front);
 
   wkw = font.cw;
   status_init(panel.win);
@@ -47,28 +48,32 @@ panel_deinit(void) {
 }
 
 static void
-panel_wk_conf(wk_t* const wk) {
+panel_wk_conf(wk_t* const wk_) {
   /* Size the workspaces to available estate */
 
   unsigned n = 0;
-  for (wk_t* wk = wks.front; wk != wks.front; 
-    wk = cblk_next(&wks, wk))
+  wk_t* wk = wks.front;
+  do {
     n += wk->clis.size;
+    wk = cblk_next(&wks, wk);
+  } while (wk != wks.front);
 
   unsigned w = n * wkw + status.w;
 
-  for (wk_t* wk = wks.front; wk != wks.front; 
-    wk = cblk_next(&wks, wk)) {
+  do {
     wg_win_resize(&wk->wg, 
       wk->clis.size ? wkw * wk->clis.size : wkw, wk->wg.h);
-  }
+    wk = cblk_next(&wks, wk);
+  } while (wk != wks.front);
 }
 
 static void
 panel_icos_arrange_(wk_t* const wk) {
-  for (wk_t* wk = wks.front; wk != wks.front; 
-    wk = cblk_next(&wks, wk))
-    wg_win_resize(&wk->wg, wk->wg.w0, wk->wg.h);
+  wk_t* wk_ = wks.front;
+  do {
+    wg_win_resize(&wk_->wg, wk_->wg.w0, wk_->wg.h);
+    wk_ = cblk_next(&wks, wk);
+  } while (wk_ != wks.front);
 
   unsigned n = wk->clis.size;
   if (n) {
@@ -105,10 +110,15 @@ panel_icos_arrange_(wk_t* const wk) {
 void
 panel_icos_arrange(wk_t* const wk) {
   /* Update wk */
-  for (cli_t* c = wk->clis.front; c != wk->clis.front; 
-    c = cblk_next(&wk->clis, c))
-    arrange_sel_map(&c->ico);
+  if (wk->clis.size == 0)
+    return;
 
+  cli_t* c = wk->clis.front;
+  do {
+    arrange_sel_map(&c->ico);
+    c = cblk_next(&wk->clis, c);
+  } while (c != wk->clis.front);
+  
   arrange_sel_adj(0);
 }
 
@@ -130,10 +140,11 @@ panel_arrange(wk_t* const currwk) {
   }
   */
   panel_wk_conf(currwk);
-  for (wk_t* wk = wks.front; wk != wks.front; 
-    wk = cblk_next(&wks, wk)) {
+  wk_t* wk = wks.front; 
+  do {
     arrange_sel_map(&wk->wg);
-  }
+    wk = cblk_next(&wks, wk);
+  } while (wk != wks.front);
 
   arrange_sel_map(&status);
   arrange_sel_adj(4);

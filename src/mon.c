@@ -6,11 +6,14 @@
 #include "cblk.h"
 
 extern Display* dpy;
+
+static size_t const NRES = 1;
+
 cblk_t mons;
 
 int
-mon_mons_init(unsigned const n) {
-  mons = cblk_init(sizeof(mon_t), n);
+mon_mons_init(void) {
+  mons = cblk_init(sizeof(mon_t), NRES);
   if (mons.blk == NULL) {
     fprintf(stderr, "Failed to init mon\n");
     return -1;
@@ -29,27 +32,17 @@ mon_mons_clear(void) {
   cblk_clear(&mons);
 }
 
-static void*
-mon_init(int const x, int const y, 
-    int const w, int const h) {
-  mon_t mon = {
-    .x = x,
-    .y = y,
-    .w = w,
-    .h = h
-  };
-  
-  return cblk_map(&mons, &mon);
-}
-
 mon_t*
 mon_currmon(int const x, int const y) {
-  for (mon_t* mon = mons.front; mon != mons.front; 
-    mon = cblk_next(&mons, mon))
+  mon_t* mon = mons.front;
+  do {
     if (x > mon->x && x < mon->x + mon->w &&
       y > mon->y && y < mon->y + mon->h) {
       return mon;
     }
+
+    mon = cblk_next(&mons, mon);
+  } while (mon != mons.front); 
 
   return NULL;
 }
@@ -62,14 +55,28 @@ mon_conf(void) {
       XineramaQueryScreens(dpy, &n);
     if (inf) {
       cblk_clear(&mons);
-      for (int i = 0; i < n; i++)
-        mon_init(inf[i].x_org, inf[i].y_org, 
-          inf[i].width, inf[i].height);
+      for (int i = 0; i < n; i++) {
+        mon_t const mon = {
+          .x = inf[i].x_org,
+          .y = inf[i].y_org,
+          .w = inf[i].width,
+          .h = inf[i].height
+        };
+        
+        cblk_map(&mons, &mon);
+      }
 
       XFree(inf);
     }
-  } else if (mons.size == 0)
-    mon_init(0, 0, 
-      DisplayWidth(dpy, DefaultScreen(dpy)),
-      DisplayHeight(dpy, DefaultScreen(dpy)));
+  } else {
+    /* Mandatory at least 1x mon */
+      mon_t const mon = {
+        .x = 0,
+        .y = 0,
+        .w = DisplayWidth(dpy, DefaultScreen(dpy)),
+        .h = DisplayHeight(dpy, DefaultScreen(dpy))
+      };
+      
+      cblk_map(&mons, &mon);
+  }
 }

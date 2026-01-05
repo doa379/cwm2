@@ -1,12 +1,11 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
-#include <wchar.h>
-#include <stdio.h>
+#include <string.h>
 
 extern Display* dpy;
-static wchar_t BUF[32];
+static char BUF[32];
 
-static wchar_t const* prop_text(Window const win, Atom atom) {
+static char const* prop_text(Window const win, Atom atom) {
   BUF[0] = '\0';
   XTextProperty prop;
   if (XGetTextProperty(dpy, win, &prop, atom) && 
@@ -14,21 +13,21 @@ static wchar_t const* prop_text(Window const win, Atom atom) {
     char** list = NULL;
     int n = 0;
  	  if (prop.encoding == XA_STRING)
- 		  wcsncpy(BUF, (wchar_t*) prop.value, sizeof BUF - 1);
+ 		  strncpy(BUF, (char*) prop.value, sizeof BUF - 1);
  	  else if (XmbTextPropertyToTextList(dpy, &prop, &list, &n)
       && n > 0 && *list) {
- 		  wcsncpy(BUF, (wchar_t*) *list, sizeof BUF - 1);
+ 		  strncpy(BUF, *list, sizeof BUF - 1);
  		  XFreeStringList(list);
  	  }
  	
-    /* BUF[sizeof BUF - 1] = '\0'; */
+    BUF[sizeof BUF - 1] = '\0';
  	  XFree(prop.value);
   }
 
   return BUF;
 }
 
-static wchar_t const* prop_win_prop(Window const win, 
+static char const* prop_win_prop(Window const win, 
     Atom const atom) {
   Atom actual_type;
   int actual_format;
@@ -41,30 +40,30 @@ static wchar_t const* prop_win_prop(Window const win,
       AnyPropertyType, &actual_type, 
         &actual_format, &nitems, &bytes_after, 
           &data) == Success && actual_type != None) {
-    wcsncpy(BUF, (wchar_t*) data, sizeof BUF - 1);
-    /* BUF[sizeof BUF - 1] = '\0'; */
+    strncpy(BUF, (char*) data, sizeof BUF - 1);
+    BUF[sizeof BUF - 1] = '\0';
  	  XFree(data);
   }
 
   return BUF;
 }
 
-wchar_t const* prop_root(void) {
+char const* prop_root(void) {
   if (prop_text(DefaultRootWindow(dpy), XA_WM_NAME)[0] ==
       '\0')
- 	  wcscpy(BUF, L"status");
+ 	  strcpy(BUF, "status");
 
   return BUF;
 }
  
-wchar_t const* prop_name(Window const win) {
+char const* prop_name(Window const win) {
   if (prop_text(win, XA_WM_NAME)[0] == '\0')
  	  prop_text(win, XInternAtom(dpy, "_NET_WM_NAME", False));
 
   return BUF;
 }
 
-wchar_t const* prop_ico(Window const win) {
+char const* prop_ico(Window const win) {
   /*
   BUF[0] = '\0';
   XTextProperty prop;
@@ -89,7 +88,6 @@ void prop_hints(Window const win, GC const gc) {
   XWMHints* wm_hints = XGetWMHints(dpy, win);
   if (wm_hints) {
     if (wm_hints->flags & IconPixmapHint) {
-      fprintf(stdout, "Icon Pixmap available\n");
       /*
          Pixmap p = XCreateBitmapFromData(dpy, 
          c->parwin, 

@@ -35,6 +35,6 @@ status_focus(unsigned const clr) {
 }
 
 void
-status_str_set(wchar_t const* str) {
+status_str_set(char const* str) {
   wg_str_set(&status, str);
 }

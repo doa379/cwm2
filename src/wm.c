@@ -38,6 +38,7 @@ wm_init(unsigned const n) {
 
   wm_wk_focus(wks.front);
   prevwk = currwk = wks.front;
+  mon_conf();
   currmon = mons.front;
   return 0;
 }
@@ -162,12 +163,14 @@ int const x, int const y, int const w, int const h) {
 
 cli_t*
 wm_cli(Window const win) {
-  for (wk_t* wk = wks.front; wk != wks.front; 
-    wk = cblk_next(&wks, wk)) {
+  wk_t* wk = wks.front;
+  do {
     cli_t* const c = cli(win, wk);
     if (c)
       return c;
-  }
+
+    wk = cblk_next(&wks, wk);
+  } while (wk != wks.front);
 
   return NULL;
 }
@@ -349,27 +352,31 @@ wm_cli_switch(cli_t* const c) {
 
 void
 wm_wk_unfocus(wk_t* const wk) {
-  for (cli_t* c = wk->clis.front; c != wk->clis.front; 
-    c = cblk_next(&wk->clis, c)) {
-    if (c == wk->currc)
-      wm_cli_unfocus(c);
+  if (wk->clis.size) {
+    cli_t* c = wk->clis.front;
+    do {
+      if (c == wk->currc)
+        wm_cli_unfocus(c);
 
-    XUnmapWindow(dpy, c->par.win);
+      XUnmapWindow(dpy, c->par.win);
+      c = cblk_next(&wk->clis, c);
+    } while (c != wk->clis.front); 
   }
-  
+
   wk_wg_focus(wk, wg_BG);
 }
 
 void
 wm_wk_focus(wk_t* const wk) {
   if (wk->clis.size) {
-    for (cli_t* c = wk->clis.front; c != wk->clis.front; 
-      c = cblk_next(&wk->clis, c)) {
+    cli_t* c = wk->clis.front; 
+    do {
       /* Disable any transient events within this op */
       XSelectInput(dpy, c->par.win, 0);
       XMapWindow(dpy, c->par.win);
       XSelectInput(dpy, c->par.win, c->par.mask);
-    }
+      c = cblk_next(&wk->clis, c);
+    } while (c != wk->clis.front);
 
     wm_cli_focus(wk->currc);
   }
@@ -418,15 +425,23 @@ wm_cli_arrange(cli_t* const c, int const x, int const y) {
 }
 
 void wm_cli_currmon_move(void) {
-  for (wk_t* wk = wks.front; wk != wks.front; 
-    wk = cblk_next(&wks, wk))
-    for (cli_t* c = wk->clis.front; c != wk->clis.front;
-      c = cblk_next(&wk->clis, c))
-      if (c->mon >= (mon_t*) mons.back) {
-        mon_t const* mon = cblk_back(&mons);
-        wg_win_move(&c->par, mon->x, mon->y);
-        c->mon = currmon;
-      }
+  wk_t* wk = wks.front;
+  do {
+    if (wk->clis.size) {
+      cli_t* c = wk->clis.front;
+      do {
+        if (c->mon >= (mon_t*) mons.back) {
+          mon_t const* mon = cblk_back(&mons);
+          wg_win_move(&c->par, mon->x, mon->y);
+          c->mon = currmon;
+        }
+
+        c = cblk_next(&wk->clis, c);
+      } while (c != wk->clis.front);
+    }
+
+    wk = cblk_next(&wks, wk);
+  } while (wk != wks.front); 
 }
 
 void
@@ -444,15 +459,24 @@ wm_cli_max(cli_t* const c) {
     currmon->h - panel.h - 2 * panel.bdrw :
     currmon->h;
   c->mode = MAX;
+  XSetWindowBorderWidth(dpy, c->par.win, 0);
 
-  for (int i = 0; i < 100; i++)
-    wm_cli_conf(c, w * i / 100., h * i / 100.);
-
-  wm_cli_arrange(c, currmon->x, currmon->y);
+  XWindowAttributes wa;
+  XGetWindowAttributes(dpy, c->win, &wa);
+  int const w_org = wa.width;
+  int const h_org = wa.height;
+  
+  wm_cli_conf(c, w, h);
+  c->par.w0 = w_org;
+  c->par.h0 = h_org;
+  /* wm_cli_arrange(c, currmon->x, currmon->y); */
+  XMoveWindow(dpy, c->par.win, currmon->x, currmon->y);
 }
 
 void
 wm_cli_res(cli_t* const c) {
   c->mode = RES;
+  XSetWindowBorderWidth(dpy, c->par.win, c->par.bdrw);
   wm_cli_conf(c, c->par.w0, c->par.h0);
+  XMoveWindow(dpy, c->par.win, c->par.x, c->par.y);
 }

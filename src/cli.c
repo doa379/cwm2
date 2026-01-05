@@ -112,8 +112,11 @@ cli_deinit(cli_t* const c) {
 
 cli_t*
 cli(Window const win, wk_t* const wk) {
-  for (cli_t* c = wk->clis.front; c != wk->clis.front; 
-    c = cblk_next(&wk->clis, c))
+  if (wk->clis.size == 0)
+    return NULL;
+
+  cli_t* c = wk->clis.front; 
+  do {
     if (c->win == win ||
         c->par.win == win ||
         c->hdr.win == win ||
@@ -124,6 +127,9 @@ cli(Window const win, wk_t* const wk) {
         c->shd.win == win ||
         c->ico.win == win)
       return c;
+
+    c = cblk_next(&wk->clis, c);
+  } while (c != wk->clis.front); 
   
   return NULL;
 }

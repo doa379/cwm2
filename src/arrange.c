@@ -40,15 +40,17 @@ arrange_sel_clear(void) {
 void
 arrange_sel_adj(int const gap) {
   int x = 0;
-  for (wg_t** wg = sel.front; wg != sel.front; 
-    wg = cblk_next(&sel, wg)) {
+  wg_t** wg = sel.front; 
+  do {
     int const X = x;
     if (XMoveWindow(dpy, (*wg)->win, X, 0)) {
       (*wg)->x = X;
       (*wg)->y = 0;
       x += (*wg)->w + 2 * (*wg)->bdrw + gap;
     }
-  }
+
+    wg = cblk_next(&sel, wg);
+  } while (wg != sel.front); 
 
   cblk_clear(&sel);
 }
@@ -73,8 +75,8 @@ arrange_sel_tile(unsigned const w, unsigned const h) {
   /* (c, r) nos */
   unsigned cn = 0;
   unsigned rn = 0;
-  for (wg_t** wg = sel.front; wg != sel.front; 
-    wg = cblk_next(&sel, wg)) {
+  wg_t** wg = sel.front; 
+  do {
     size_t i = cblk_dist(&sel, *wg);
     if (i / nr + 1 > nc - n % nc)
       nr = n / nc + 1;
@@ -92,7 +94,9 @@ arrange_sel_tile(unsigned const w, unsigned const h) {
       rn = 0;
       cn++;
     }
-  }
+
+    wg = cblk_next(&sel, wg);
+  } while (wg != sel.front);
 
   cblk_clear(&sel);
 }
@@ -100,9 +104,11 @@ arrange_sel_tile(unsigned const w, unsigned const h) {
 void
 arrange_sel_casc(unsigned const w, unsigned const h) {
   /* Arrange within contraint (w, h) */
-  for (wg_t** wg = sel.front; wg != sel.front; 
-    wg = cblk_next(&sel, wg))
-    ;
+  wg_t** wg = sel.front;
+  do {
+
+    wg = cblk_next(&sel, wg);
+  } while (wg != sel.front);
   
   cblk_clear(&sel);
 }

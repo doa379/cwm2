@@ -7,7 +7,7 @@ typedef struct {
   int h;
 } mon_t;
 
-int mon_mons_init(unsigned const);
+int mon_mons_init(void);
 void mon_mons_deinit(void);
 void mon_mons_clear(void);
 mon_t* mon_currmon(int const, int const);

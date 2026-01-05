@@ -371,33 +371,27 @@ calls_cli9(void) {
 
 void
 calls_cli_raise_toggle(void) {
-  static int t;
-  for (cli_t* c = currwk->clis.front; 
-      c != currwk->clis.front; 
-      c = cblk_next(&currwk->clis, c)) {
-    if (t++ == 0)
-      XUnmapWindow(dpy, c->par.win);
-    else
-      XMapRaised(dpy, c->par.win);
-  }
 
-  t %= 2;
 }
 
 void
 calls_grid_arrange(void) {
-  for (cli_t* c = currwk->clis.front; 
-      c != currwk->clis.front;
-      c = cblk_next(&currwk->clis, c))
+  if (currwk->clis.size == 0)
+    return;
+
+  cli_t* c = currwk->clis.front;
+  do {
     arrange_sel_map(&c->par);
+    c = cblk_next(&currwk->clis, c);
+  } while (c != currwk->clis.front);
 
   mon_t const* mon = mons.front;
   (void) mon;
   arrange_sel_tile(300, 200);
-  for (cli_t* c = currwk->clis.front; 
-      c != currwk->clis.front;
-      c = cblk_next(&currwk->clis, c))
+  do {
     cli_conf(c, c->par.w, c->par.h);
+    c = cblk_next(&currwk->clis, c);
+  } while (c != currwk->clis.front);
 }
 
 void
@@ -461,16 +455,15 @@ calls_cli_resize(void) {
 
 void
 calls_debug(void) {
-  fprintf(stdout, "prevwk %p\n", (void*) prevwk);
-  fprintf(stdout, "currwk %p\n", (void*) currwk);
-  fprintf(stdout, "prevc %p\n", (void*) currwk->prevc);
-  fprintf(stdout, "currc %p\n", (void*) currwk->currc);
-  for (wk_t* wk = wks.front; wk != wks.front; 
-    wk = cblk_next(&wks, wk)) {
+  wk_t* wk = wks.front;
+  do {
     fprintf(stdout, "wk %p (prevc %p, currc %p)\n", 
       (void*) wk, (void*) wk->prevc, (void*) wk->currc);
-    for (cli_t* c = wk->clis.front; c != wk->clis.front; 
-      c = cblk_next(&wk->clis, c))
+    cli_t* c = wk->clis.front; 
+    do {
       fprintf(stdout, "cli %p\n", (void*) c);
-  }
+      c = cblk_next(&wk->clis, c);
+    } while (c != wk->clis.front);
+    wk = cblk_next(&wks, wk);
+  } while (wk != wks.front); 
 }

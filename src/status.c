@@ -12,7 +12,7 @@ wg_t status;
 
 void
 status_init(Window const win) {
-  status = wg_init(win, 0, 0, 1, font.ch, 0);
+  status = wg_init(win, 1, font.ch, 0);
   static unsigned const STATUSMASK = 
     PropertyChangeMask |
     ExposureMask;

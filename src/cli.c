@@ -50,42 +50,41 @@ cli_wg_init(void) {
 }
 
 cli_t
-cli_init(Window const win, wk_t* const wk, mon_t* const mon,
-int const x, int const y, int const w, int const h) {
+cli_init(Window const win, wk_t* const wk, int const w, 
+int const h) {
   /* Init parent */
   wg_t const par = wg_init(DefaultRootWindow(dpy), 
-      x, y, w, h, bdrw);
+      w, h, bdrw);
   XReparentWindow(dpy, win, par.win, 0, font.ch);
   XSetWindowBorderWidth(dpy, win, 0);
   /* Init header */
-  wg_t hdr = wg_init(par.win, 0, 0, 1, 1, 0);
+  wg_t hdr = wg_init(par.win, 1, 1, 0);
   hdr.pixmap = XCreateBitmapFromData(dpy, hdr.win, 
     (char*) stipple_8x8, 8, 8);
   XSetStipple(dpy, hdr.gc, hdr.pixmap);
   XSetFillStyle(dpy, hdr.gc, FillStippled);
   /* Init min */
-  wg_t min = wg_init(hdr.win, 0, 0, btnw, btnh, 0);
+  wg_t min = wg_init(hdr.win, btnw, btnh, 0);
   min.pixmap = XCreateBitmapFromData(dpy, min.win, 
     (char const*) BTN[MIN], btnw, btnh);
   /* Init max */
-  wg_t max = wg_init(hdr.win, 0, 0, btnw, btnh, 0);
+  wg_t max = wg_init(hdr.win, btnw, btnh, 0);
   max.pixmap = XCreateBitmapFromData(dpy, max.win, 
     (char const*) BTN[MAX], btnw, btnh);
   /* Init res */
-  wg_t res = wg_init(hdr.win, 0, 0, btnw, btnh, 0);
+  wg_t res = wg_init(hdr.win, btnw, btnh, 0);
   res.pixmap = XCreateBitmapFromData(dpy, res.win, 
     (char const*) BTN[RES], btnw, btnh);
   /* Init cls */
-  wg_t cls = wg_init(hdr.win, 0, 0, btnw, btnh, 0);
+  wg_t cls = wg_init(hdr.win, btnw, btnh, 0);
   cls.pixmap = XCreateBitmapFromData(dpy, cls.win, 
     (char const*) BTN[CLS], btnw, btnh);
   /* Init ico */
-  wg_t ico = wg_init(wk->wg.win, 0, 2 * bdrw, 
-      font.cw - 2 * bdrw, font.ch - 2 * bdrw, bdrw);
+  wg_t ico = wg_init(wk->wg.win, font.cw - 2 * bdrw, 
+    font.ch - 2 * bdrw, bdrw);
 
   return (cli_t) {
     .wk = wk,
-    .mon = mon,
     .win = win,
     .par = par,
     .hdr = hdr,
@@ -166,38 +165,47 @@ cli_wg_focus(cli_t* const c, unsigned const clr) {
 
 void
 cli_conf(cli_t* const c, int const w, int const h) {
+  /* Arrange elements given kernel dims */
   if (wg_win_resize(&c->par, w, h + font.ch) == 0) {
     if (wg_win_resize(&c->hdr, w, font.ch) == 0) {
       XMoveWindow(dpy, c->hdr.win, 0, 0);
       int const y = 0.5 * (c->hdr.h - btnh);
+      /* Cls btn */
       XMoveWindow(dpy, c->cls.win, c->hdr.w - btnw, y);
-      
+      /* Max btn */
       XSelectInput(dpy, c->max.win, 0);
       XUnmapWindow(dpy, c->max.win);
       XSelectInput(dpy, c->max.win, c->max.mask);
-
+      /* Res btn */
       XSelectInput(dpy, c->res.win, 0);
       XUnmapWindow(dpy, c->res.win);
       XSelectInput(dpy, c->res.win, c->res.mask);
-
+      /* Res, Max selection */
       wg_t* const wg = c->mode == MAX ? &c->res : &c->max;
       XMoveWindow(dpy, wg->win, 
           c->hdr.w - 2 * btnw - bdrw, y);
-
       XSelectInput(dpy, wg->win, 0);
       XMapWindow(dpy, wg->win);
       XSelectInput(dpy, wg->win, wg->mask);
-      
+      /* Min btn */
       XMoveWindow(dpy, c->min.win, 
           c->hdr.w - 3 * btnw - 2 * bdrw, y);
     }
 
-    XResizeWindow(dpy, c->win, w, h);
+    if (XResizeWindow(dpy, c->win, w, h)) {
+      c->w = w;
+      c->h = h;
+    }
   }
 }
 
 void
-cli_arrange(cli_t* const c, int const x, 
-    int const y) {
-  wg_win_move(&c->par, x + font.cw, y + font.ch);
+cli_move(cli_t* const c, int const x, int const y) {
+  /*wg_win_move(&c->par, x + font.cw, y + font.ch);*/
+  if (XMoveWindow(dpy, c->par.win, x, y)) {
+    c->x = x;
+    c->y = y;
+    c->x1 = c->x + c->par.w + 2 * c->par.bdrw;
+    c->y1 = c->y + c->par.h + 2 * c->par.bdrw;
+  }
 }

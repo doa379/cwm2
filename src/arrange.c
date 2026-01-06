@@ -44,8 +44,10 @@ arrange_sel_adj(int const gap) {
   do {
     int const X = x;
     if (XMoveWindow(dpy, (*wg)->win, X, 0)) {
+      /*
       (*wg)->x = X;
       (*wg)->y = 0;
+      */
       x += (*wg)->w + 2 * (*wg)->bdrw + gap;
     }
 
@@ -67,7 +69,7 @@ arrange_sel_tile(unsigned const w, unsigned const h) {
     if (nc * nc >= n)
       break;
 
-  if (n == 5)
+  if (n == 3)
     nc = 2;
 
   unsigned nr = n / nc;

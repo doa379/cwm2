@@ -386,8 +386,9 @@ calls_grid_arrange(void) {
   } while (c != currwk->clis.front);
 
   mon_t const* mon = mons.front;
-  (void) mon;
-  arrange_sel_tile(300, 200);
+  int const w = mon->w - tray.wg.w - tray.wg.bdrw;
+  int const h = mon->h - panel.h - panel.bdrw;
+  arrange_sel_tile(w, h);
   do {
     cli_conf(c, c->par.w, c->par.h);
     c = cblk_next(&currwk->clis, c);

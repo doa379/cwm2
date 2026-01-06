@@ -4,8 +4,12 @@
 
 #include "mon.h"
 #include "cblk.h"
+#include "tray.h"
+#include "panel.h"
 
 extern Display* dpy;
+extern tray_t tray;
+extern wg_t panel;
 
 static size_t const NRES = 1;
 

@@ -13,8 +13,8 @@ static size_t const NRES = 100;
 
 wk_t
 wk_init(void) {
-  wg_t const wg = wg_init(DefaultRootWindow(dpy), 0, 
-      bdrw, font.cw, font.ch - 2 * bdrw, bdrw);
+  wg_t const wg = wg_init(DefaultRootWindow(dpy), font.cw, 
+    font.ch - 2 * bdrw, bdrw);
   wg_win_bgset(wg.win, wg_BG);
   wg_win_bdrset(wg.win, wg_ACT);
 

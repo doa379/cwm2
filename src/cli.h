@@ -2,13 +2,21 @@
 
 #include "wg.h"
 #include "wk.h"
-#include "mon.h"
 
 typedef struct cli_s {
   wk_t* wk;
-  mon_t* mon;
+  /* Kernel Window */
   Window win;
+  int w;
+  int h;
   unsigned long mask;
+  /* Cli (par) origin */
+  int x;
+  int y;
+  /* Cli (par) bbox */
+  int x1;
+  int y1;
+  /* Widgets */
   wg_t par;
   wg_t hdr;
   wg_t min;
@@ -23,11 +31,11 @@ typedef struct cli_s {
 enum mode { MIN, MAX, RES, CLS, FS };
 
 void cli_wg_init(void);
-cli_t cli_init(Window const, wk_t* const, mon_t* const, 
-int const, int const, int const, int const);
+cli_t cli_init(Window const, wk_t* const, int const, 
+  int const);
 void cli_deinit(cli_t* const);
 cli_t* cli(Window const, wk_t* const);
 wg_t* cli_wg(cli_t* const, Window const);
 void cli_wg_focus(cli_t* const, unsigned const);
 void cli_conf(cli_t* const, int const, int const);
-void cli_arrange(cli_t* const, int const, int const);
+void cli_move(cli_t* const, int const, int const);

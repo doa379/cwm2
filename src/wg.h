@@ -12,18 +12,8 @@ typedef struct {
 typedef struct {
 /* Widget type */
   Window win;
-  /* prev (suffix 0), curr */
-  int x0;
-  int x;
-  int y0;
-  int y;
-  int w0;
   int w;
-  int h0;
   int h;
-  /* lower right */
-  int x1;
-  int y1;
   int bdrw;
   unsigned long mask;
   Pixmap pixmap;
@@ -34,8 +24,8 @@ typedef struct {
 
 enum colors { wg_BG, wg_ACT, wg_SEL };
 
-wg_t wg_init(Window const parwin, int const, 
-    int const, int const, int const, int const);
+wg_t wg_init(Window const parwin, int const, int const, 
+  int const);
 void wg_deinit(wg_t* const);
 
 void wg_str_set(wg_t* const, char const*);

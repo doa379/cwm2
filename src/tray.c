@@ -21,8 +21,7 @@ tray_init(void) {
     return -1;
   }
 
-  tray.wg = wg_init(DefaultRootWindow(dpy), 
-      0, 0, 1, 1, bdrw);
+  tray.wg = wg_init(DefaultRootWindow(dpy), 1, 1, bdrw);
   wg_win_bgset(tray.wg.win, wg_BG);
   wg_win_bdrset(tray.wg.win, wg_BG);
   return 0;
@@ -36,11 +35,11 @@ tray_deinit(void) {
 
 void
 tray_conf(void) {
-  wg_t* const wg = &tray.wg;
-  mon_t const* mon = mons.front;
-  if (wg_win_resize(wg, trayw, mon->h - 2 * wg->bdrw - 
-      panel.h - 2 * panel.bdrw) == 0)
-    if (wg_win_move(wg, mon->w - trayw - 2 * wg->bdrw, 0) == 
-        0)
+  mon_t* const mon = mons.front;
+  if (wg_win_resize(&tray.wg, trayw, 
+      mon->h - 2 * tray.wg.bdrw) == 0) {
+    mon->w -= tray.wg.w + 2 * tray.wg.bdrw;
+    if (wg_win_move(&tray.wg, mon->w, 0) == 0)
       ;
+  }
 }

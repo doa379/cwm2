@@ -26,9 +26,9 @@ int const h) {
     /* Configure root window */
     mon_mons_clear();
     mon_conf();
-    wm_cli_currmon_move();
     panel_conf();
     tray_conf();
+    wm_cli_currmon_move();
     mascot_draw();
   } else {
     cli_t* const c = wm_cli(win);
@@ -50,16 +50,13 @@ evcalls_map_override_redirect(Window const win) {
 void
 evcalls_map_request(Window const win, int const x,
 int const y, int const w, int const h) {
-  cli_t* const c = wm_cli_map(currmon, currwk, win, 
-    x, y, w, h);
+  cli_t* const c = wm_cli_map(currwk, win, w, h);
   if (c) {
     wg_str_set(&c->ico, prop_ico(win));
     wg_str_set(&c->hdr, prop_name(win));
     wm_cli_switch(c);
     wm_cli_conf(c, w, h);
-    int const prevx = c->wk->prevc->par.x;
-    int const prevy = c->wk->prevc->par.y;
-    wm_cli_arrange(c, prevx, prevy);
+    wm_cli_arrange(c, x, y);
     panel_icos_arrange(c->wk);
     panel_arrange(c->wk);
   }
@@ -122,9 +119,9 @@ unsigned const button) {
       wm_cli_resize(c);
     else if (win == c->min.win)
       wm_cli_min(c);
-    else if (win == c->max.win)
+    else if (c->mode == RES && win == c->max.win)
       wm_cli_max(c);
-    else if (win == c->res.win)
+    else if (c->mode == MAX && win == c->res.win)
       wm_cli_res(c);
     else if (win == c->cls.win) {
       wk_t* const wk = c->wk;

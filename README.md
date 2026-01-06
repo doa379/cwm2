@@ -33,6 +33,6 @@ apart from those pre-installed above).
 
 Release: TBC
 
-Target(s): BSD UNIX, Linux
+Target(s): Any UNIX w/ X-Windows system ver. 11, Rel. 7
 
 (C) 2023-2026 doa379

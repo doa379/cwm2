@@ -25,8 +25,7 @@ wg_t panel;
 
 void
 panel_init(void) {
-  panel = wg_init(DefaultRootWindow(dpy), 0, 0, 
-      1, font.ch, 0);
+  panel = wg_init(DefaultRootWindow(dpy), 1, font.ch, 0);
   wg_win_bgset(panel.win, wg_BG);
 
   wk_t* wk = wks.front;
@@ -71,7 +70,7 @@ static void
 panel_icos_arrange_(wk_t* const wk) {
   wk_t* wk_ = wks.front;
   do {
-    wg_win_resize(&wk_->wg, wk_->wg.w0, wk_->wg.h);
+    wg_win_resize(&wk_->wg, wkw, wk_->wg.h);
     wk_ = cblk_next(&wks, wk);
   } while (wk_ != wks.front);
 
@@ -162,9 +161,10 @@ panel_arrange_all(void) {
 
 void
 panel_conf(void) {
-  mon_t const* mon = mons.front;
+  mon_t* const mon = mons.front;
   if (wg_win_resize(&panel, mon->w, panel.h) == 0) {
-    if (wg_win_move(&panel, 0, mon->h - panel.h) == 0)
+    mon->h -= panel.h + 2 * panel.bdrw;
+    if (wg_win_move(&panel, 0, mon->h) == 0)
       ;
   }
 }

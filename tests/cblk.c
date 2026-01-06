@@ -4,9 +4,20 @@
 
 static cblk_t cblk;
 
-static void print_by_val(void) {
+static void print_by_prev_val(void* org) {
+  fprintf(stdout, "Running over prev values from arg: ");
+  void *dev = org;
+  do {
+    fprintf(stdout, "%d ", *(int32_t*) dev);
+    dev = cblk_prev(&cblk, dev);
+  } while (dev != org);
+  
+  fprintf(stdout, "\n");
+}
+
+static void print_by_next_val(void) {
   void* dev = cblk.front;
-  fprintf(stdout, "Running over values: ");
+  fprintf(stdout, "Running over next values from front: ");
   do {
     fprintf(stdout, "%d ", *(int32_t*) dev);
     dev = cblk_next(&cblk, dev);
@@ -36,7 +47,7 @@ int main(int const argc, char const* argv[]) {
   fprintf(stdout, "Front %d Back %d\n", 
     *(int32_t*) cblk.front, *(int32_t*) cblk.back);
 
-  print_by_val();
+  print_by_next_val();
   print_by_itr();
   
   {
@@ -46,7 +57,7 @@ int main(int const argc, char const* argv[]) {
     fprintf(stdout, "After removal of 1st\n");
     fprintf(stdout, "Front %d Back %d\n", 
       *(int32_t*) cblk.front, *(int32_t*) cblk.back);
-    print_by_val();
+    print_by_next_val();
     print_by_itr();
   }
   
@@ -57,7 +68,7 @@ int main(int const argc, char const* argv[]) {
     fprintf(stdout, "After mapping another\n");
     fprintf(stdout, "Front %d Back %d\n", 
       *(int32_t*) cblk.front, *(int32_t*) cblk.back);
-    print_by_val();
+    print_by_next_val();
     print_by_itr();
   }
 
@@ -68,7 +79,7 @@ int main(int const argc, char const* argv[]) {
     fprintf(stdout, "After mapping another\n");
     fprintf(stdout, "Front %d Back %d\n", 
       *(int32_t*) cblk.front, *(int32_t*) cblk.back);
-    print_by_val();
+    print_by_next_val();
     print_by_itr();
   }
   
@@ -80,7 +91,7 @@ int main(int const argc, char const* argv[]) {
 
     fprintf(stdout, "Front %d Back %d\n", 
       *(int32_t*) cblk.front, *(int32_t*) cblk.back);
-    print_by_val();
+    print_by_next_val();
     print_by_itr();
   }
 
@@ -91,9 +102,15 @@ int main(int const argc, char const* argv[]) {
       cblk_unmap(&cblk, rm);
       fprintf(stdout, "Front %d Back %d\n", 
         *(int32_t*) cblk.front, *(int32_t*) cblk.back);
-      print_by_val();
+      print_by_next_val();
       print_by_itr();
     }
+  }
+
+  {
+    void* const dev = cblk_itr(&cblk, 15);
+    fprintf(stdout, "Val %d\n", *(int32_t*) dev);
+    print_by_prev_val(dev);
   }
 
   return 0;

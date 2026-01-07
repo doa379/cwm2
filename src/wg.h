@@ -36,5 +36,4 @@ void wg_win_bgset(Window const, unsigned const);
 void wg_win_bdrset(Window const, unsigned const);
 void wg_gc_bgset(GC const, unsigned const);
 void wg_pixmap_fill(wg_t const*, unsigned const);
-int wg_win_move(wg_t* const, int const, int const);
 int wg_win_resize(wg_t* const, int const, int const);

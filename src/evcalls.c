@@ -128,9 +128,11 @@ unsigned const button) {
       wm_cli_kill(c);
       panel_icos_arrange(wk);
       panel_arrange(wk);
-    } else if (win == c->ico.win)
+    } else if (win == c->ico.win) {
       wm_cli_switch(c);
-    else {
+      if (c->mode == MIN)
+        wm_cli_raise(c);
+    } else {
       input_t const* input = input_btn(state, button);
       if (input)
         input->call();

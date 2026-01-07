@@ -93,15 +93,6 @@ wg_pixmap_fill(wg_t const* wg, unsigned const clr) {
 }
 
 int
-wg_win_move(wg_t* const wg, int const x, int const y) {
-  if (XMoveWindow(dpy, wg->win, x, y)) {
-    return 0;
-  }
-
-  return -1;
-}
-
-int
 wg_win_resize(wg_t* const wg, int const w, int const h) {
   if (XResizeWindow(dpy, wg->win, w, h)) {
     wg->h = h;

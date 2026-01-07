@@ -164,7 +164,6 @@ panel_conf(void) {
   mon_t* const mon = mons.front;
   if (wg_win_resize(&panel, mon->w, panel.h) == 0) {
     mon->h -= panel.h + 2 * panel.bdrw;
-    if (wg_win_move(&panel, 0, mon->h) == 0)
-      ;
+    XMoveWindow(dpy, panel.win, 0, mon->h);
   }
 }

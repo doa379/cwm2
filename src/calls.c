@@ -21,26 +21,6 @@ extern wg_t panel;
 extern tray_t tray;
 
 void
-calls_mon0(void) {
-
-}
-
-void
-calls_mon1(void) {
-
-}
-
-void
-calls_mon2(void) {
-
-}
-
-void
-calls_mon3(void) {
-
-}
-
-void
 calls_wk0(void) {
 
 }
@@ -165,6 +145,36 @@ calls_wk9(void) {
 }
 
 void
+calls_wk10(void) {
+  wk_t* const wk = cblk_itr(&wks, 9);
+  if (wk && wk != currwk) {
+    wm_wk_switch(wk);
+    panel_icos_arrange(wk);
+    panel_arrange(wk);
+  }
+}
+
+void
+calls_wk11(void) {
+  wk_t* const wk = cblk_itr(&wks, 10);
+  if (wk && wk != currwk) {
+    wm_wk_switch(wk);
+    panel_icos_arrange(wk);
+    panel_arrange(wk);
+  }
+}
+
+void
+calls_wk12(void) {
+  wk_t* const wk = cblk_itr(&wks, 12);
+  if (wk && wk != currwk) {
+    wm_wk_switch(wk);
+    panel_icos_arrange(wk);
+    panel_arrange(wk);
+  }
+}
+
+void
 calls_wk_map(void) {
   if (wm_wk_map()) {
     panel_icos_arrange(currwk);
@@ -181,12 +191,12 @@ calls_wk_unmap(void) {
 }
 
 static void
-wm_cli_wk_move(cli_t* const c, wk_t* const wk) {
+calls_cli_wk_move(cli_t* const c, wk_t* const wk) {
   if (c && wk && wk != c->wk) {
-    wk_t* const wk = c->wk;
+    wk_t* const currwk = c->wk;
     if (wm_cli_move(c, wk)) {
-      panel_icos_arrange(wk);
-      panel_arrange(wk);
+      panel_icos_arrange(currwk);
+      panel_arrange(currwk);
     }
   }
 }
@@ -194,67 +204,85 @@ wm_cli_wk_move(cli_t* const c, wk_t* const wk) {
 void
 calls_cli_wk_prev_move(void) {
   wk_t* const wk = cblk_prev(&wks, currwk);
-  wm_cli_wk_move(currwk->currc, wk);
+  calls_cli_wk_move(currwk->currc, wk);
 }
 
 void
 calls_cli_wk_next_move(void) {
   wk_t* const wk = cblk_next(&wks, currwk);
-  wm_cli_wk_move(currwk->currc, wk);
+  calls_cli_wk_move(currwk->currc, wk);
 }
 
 void
 calls_cli_wk1_move(void) {
   wk_t* const wk = cblk_itr(&wks, 0);
-  wm_cli_wk_move(currwk->currc, wk);
+  calls_cli_wk_move(currwk->currc, wk);
 }
 
 void
 calls_cli_wk2_move(void) {
   wk_t* const wk = cblk_itr(&wks, 1);
-  wm_cli_wk_move(currwk->currc, wk);
+  calls_cli_wk_move(currwk->currc, wk);
 }
 
 void
 calls_cli_wk3_move(void) {
   wk_t* const wk = cblk_itr(&wks, 2);
-  wm_cli_wk_move(currwk->currc, wk);
+  calls_cli_wk_move(currwk->currc, wk);
 }
 
 void
 calls_cli_wk4_move(void) {
   wk_t* const wk = cblk_itr(&wks, 3);
-  wm_cli_wk_move(currwk->currc, wk);
+  calls_cli_wk_move(currwk->currc, wk);
 }
 
 void
 calls_cli_wk5_move(void) {
   wk_t* const wk = cblk_itr(&wks, 4);
-  wm_cli_wk_move(currwk->currc, wk);
+  calls_cli_wk_move(currwk->currc, wk);
 }
 
 void
 calls_cli_wk6_move(void) {
   wk_t* const wk = cblk_itr(&wks, 5);
-  wm_cli_wk_move(currwk->currc, wk);
+  calls_cli_wk_move(currwk->currc, wk);
 }
 
 void
 calls_cli_wk7_move(void) {
   wk_t* const wk = cblk_itr(&wks, 6);
-  wm_cli_wk_move(currwk->currc, wk);
+  calls_cli_wk_move(currwk->currc, wk);
 }
 
 void
 calls_cli_wk8_move(void) {
   wk_t* const wk = cblk_itr(&wks, 7);
-  wm_cli_wk_move(currwk->currc, wk);
+  calls_cli_wk_move(currwk->currc, wk);
 }
 
 void
 calls_cli_wk9_move(void) {
   wk_t* const wk = cblk_itr(&wks, 8);
-  wm_cli_wk_move(currwk->currc, wk);
+  calls_cli_wk_move(currwk->currc, wk);
+}
+
+void
+calls_cli_wk10_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 9);
+  calls_cli_wk_move(currwk->currc, wk);
+}
+
+void
+calls_cli_wk11_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 10);
+  calls_cli_wk_move(currwk->currc, wk);
+}
+
+void
+calls_cli_wk12_move(void) {
+  wk_t* const wk = cblk_itr(&wks, 11);
+  calls_cli_wk_move(currwk->currc, wk);
 }
 
 void
@@ -386,9 +414,7 @@ calls_grid_arrange(void) {
   } while (c != currwk->clis.front);
 
   mon_t const* mon = mons.front;
-  int const w = mon->w - tray.wg.w - tray.wg.bdrw;
-  int const h = mon->h - panel.h - panel.bdrw;
-  arrange_sel_tile(w, h);
+  arrange_sel_tile(mon->w, mon->h);
   do {
     cli_conf(c, c->par.w, c->par.h);
     c = cblk_next(&currwk->clis, c);

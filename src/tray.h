@@ -2,6 +2,7 @@
 
 #include "wg.h"
 #include "cblk.h"
+#include "cli.h"
 
 typedef struct {
   cblk_t clis;
@@ -11,3 +12,4 @@ typedef struct {
 int tray_init(void);
 void tray_deinit(void);
 void tray_conf(void);
+void tray_cli_map(cli_t* const);

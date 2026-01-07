@@ -39,7 +39,10 @@ tray_conf(void) {
   if (wg_win_resize(&tray.wg, trayw, 
       mon->h - 2 * tray.wg.bdrw) == 0) {
     mon->w -= tray.wg.w + 2 * tray.wg.bdrw;
-    if (wg_win_move(&tray.wg, mon->w, 0) == 0)
-      ;
+    XMoveWindow(dpy, tray.wg.win, mon->w, 0);
   }
+}
+
+void tray_cli_map(cli_t* const c) {
+
 }

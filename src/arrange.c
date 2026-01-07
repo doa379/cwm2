@@ -87,9 +87,8 @@ arrange_sel_tile(unsigned const w, unsigned const h) {
     unsigned const currx = cn * currw;
     unsigned const curry = rn * currh;
     Window const win = (*wg)->win;
-    if (wg_win_resize(*wg, currw, currh) == 0 &&
-      wg_win_move(*wg, currx, curry) == 0)
-      ;
+    if (wg_win_resize(*wg, currw, currh) == 0)
+      XMoveWindow(dpy, (*wg)->win, currx, curry);
 
     rn++;
     if (rn >= nr) {

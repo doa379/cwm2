@@ -1,9 +1,5 @@
 #pragma once
 
-void calls_mon0(void);
-void calls_mon1(void);
-void calls_mon2(void);
-void calls_mon3(void);
 void calls_wk_prev(void);
 void calls_wk_next(void);
 void calls_wk_last(void);
@@ -17,6 +13,9 @@ void calls_wk6(void);
 void calls_wk7(void);
 void calls_wk8(void);
 void calls_wk9(void);
+void calls_wk10(void);
+void calls_wk11(void);
+void calls_wk12(void);
 void calls_wk_map(void);
 void calls_wk_unmap(void);
 void calls_cli_wk_prev_move(void);
@@ -30,6 +29,9 @@ void calls_cli_wk6_move(void);
 void calls_cli_wk7_move(void);
 void calls_cli_wk8_move(void);
 void calls_cli_wk9_move(void);
+void calls_cli_wk10_move(void);
+void calls_cli_wk11_move(void);
+void calls_cli_wk12_move(void);
 void calls_cli_prev(void);
 void calls_cli_next(void);
 void calls_cli_last(void);

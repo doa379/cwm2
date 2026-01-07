@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <string.h>
 #include <X11/Xlib.h>
+#include <unistd.h>
 
 #include "font.h"
 #include "mon.h"
@@ -165,7 +166,7 @@ cli_wg_focus(cli_t* const c, unsigned const clr) {
 
 void
 cli_conf(cli_t* const c, int const w, int const h) {
-  /* Arrange elements given kernel dims */
+  /* Config elements given kernel dims */
   if (wg_win_resize(&c->par, w, h + font.ch) == 0) {
     if (wg_win_resize(&c->hdr, w, font.ch) == 0) {
       XMoveWindow(dpy, c->hdr.win, 0, 0);
@@ -196,16 +197,63 @@ cli_conf(cli_t* const c, int const w, int const h) {
       c->w = w;
       c->h = h;
     }
+    
+    c->x1 = c->x + c->par.w + 2 * c->par.bdrw;
+    c->y1 = c->y + c->par.h + 2 * c->par.bdrw;
   }
 }
 
 void
 cli_move(cli_t* const c, int const x, int const y) {
-  /*wg_win_move(&c->par, x + font.cw, y + font.ch);*/
   if (XMoveWindow(dpy, c->par.win, x, y)) {
     c->x = x;
     c->y = y;
     c->x1 = c->x + c->par.w + 2 * c->par.bdrw;
     c->y1 = c->y + c->par.h + 2 * c->par.bdrw;
   }
+}
+
+void
+cli_resize(cli_t* const c, int const w, int const h) {
+  /*
+  if (wg_win_resize(&c->par, w, h) == 0) {
+    cli_conf(c, w, h - font.ch);
+    c->x1 = c->x + c->par.w + 2 * c->par.bdrw;
+    c->y1 = c->y + c->par.h + 2 * c->par.bdrw;
+  }
+  */
+  
+  cli_conf(c, w, h - font.ch);
+}
+
+void
+cli_anim(cli_t* const c, int const x, int const y, 
+int const w, int const h, int const X, int const Y, 
+int const W, int const H, int const d) {
+  int const dX = (X - x) / d;
+  int const dY = (Y - y) / d;
+  int const dW = (W - w) / d;
+  int const dH = (H - h) / d;
+  XUnmapWindow(dpy, c->hdr.win);
+  XUnmapWindow(dpy, c->win);
+  wg_win_bgset(c->par.win, wg_BG);
+  for (int n = 0; n < d; n++) {
+    int const nextX = x + dX * n;
+    int const nextY = y + dY * n;
+    int const nextW = w + dW * n;
+    int const nextH = h + dH * n;
+    XResizeWindow(dpy, c->par.win, nextW, nextH);
+    XMoveWindow(dpy, c->par.win, nextX, nextY);
+    XFlush(dpy);
+    usleep(10000);
+  }
+
+  /*
+  XResizeWindow(dpy, c->par.win, W, H);
+  XMoveWindow(dpy, c->par.win, X, Y);
+  */
+  
+  wg_win_bgset(c->par.win, wg_ACT);
+  XMapWindow(dpy, c->win);
+  XMapWindow(dpy, c->hdr.win);
 }

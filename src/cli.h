@@ -39,3 +39,7 @@ wg_t* cli_wg(cli_t* const, Window const);
 void cli_wg_focus(cli_t* const, unsigned const);
 void cli_conf(cli_t* const, int const, int const);
 void cli_move(cli_t* const, int const, int const);
+void cli_resize(cli_t* const, int const, int const);
+void cli_anim(cli_t* const, int const, int const, int const, 
+  int const, int const, int const, int const, int const, 
+  int const);

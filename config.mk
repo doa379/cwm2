@@ -39,6 +39,7 @@ SRC=src/main.c \
   src/evcalls.c \
   src/input.c \
   src/calls.c \
+  src/usercalls.c \
   src/wg.c \
   src/panel.c \
   src/status.c \

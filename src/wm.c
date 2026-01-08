@@ -121,15 +121,20 @@ wm_wk_focus_all(void) {
 cli_t*
 wm_cli_map(wk_t* const wk, Window const win, 
 int const w, int const h) {
-  static unsigned long const WINMASK = FocusChangeMask;
-  static unsigned long const CLIMASK = StructureNotifyMask |
+  static unsigned long const WINMASK = 
+    FocusChangeMask | 
+    StructureNotifyMask;
+  static unsigned long const CLIMASK = 
+    StructureNotifyMask |
     EnterWindowMask |
     ButtonPressMask |
     PropertyChangeMask;
-  static unsigned long const HDRMASK = ButtonPressMask |
+  static unsigned long const HDRMASK =
+    ButtonPressMask |
     ButtonReleaseMask |
     ExposureMask;
-  static unsigned long const BTNMASK = EnterWindowMask |
+  static unsigned long const BTNMASK = 
+    EnterWindowMask |
     LeaveWindowMask |
     ButtonPressMask |
     ButtonReleaseMask |
@@ -178,7 +183,6 @@ wm_cli(Window const win) {
 cli_t*
 wm_cli_move(cli_t* const c, wk_t* const wk) {
   /* Duplicate c in wk */
-  fprintf(stdout, "Move client %p to %p\n", c, wk);
   cli_t* const nextc = cblk_map(&wk->clis, c);
   if (nextc) {
     nextc->wk = wk;
@@ -189,6 +193,7 @@ wm_cli_move(cli_t* const c, wk_t* const wk) {
       wk->currc = nextc;
     }
 
+    cli_wg_focus(nextc, wg_BG);
     XReparentWindow(dpy, nextc->ico.win, wk->wg.win, 0, 0);
     /* Resolve remainder after copy */
     cli_t* const prevc = c->wk->clis.size == 1 ? NULL : 

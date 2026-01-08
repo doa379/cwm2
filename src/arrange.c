@@ -8,7 +8,6 @@
 extern Display* dpy;
 
 static size_t const NRES = 100;
-static unsigned mode;
 static cblk_t sel;
 
 int

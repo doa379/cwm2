@@ -12,7 +12,8 @@ extern int rootbg;
 int root_init(void) {
   XSetWindowAttributes wa = {
     .cursor = font.crs.ptr,
-    .event_mask = SubstructureRedirectMask |
+    .event_mask =
+      SubstructureRedirectMask |
       SubstructureNotifyMask |
       ButtonPressMask |
       PointerMotionMask |

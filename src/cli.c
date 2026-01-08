@@ -95,6 +95,7 @@ int const h) {
     .cls = cls,
     .ico = ico,
     .mode = RES,
+    .sel = 0,
   };
 }
 
@@ -148,7 +149,7 @@ cli_wg(cli_t* const c, Window const win) {
 void
 cli_wg_focus(cli_t* const c, unsigned const clr) {
   wg_win_bgset(c->par.win, clr);
-  wg_win_bdrset(c->par.win, clr);
+  wg_win_bdrset(c->par.win, c->sel ? wg_SEL : clr);
   wg_win_bgset(c->hdr.win, clr);
   wg_gc_bgset(c->hdr.gc, clr);
   XFillRectangle(dpy, c->hdr.win, c->hdr.gc,
@@ -193,9 +194,11 @@ cli_conf(cli_t* const c, int const w, int const h) {
           c->hdr.w - 3 * btnw - 2 * bdrw, y);
     }
 
+    XSelectInput(dpy, c->win, 0);
     if (XResizeWindow(dpy, c->win, w, h)) {
       c->w = w;
       c->h = h;
+      XSelectInput(dpy, c->win, c->mask);
     }
     
     c->x1 = c->x + c->par.w + 2 * c->par.bdrw;

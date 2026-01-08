@@ -398,11 +398,6 @@ calls_cli9(void) {
 }
 
 void
-calls_cli_raise_toggle(void) {
-
-}
-
-void
 calls_grid_arrange(void) {
   if (currwk->clis.size == 0)
     return;
@@ -423,34 +418,54 @@ calls_grid_arrange(void) {
 
 void
 calls_cli_mode_toggle(void) {
-  /*
   cli_t* const c = currwk->currc;
   if (c) {
-    ++c->mode; 
-    c->mode %= 2;
-    wg_t* const wg = &c->par;
-    if (c->mode == RES)
-      cli_conf(c, wg->w0, wg->h0);
-    else if (c->mode == MAX) {
-      mon_t const* mon = cblk_itr(&mons, c->mon);
-      if (mon == mons.beg)
-        cli_conf(c, mon->w - tray.wg.w, 
-          mon->h - panel.h);
-      else
-        cli_conf(c, mon->w, mon->h);
+    if (c->mode == RES) {
+      wm_cli_max(c);
+    } else if (c->mode == MAX) {
+      wm_cli_res(c);
     }
   }
-  */
 }
 
 void
-calls_sel_clear(void) {
-  arrange_sel_clear();
+calls_cli_raise_toggle(void) {
+  cli_t* const c = currwk->currc;
+  if (c) {
+    if (c->mode == RES) {
+      wm_cli_min(c);
+    } else if (c->mode == MIN) {
+      wm_cli_res(c);
+    }
+  }
 }
 
 void
 calls_sel_toggle(void) {
+  if (currwk->clis.size == 0)
+    return;
 
+  cli_t* c = currwk->clis.front;
+  do {
+    c->sel = !c->sel;
+    wg_win_bdrset(c->par.win, c->sel ? wg_SEL :
+      c == c->wk->currc ? wg_ACT : wg_BG);
+    c = cblk_next(&currwk->clis, c);
+  } while (c != currwk->clis.front);
+}
+
+void
+calls_sel_clear(void) {
+  if (currwk->clis.size == 0)
+    return;
+
+  cli_t* c = currwk->clis.front;
+  do {
+    c->sel = 0;
+    wg_win_bdrset(c->par.win, c == c->wk->currc ? wg_ACT : 
+      wg_BG);
+    c = cblk_next(&currwk->clis, c);
+  } while (c != currwk->clis.front);
 }
 
 void

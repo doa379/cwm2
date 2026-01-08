@@ -23,6 +23,7 @@ void
 evcalls_configure_notify(Window const win, int const w,
 int const h) {
   if (win == DefaultRootWindow(dpy)) {
+    fprintf(stdout, "Reconfig root window\n");
     /* Configure root window */
     mon_mons_clear();
     mon_conf();
@@ -33,6 +34,7 @@ int const h) {
   } else {
     cli_t* const c = wm_cli(win);
     if (c && win == c->win) {
+      fprintf(stdout, "Reconfig client window\n");
       cli_conf(c, w, h);
       panel_icos_arrange(c->wk);
       panel_arrange(c->wk);
@@ -43,8 +45,6 @@ int const h) {
 void
 evcalls_map_override_redirect(Window const win) {
   XMapRaised(dpy, win);
-  XSetInputFocus(dpy, win, RevertToPointerRoot,
-    CurrentTime);
 }
 
 void
@@ -83,11 +83,15 @@ int const y, int const x_root, int const y_root) {
       abs(y_root - prev_y_root) > 100) {
       prev_x_root = x_root;
       prev_y_root = y_root;
-      currmon = mon_currmon(x_root, y_root);
-      char str[16];
-      sprintf(str, "Mon %lu", cblk_dist(&mons, currmon));
-      status_str_set(str);
-      status_focus(wg_ACT);
+      mon_t* const mon = mon_currmon(x_root, y_root);
+      if (mon) {
+        fprintf(stdout, "Mon %lu\n", cblk_dist(&mons, mon));
+        char str[16];
+        sprintf(str, "Mon %lu", cblk_dist(&mons, mon));
+        currmon = mon;
+        status_str_set(str);
+        status_focus(wg_ACT);
+      }
     }
   }
 }

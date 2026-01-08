@@ -26,6 +26,7 @@ typedef struct cli_s {
   wg_t shd;
   wg_t ico;
   int mode;
+  int sel;
 } cli_t;
 
 enum mode { MIN, MAX, RES, CLS, FS };

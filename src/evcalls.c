@@ -8,7 +8,6 @@
 #include "status.h"
 #include "tray.h"
 #include "prop.h"
-#include "mascot.h"
 
 extern Display* dpy;
 
@@ -18,6 +17,7 @@ extern mon_t* currmon;
 
 extern cblk_t mons;
 extern wg_t status;
+extern tray_t tray;
 
 void
 evcalls_configure_notify(Window const win, int const w,
@@ -30,7 +30,6 @@ int const h) {
     panel_conf();
     tray_conf();
     wm_cli_currmon_move();
-    mascot_draw();
   } else {
     cli_t* const c = wm_cli(win);
     if (c && win == c->win) {
@@ -85,7 +84,6 @@ int const y, int const x_root, int const y_root) {
       prev_y_root = y_root;
       mon_t* const mon = mon_currmon(x_root, y_root);
       if (mon) {
-        fprintf(stdout, "Mon %lu\n", cblk_dist(&mons, mon));
         char str[16];
         sprintf(str, "Mon %lu", cblk_dist(&mons, mon));
         currmon = mon;
@@ -114,11 +112,12 @@ unsigned const keycode) {
 
 void
 evcalls_btn_press(Window const win, unsigned const state,
-unsigned const button) {
+unsigned const button, int const x, int const y,
+int const x_root, int const y_root) {
   cli_t* const c = cli(win, currwk);
   if (c) {
     if (c->mode == RES && c->hdr.win == win)
-      wm_cli_translate(c);
+      wm_cli_translate(c, x_root, y_root);
     else if (c->mode == RES && c->par.win == win)
       wm_cli_resize(c);
     else if (win == c->min.win)
@@ -212,12 +211,14 @@ evcalls_property_notify(Window const win) {
 void
 evcalls_expose(Window const win) {
   if (win == DefaultRootWindow(dpy)) {
-    mascot_draw();
+  
   } else if (win == status.win) {
     status_focus(wg_ACT);
+  } else if (win == tray.wg.win) {
+    tray_mascot_conf();
   } else {
     cli_t* const c = wm_cli(win);
     if (c)
-      cli_wg_focus(c, c == c->wk->currc ? wg_ACT : wg_BG);
+      cli_wg_focus(c, c == currwk->currc ? wg_ACT : wg_BG);
   }
 }

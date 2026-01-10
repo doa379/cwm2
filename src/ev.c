@@ -119,7 +119,12 @@ ev_btn_press(void) {
   Window const win = xev.xbutton.window;
   unsigned const state = xev.xbutton.state;
   unsigned const button = xev.xbutton.button;
-  evcalls_btn_press(win, state, button);
+  int const x = xev.xbutton.x;
+  int const y = xev.xbutton.y;
+  int const x_root = xev.xbutton.x_root;
+  int const y_root = xev.xbutton.y_root;
+  evcalls_btn_press(win, state, button, x, y, x_root, 
+    y_root);
 }
 
 static void

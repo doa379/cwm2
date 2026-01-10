@@ -14,7 +14,6 @@
 #include "prop.h"
 #include "tray.h"
 #include "panel.h"
-#include "mascot.h"
 #include "../config.h"
 
 static int xerror;
@@ -54,7 +53,13 @@ int main(int const ARGC, char const* ARGV[]) {
     return -1;
   }
 
+  if (root_wins_init() != 0) {
+    XCloseDisplay(dpy);
+    return -1;
+  }
+
   root_query();
+  root_ev_enqueue();
   if (font_init()       != 0 ||
       clr_init()        != 0 ||
       arrange_init()    != 0 ||
@@ -70,19 +75,17 @@ int main(int const ARGC, char const* ARGV[]) {
   panel_init();
   panel_conf();
   tray_conf();
-  mascot_init();
-  mascot_draw();
   ev_init();
   XSync(dpy, False);
   while (sig_status == 0)
     ev_call();
 
-  mascot_deinit();
   root_deinit();
   wm_deinit();
   panel_deinit();
   clr_deinit();
   font_deinit();
+  root_wins_deinit();
   XCloseDisplay(dpy);
   return 0;
 }

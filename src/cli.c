@@ -151,7 +151,7 @@ cli_wg_focus(cli_t* const c, unsigned const clr) {
   wg_win_bgset(c->par.win, clr);
   wg_win_bdrset(c->par.win, c->sel ? wg_SEL : clr);
   wg_win_bgset(c->hdr.win, clr);
-  wg_gc_bgset(c->hdr.gc, clr);
+  wg_gc_bgfgset(c->hdr.gc, clr);
   XFillRectangle(dpy, c->hdr.win, c->hdr.gc,
     c->hdr.str.ext + 4 * c->par.bdrw, 0, c->hdr.w, 
       font.ch - 2 * c->hdr.bdrw);
@@ -208,12 +208,13 @@ cli_conf(cli_t* const c, int const w, int const h) {
 
 void
 cli_move(cli_t* const c, int const x, int const y) {
-  if (XMoveWindow(dpy, c->par.win, x, y)) {
-    c->x = x;
-    c->y = y;
-    c->x1 = c->x + c->par.w + 2 * c->par.bdrw;
-    c->y1 = c->y + c->par.h + 2 * c->par.bdrw;
-  }
+  if (x != c->x || y != c->y)
+    if (XMoveWindow(dpy, c->par.win, x, y)) {
+      c->x = x;
+      c->y = y;
+      c->x1 = c->x + c->par.w + 2 * c->par.bdrw;
+      c->y1 = c->y + c->par.h + 2 * c->par.bdrw;
+    }
 }
 
 void

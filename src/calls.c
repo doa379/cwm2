@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <stdio.h>
 
+#include "root.h"
 #include "wm.h"
 #include "mon.h"
 #include "wk.h"
@@ -486,7 +487,11 @@ calls_kill(void) {
 void
 calls_cli_move(void) {
   fprintf(stdout, "Call move on client\n");
-  wm_cli_translate(currwk->currc);
+  int x_root;
+  int y_root;
+  Window const child = root_ptr_query(&x_root, &y_root);
+  if (child == currwk->currc->hdr.win)
+    wm_cli_translate(currwk->currc, x_root, y_root);
 }
 
 void

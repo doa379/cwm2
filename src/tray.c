@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "tray.h"
+#include "mascot.h"
 #include "mon.h"
 
 extern Display* dpy;
@@ -22,8 +23,16 @@ tray_init(void) {
   }
 
   tray.wg = wg_init(DefaultRootWindow(dpy), 1, 1, bdrw);
+  unsigned long const TRAYMASK = 
+    ButtonPressMask |
+    ButtonReleaseMask |
+    PointerMotionMask |
+    ExposureMask;
+
+  XSelectInput(dpy, tray.wg.win, TRAYMASK);
   wg_win_bgset(tray.wg.win, wg_BG);
   wg_win_bdrset(tray.wg.win, wg_BG);
+  mascot_init(&tray.wg);
   return 0;
 }
 
@@ -38,9 +47,16 @@ tray_conf(void) {
   mon_t* const mon = mons.front;
   if (wg_win_resize(&tray.wg, trayw, 
       mon->h - 2 * tray.wg.bdrw) == 0) {
-    mon->w -= tray.wg.w + 2 * tray.wg.bdrw;
-    XMoveWindow(dpy, tray.wg.win, mon->w, 0);
+    /*mon->w -= tray.wg.w + 2 * tray.wg.bdrw;*/
+    int const x = mon->w - tray.wg.w - 2 * tray.wg.bdrw;
+    XMoveWindow(dpy, tray.wg.win, x, 0);
+    tray_mascot_conf();
   }
+}
+
+void
+tray_mascot_conf(void) {
+  mascot_draw(&tray.wg, 0, tray.wg.h);
 }
 
 void tray_cli_map(cli_t* const c) {

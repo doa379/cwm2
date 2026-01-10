@@ -123,21 +123,6 @@ panel_icos_arrange(wk_t* const wk) {
 
 void
 panel_arrange(wk_t* const currwk) {
-  /*
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++) {
-    if (wk == currwk)
-      wk_wg_focus(wk, wg_ACT);
-    else {
-      wk_wg_focus(wk, wg_BG);
-      if (wk->clis.size) {
-        cli_t* const c = wk->currc;
-        XMoveWindow(dpy, c->ico.win, 0, 0);
-      }
-    }
-    
-    arrange_sel_map(&wk->wg);
-  }
-  */
   panel_wk_conf(currwk);
   wk_t* wk = wks.front; 
   do {

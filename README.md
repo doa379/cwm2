@@ -22,13 +22,13 @@ Presented here are a combination of features that make this Wm unique. The
 motivation is not to replicate what already exists. The following are a 
 genuinely unique combination of features. The codebase has been founded from 
 first principles. Most importantly, the idea here has been to cast the project 
-in such a way that it is open to extensibility. Herein is the highly modular 
-aspect of the project's design. The project then has to be manageable such that 
-the user is not inhibited or curtailed from making modifications to the project 
-at any later point in time. The project has to be simple (even dumb), clean, 
-easy to control, yet useful. So where are the "new paradigms" I was referring 
-to? We will come to those in due course. The design choices are kept natural and 
-straightforward. We don't conform to any corporate or vested interests.
+in such a way that it is relatively easy to extend. Herein is the highly modular 
+aspect of the project's design. The project has to be manageable such that the 
+user is not inhibited or curtailed from making modifications to it at any future 
+point in time. The project has to be simple (even dumb), clean, under control, 
+yet useful. So where are the "new paradigms" I was referring to? We will come to 
+those in due course. The design choices are kept natural and straightforward. We 
+don't conform to any corporate or vested interests.
 
 ## Features in a nut-shell:
 
@@ -75,9 +75,17 @@ libs required apart from the pre-installed system libs above).
 This overarching philosophy of this Wm is it works on the principle of 
 selections. You select a group of objects (namely Clients/Windows) and then 
 apply the desired operation on the group. The selection expires once an 
-operation is complete. Operations are arrangements. It is possible to 
+operation is complete. Operations are typically arrangements. It is possible to 
 conceivably implement any number of operations. The default arrangement for 
 clients is a floating arrangement.
+
+The config.h file (in the root directory) lists a series of basic settings in 
+order to bootstrap operations. There are also a series of 
+keyboard/mouse-bindings listed in config.h. The config is not entirely 
+bomb-proof -- as such invalid settings may result in erroneous behaviour. Basic 
+user functionality corresponding to the bindings are implemented in the calls.c 
+file. It is recommended that you leave calls.c intact for reference, but instead 
+add your own extensions to the usercalls.c file instead.
 
 
 (C) 2023-2026 doa379

@@ -3,7 +3,8 @@
 
 #include "cblk.h"
 
-cblk_t cblk_init(size_t const unit, size_t const res) {
+cblk_t
+cblk_init(size_t const unit, size_t const res) {
   void* blk = malloc(unit * res);
   uint64_t* val = calloc(res, sizeof *val);
   return (cblk_t) {
@@ -17,12 +18,14 @@ cblk_t cblk_init(size_t const unit, size_t const res) {
   };
 }
 
-void cblk_deinit(cblk_t* cblk) {
+void
+cblk_deinit(cblk_t* cblk) {
   free(cblk->val);
   free(cblk->blk);
 }
 
-void* cblk_front(cblk_t const* cblk) {
+void*
+cblk_front(cblk_t const* cblk) {
   for (size_t i = 0; i < cblk->res; i++)
     if (cblk->val[i])
       return (char*) cblk->blk + i * cblk->unit;
@@ -30,11 +33,13 @@ void* cblk_front(cblk_t const* cblk) {
   return NULL;
 }
 
-void* cblk_back(cblk_t const* cblk) {
+void*
+cblk_back(cblk_t const* cblk) {
   return cblk_prev(cblk, cblk->front);
 }
 
-void* cblk_itr(cblk_t const* cblk, size_t const n) {
+void*
+cblk_itr(cblk_t const* cblk, size_t const n) {
   void* dev = cblk->front;
   if (dev == NULL)
     return NULL;
@@ -45,7 +50,8 @@ void* cblk_itr(cblk_t const* cblk, size_t const n) {
   return dev;
 }
 
-void* cblk_map(cblk_t* const cblk, void const* dev) {
+void*
+cblk_map(cblk_t* const cblk, void const* dev) {
   /* Returns address of mapping */
   for (size_t i = 0; i < cblk->res; i++) {
     if (cblk->val[i] == 0) {
@@ -79,7 +85,8 @@ void* cblk_map(cblk_t* const cblk, void const* dev) {
   return dst;
 }
 
-void cblk_unmap(cblk_t* cblk, void* dev) {
+void
+cblk_unmap(cblk_t* cblk, void* dev) {
   if (dev == NULL || cblk->size == 0)
     return;
 
@@ -94,7 +101,8 @@ void cblk_unmap(cblk_t* cblk, void* dev) {
   cblk->back = cblk_back(cblk);
 }
 
-void* cblk_prev(cblk_t const* cblk, void* dev) {
+void*
+cblk_prev(cblk_t const* cblk, void* dev) {
   size_t const n = 
     ((char*) dev - (char*) cblk->blk) / cblk->unit;
   for (size_t i = 1; i <= cblk->res; i++) {
@@ -106,7 +114,8 @@ void* cblk_prev(cblk_t const* cblk, void* dev) {
   return NULL;
 }
 
-void* cblk_next(cblk_t const* cblk, void* dev) {
+void*
+cblk_next(cblk_t const* cblk, void* dev) {
   size_t const n = 
     ((char*) dev - (char*) cblk->blk) / cblk->unit;
   for (size_t i = 1; i <= cblk->res; i++) {
@@ -118,7 +127,8 @@ void* cblk_next(cblk_t const* cblk, void* dev) {
   return NULL;
 }
 
-size_t const cblk_dist(cblk_t const* cblk, 
+size_t const
+cblk_dist(cblk_t const* cblk, 
     void const* dev) {
   /* dev must exist in cblk */
   void* dev_ = cblk->front;
@@ -127,14 +137,30 @@ size_t const cblk_dist(cblk_t const* cblk,
     if (dev_ == dev)
       break;
 
+    n++;
     dev_ = cblk_next(cblk, dev_);
   } while (dev_ != cblk->front);
   
   return n;
 }
 
-void cblk_clear(cblk_t* cblk) {
+void
+cblk_clear(cblk_t* cblk) {
   cblk->size = 0;
   cblk->front = cblk->back = NULL;
   memset(cblk->val, 0, cblk->res * sizeof *cblk->val);
+}
+
+void*
+cblk_val_find(cblk_t const* cblk, void* val) {
+  /* return here itr of comparison *val */
+  void* dev = cblk->front;
+  do {
+    if (memcmp(dev, val, cblk->unit) == 0)
+      return dev;
+
+    dev = cblk_next(cblk, dev);
+  } while (dev != cblk->front);
+
+  return NULL;
 }

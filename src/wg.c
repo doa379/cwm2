@@ -78,14 +78,24 @@ wg_win_bdrset(Window const win, unsigned const clr) {
 }
 
 void
-wg_gc_bgset(GC const gc, unsigned const clr) {
+wg_gc_bgfgset(GC const gc, unsigned const clr) {
   XSetBackground(dpy, gc, clr_pair[clr].bg.pix);
   XSetForeground(dpy, gc, clr_pair[clr].fg.pix);
 }
 
 void
+wg_gc_bgset(GC const gc, unsigned const clr) {
+  XSetBackground(dpy, gc, clr_pair[clr].bg.pix);
+}
+
+void
+wg_gc_fgset(GC const gc, unsigned const clr) {
+  XSetForeground(dpy, gc, clr_pair[clr].fg.pix);
+}
+
+void
 wg_pixmap_fill(wg_t const* wg, unsigned const clr) {
-  wg_gc_bgset(wg->gc, clr);
+  wg_gc_bgfgset(wg->gc, clr);
   XFillRectangle(dpy, wg->win, wg->gc, 
       0, 0, wg->w, wg->h);
   XCopyPlane(dpy, wg->pixmap, wg->win, wg->gc, 
@@ -94,11 +104,12 @@ wg_pixmap_fill(wg_t const* wg, unsigned const clr) {
 
 int
 wg_win_resize(wg_t* const wg, int const w, int const h) {
-  if (XResizeWindow(dpy, wg->win, w, h)) {
-    wg->h = h;
-    wg->w = w;
-    return 0;
-  }
+  if (w != wg->w || h != wg->h)
+    if (XResizeWindow(dpy, wg->win, w, h)) {
+      wg->h = h;
+      wg->w = w;
+      return 0;
+    }
 
   return -1;
 }

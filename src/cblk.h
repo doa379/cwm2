@@ -25,3 +25,4 @@ void* cblk_prev(cblk_t const*, void*);
 void* cblk_next(cblk_t const*, void*);
 size_t const cblk_dist(cblk_t const*, const void*);
 void cblk_clear(cblk_t*);
+void* cblk_val_find(cblk_t const*, void*);

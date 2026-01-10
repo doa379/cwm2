@@ -42,8 +42,10 @@ mon_currmon(int const x, int const y) {
   fprintf(stdout, "(x, y) %d %d\n", x, y);
   do {
     if (x >= mon->x && x < mon->x + mon->w &&
-        y >= mon->y && y < mon->y + mon->h)
+        y >= mon->y && y < mon->y + mon->h) {
+      fprintf(stdout, "Mon %lu\n", cblk_dist(&mons, mon));
       return mon;
+    }
 
     mon = cblk_next(&mons, mon);
   } while (mon != mons.front); 

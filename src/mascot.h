@@ -1,5 +1,8 @@
 #pragma once
 
-void mascot_init(void);
-void mascot_deinit(void);
-void mascot_draw(void);
+#include <X11/Xlib.h>
+
+#include "wg.h"
+
+void mascot_init(wg_t* const);
+void mascot_draw(wg_t* const, int const, int const);

@@ -87,35 +87,28 @@ wm_wk_deinit(wk_t* const wk) {
 
 int
 wm_wk_unmap(wk_t* const wk) {
-  /*
-  if (wks.size == 1)
+  if (wks.size == 1 ||
+      wk->clis.size == 0)
     return -1;
-  */
 
+  wk_t* const nextwk = cblk_next(&wks, wk);
+  while (wk->clis.size) {
+    cli_t* const c = wk->clis.front;
+    wm_cli_move(c, nextwk);
+  }
+
+  if (prevwk == currwk)
+    prevwk = nextwk;
+
+  wm_wk_focus(nextwk);
+  currwk = nextwk;
+  wm_wk_deinit(wk);
   return 0;
 }
 
 void
 wm_wk_focus_all(void) {
-  /*
-  for (wk_t* wk = wks.beg; wk != wks.end; wk++)
-    for (cli_t* c = wk->clis.beg; c != wk->clis.end; c++)
-      XMapWindow(dpy, c->par.win);
-   
-  if (currwk->clis.size) {
-    cli_t* const c = currwk->currc;
-    wm_cli_focus(c);
-  } else if (prevwk->clis.size) {
-    cli_t* const c = prevwk->currc;
-    wm_cli_focus(c);
-  } else {
-    for (wk_t* wk = wks.beg; wk != wks.end; wk++)
-      if (wk->clis.size) {
-        cli_t* const c = wk->currc;
-        wm_cli_focus(c);
-      }
-  }
-  */
+
 }
 
 cli_t*
@@ -193,13 +186,15 @@ wm_cli_move(cli_t* const c, wk_t* const wk) {
       wk->currc = nextc;
     }
 
-    cli_wg_focus(nextc, wg_BG);
     XReparentWindow(dpy, nextc->ico.win, wk->wg.win, 0, 0);
-    /* Resolve remainder after copy */
     cli_t* const prevc = c->wk->clis.size == 1 ? NULL : 
       cblk_prev(&c->wk->clis, c);
     if (prevc)
       wm_cli_switch(prevc);
+    else {
+      wm_cli_unfocus(c);
+      c->wk->prevc = c->wk->currc = NULL;
+    }
 
     /* Unmap c */
     XUnmapWindow(dpy, c->par.win);
@@ -210,51 +205,54 @@ wm_cli_move(cli_t* const c, wk_t* const wk) {
 }
 
 void
-wm_cli_translate(cli_t* const c) {
+wm_cli_translate(cli_t* const c, int const x_root, 
+  int const y_root) {
   static unsigned const MOUSEMASK = 
-    ButtonPressMask |
     ButtonReleaseMask |
     PointerMotionMask;
-  static unsigned const MASK = ExposureMask;
+  static unsigned const MASK = 
+    ExposureMask;
   if (XGrabPointer(dpy, DefaultRootWindow(dpy), False, 
         MOUSEMASK, GrabModeAsync, GrabModeAsync, None, 
           font.crs.move, CurrentTime) != GrabSuccess)
     return;
 
   XEvent xev;
-  int x;
-  int y;
-  if (root_ptr(&x, &y) == 0)
-    return;
-  
   int const x0 = c->x;
   int const y0 = c->y;
   void (*tray_map_cb)(cli_t* const) = NULL;
-
+  
+  root_query();
+  int const par_d = root_stack_dist(c->par.win);
+  int const tray_d = root_stack_dist(tray.wg.win);
   do {
     XMaskEvent(dpy, MASK | MOUSEMASK, &xev);
     if (xev.type == MotionNotify) {
-      int const nextx = x0 + xev.xmotion.x - x;
-      int const nexty = y0 + xev.xmotion.y - y;
+      int const nextx = x0 + xev.xmotion.x_root - x_root;
+      int const nexty = y0 + xev.xmotion.y_root - y_root;
       cli_move(c, nextx, nexty);
       if (c->y + c->par.h + 2 * c->par.bdrw > currmon->h)
         cli_move(c, nextx, 
           currmon->h - c->par.h - 2 * c->par.bdrw);
-      
-      if (currmon == mons.front && 
-          xev.xmotion.x > currmon->w &&
-            xev.xmotion.x < currmon->w + tray.wg.w) {
+    
+      if (tray_d < par_d &&
+        /* but why, par will be raised anyway */
+          currmon == mons.front && 
+          xev.xmotion.x > currmon->w - tray.wg.w &&
+          xev.xmotion.x < currmon->w) {
         wg_win_bdrset(tray.wg.win, wg_SEL);
-        /* tray action */
         tray_map_cb = tray_cli_map;
       } else {
-        wg_win_bdrset(tray.wg.win, wg_BG);
-        tray_map_cb = NULL;
+          wg_win_bdrset(tray.wg.win, wg_BG);
+          tray_map_cb = NULL;
       }
-    } else if (xev.type == Expose) {
+    }
+
+    if (xev.type == Expose) {
         Window const win = xev.xexpose.window;
         evcalls_expose(win);
     }
+          
   } while (xev.type != ButtonRelease);
   XUngrabPointer(dpy, CurrentTime);
   wg_win_bdrset(tray.wg.win, wg_BG);

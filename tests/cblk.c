@@ -99,6 +99,8 @@ int main(int const argc, char const* argv[]) {
     /* Remove a few */
     for (size_t i = 15; i < 18; i++) {
       void* const rm = cblk_itr(&cblk, i);
+      size_t d = cblk_dist(&cblk, rm);
+      fprintf(stdout, "Dist from root %lu\n", d);
       cblk_unmap(&cblk, rm);
       fprintf(stdout, "Front %d Back %d\n", 
         *(int32_t*) cblk.front, *(int32_t*) cblk.back);
@@ -111,6 +113,8 @@ int main(int const argc, char const* argv[]) {
     void* const dev = cblk_itr(&cblk, 15);
     fprintf(stdout, "Val %d\n", *(int32_t*) dev);
     print_by_prev_val(dev);
+    size_t d = cblk_dist(&cblk, dev);
+    fprintf(stdout, "Dist from root %lu\n", d);
   }
 
   return 0;

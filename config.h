@@ -104,12 +104,12 @@ char const* font_name = "Fixed:size=12";
 unsigned const bdrw = 2;
 unsigned const gaps = 0;
 unsigned const trayw = 100;
-int const rootbg = palette_gray60;
+int const rootbg = palette_gray20;
 int const COLORS[] = { 
 /* Color Scheme { BG, ACT, SEL } */
   palette_cyan10,
   palette_cyan50,
-  palette_yellow
+  palette_yellow10
 };
 
 input_t const KBD[] = {

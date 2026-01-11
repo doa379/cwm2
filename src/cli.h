@@ -23,13 +23,13 @@ typedef struct cli_s {
   wg_t max;
   wg_t res;
   wg_t cls;
-  wg_t shd;
+  wg_t siz;
   wg_t ico;
   int mode;
   int sel;
 } cli_t;
 
-enum mode { MIN, MAX, RES, CLS, FS };
+enum mode { MIN, MAX, RES, CLS, SIZ, FS };
 
 void cli_wg_init(void);
 cli_t cli_init(Window const, wk_t* const, int const, 

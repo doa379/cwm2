@@ -13,10 +13,12 @@
 #include "res/cboxf_16x16.xbm"
 #include "res/cboxff_16x16.xbm"
 #include "res/cx_16x16.xbm"
+#include "res/siz_16x16.xbm"
 #include "res/cbox_24x24.xbm"
 #include "res/cboxf_24x24.xbm"
 #include "res/cboxff_24x24.xbm"
 #include "res/cx_24x24.xbm"
+#include "res/siz_24x24.xbm"
 
 extern Display* dpy;
 
@@ -33,7 +35,7 @@ static unsigned btnw;
 static unsigned btnh;
 static unsigned btnx;
 static unsigned btny;
-static unsigned char* BTN[4];
+static unsigned char* BTN[5];
 
 void
 cli_wg_init(void) {
@@ -45,6 +47,8 @@ cli_wg_init(void) {
     cboxff_16x16_bits : cboxff_24x24_bits;
   BTN[CLS] = font.ch < 20 ? 
     cx_16x16_bits : cx_24x24_bits;
+  BTN[SIZ] = font.ch < 20 ? 
+    siz_16x16_bits : siz_24x24_bits;
   btnh = btnw = font.ch < 20 ? 16 : 24;
   btnx = 0.5 * (font.cw - btnw);
   btny = 0.5 * (font.ch - btnh);
@@ -80,6 +84,10 @@ int const h) {
   wg_t cls = wg_init(hdr.win, btnw, btnh, 0);
   cls.pixmap = XCreateBitmapFromData(dpy, cls.win, 
     (char const*) BTN[CLS], btnw, btnh);
+  /* Init siz */
+  wg_t siz = wg_init(par.win, btnw, btnh, 0);
+  siz.pixmap = XCreateBitmapFromData(dpy, siz.win, 
+    (char const*) BTN[SIZ], btnw, btnh);
   /* Init ico */
   wg_t ico = wg_init(wk->wg.win, font.cw - 2 * bdrw, 
     font.ch - 2 * bdrw, bdrw);
@@ -93,6 +101,7 @@ int const h) {
     .max = max,
     .res = res,
     .cls = cls,
+    .siz = siz,
     .ico = ico,
     .mode = RES,
     .sel = 0,
@@ -101,6 +110,7 @@ int const h) {
 
 void
 cli_deinit(cli_t* const c) {
+  wg_deinit(&c->siz);
   wg_deinit(&c->cls);
   wg_deinit(&c->res);
   wg_deinit(&c->max);
@@ -125,7 +135,7 @@ cli(Window const win, wk_t* const wk) {
         c->max.win == win ||
         c->res.win == win ||
         c->cls.win == win ||
-        c->shd.win == win ||
+        c->siz.win == win ||
         c->ico.win == win)
       return c;
 
@@ -143,6 +153,7 @@ cli_wg(cli_t* const c, Window const win) {
     c->max.win == win ? &c->max :
     c->res.win == win ? &c->res :
     c->cls.win == win ? &c->cls :
+    c->siz.win == win ? &c->siz :
     &c->ico;
 }
 
@@ -152,14 +163,19 @@ cli_wg_focus(cli_t* const c, unsigned const clr) {
   wg_win_bdrset(c->par.win, c->sel ? wg_SEL : clr);
   wg_win_bgset(c->hdr.win, clr);
   wg_gc_bgfgset(c->hdr.gc, clr);
+
+  unsigned hdr0 = btnw + 2 * c->par.bdrw;
+  /* hdr offset */
   XFillRectangle(dpy, c->hdr.win, c->hdr.gc,
-    c->hdr.str.ext + 4 * c->par.bdrw, 0, c->hdr.w, 
+    c->hdr.str.ext + 2 + hdr0, 0, c->hdr.w, 
       font.ch - 2 * c->hdr.bdrw);
-  wg_str_draw(&c->hdr, clr, 2 * c->par.bdrw);
+  wg_str_draw(&c->hdr, clr, hdr0);
+
   wg_pixmap_fill(&c->min, clr);
   wg_pixmap_fill(&c->max, clr);
   wg_pixmap_fill(&c->res, clr);
   wg_pixmap_fill(&c->cls, clr);
+  wg_pixmap_fill(&c->siz, clr);
   wg_win_bgset(c->ico.win, clr);
   wg_win_bdrset(c->ico.win, clr);
   wg_str_draw(&c->ico, clr, 0);
@@ -169,29 +185,36 @@ void
 cli_conf(cli_t* const c, int const w, int const h) {
   /* Config elements given kernel dims */
   if (wg_win_resize(&c->par, w, h + font.ch) == 0) {
-    if (wg_win_resize(&c->hdr, w, font.ch) == 0) {
+    if (wg_win_resize(&c->hdr, w, font.ch + c->par.bdrw) == 0) {
       XMoveWindow(dpy, c->hdr.win, 0, 0);
-      int const y = 0.5 * (c->hdr.h - btnh);
+      int const y0 = 0.5 * (c->hdr.h - btnh);
       /* Cls btn */
-      XMoveWindow(dpy, c->cls.win, c->hdr.w - btnw, y);
+      XMoveWindow(dpy, c->cls.win, 0, y0);
       /* Max btn */
-      XSelectInput(dpy, c->max.win, 0);
-      XUnmapWindow(dpy, c->max.win);
-      XSelectInput(dpy, c->max.win, c->max.mask);
+      wg_unmap(&c->max);
       /* Res btn */
-      XSelectInput(dpy, c->res.win, 0);
-      XUnmapWindow(dpy, c->res.win);
-      XSelectInput(dpy, c->res.win, c->res.mask);
+      wg_unmap(&c->res);
       /* Res, Max selection */
-      wg_t* const wg = c->mode == MAX ? &c->res : &c->max;
-      XMoveWindow(dpy, wg->win, 
-          c->hdr.w - 2 * btnw - bdrw, y);
-      XSelectInput(dpy, wg->win, 0);
-      XMapWindow(dpy, wg->win);
-      XSelectInput(dpy, wg->win, wg->mask);
-      /* Min btn */
-      XMoveWindow(dpy, c->min.win, 
-          c->hdr.w - 3 * btnw - 2 * bdrw, y);
+      if (c->mode == MAX) {
+        wg_map(&c->res);
+        wg_unmap(&c->siz);
+        XMoveWindow(dpy, c->res.win, 
+          c->hdr.w - btnw, y0);
+        /* Min btn */
+        XMoveWindow(dpy, c->min.win, 
+            c->hdr.w - 2 * btnw - 2 * bdrw, y0);
+      } else {
+        wg_map(&c->max);
+        XMoveWindow(dpy, c->max.win, 
+          c->hdr.w - 2 * btnw - 2 * bdrw, y0);
+        wg_map(&c->siz);
+        /* Min btn */
+        XMoveWindow(dpy, c->min.win, 
+            c->hdr.w - 3 * btnw - 4 * bdrw, y0);
+      }
+
+      /* Resize btn */
+      XMoveWindow(dpy, c->siz.win, c->hdr.w - btnw, y0);
     }
 
     XSelectInput(dpy, c->win, 0);
@@ -208,7 +231,8 @@ cli_conf(cli_t* const c, int const w, int const h) {
 
 void
 cli_move(cli_t* const c, int const x, int const y) {
-  if (x != c->x || y != c->y)
+  /* if (x != c->x || y != c->y) */
+  /* might want to mitigate server traffic */
     if (XMoveWindow(dpy, c->par.win, x, y)) {
       c->x = x;
       c->y = y;

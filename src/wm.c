@@ -149,6 +149,8 @@ int const w, int const h) {
     nextc->res.mask = BTNMASK;
     XSelectInput(dpy, nextc->cls.win, BTNMASK);
     nextc->cls.mask = BTNMASK;
+    XSelectInput(dpy, nextc->siz.win, BTNMASK);
+    nextc->siz.mask = BTNMASK;
     XSelectInput(dpy, nextc->ico.win, BTNMASK);
     nextc->ico.mask = BTNMASK;
     XMapWindow(dpy, nextc->par.win);
@@ -248,7 +250,7 @@ wm_cli_translate(cli_t* const c, int const x_root,
       }
     }
 
-    if (xev.type == Expose) {
+    else if (xev.type == Expose) {
         Window const win = xev.xexpose.window;
         evcalls_expose(win);
     }
@@ -263,10 +265,10 @@ wm_cli_translate(cli_t* const c, int const x_root,
 void
 wm_cli_resize(cli_t* const c) {
   static unsigned const MOUSEMASK = 
-    ButtonPressMask |
     ButtonReleaseMask |
     PointerMotionMask;
-  static unsigned const MASK = ExposureMask;
+  static unsigned const MASK = 
+    ExposureMask;
   if (XGrabPointer(dpy, DefaultRootWindow(dpy), False, 
         MOUSEMASK, GrabModeAsync, GrabModeAsync, None, 
           font.crs.resize, CurrentTime) != GrabSuccess)
@@ -274,25 +276,29 @@ wm_cli_resize(cli_t* const c) {
  
   XEvent xev;
   int const x0 = c->x;
-  int const y0 = c->y;
+  int const y0 = c->y - c->par.h;
+/*  
   XWarpPointer(dpy, None, c->par.win, 0, 0, 0, 0,
-    c->x1, c->y1);
+    c->par.w, c->par.h);
+ */
+
   do {
     XMaskEvent(dpy, MASK | MOUSEMASK, &xev);
     if (xev.type == MotionNotify) {
-      int const dx = xev.xmotion.x - x0;
-      int const dy = xev.xmotion.y - y0;
-      int const bdrw = 2 * c->par.bdrw;
-      if (xev.xmotion.x + x0 + bdrw < currmon->w &&
-          xev.xmotion.y + y0 + bdrw < currmon->h)
-        cli_conf(c, dx, dy);
+      int const nextw = xev.xmotion.x - x0 + 2 * c->par.bdrw;
+      int const nexth = xev.xmotion.y - y0 + 2 * c->par.bdrw;
+      if (currmon->x + nextw < currmon->w &&
+          currmon->y + nexth < currmon->h)
+        cli_resize(c, nextw, nexth);
     } else if (xev.type == Expose) {
         Window const win = xev.xexpose.window;
         evcalls_expose(win);
     }
   } while (xev.type != ButtonRelease);
+  /*
   XWarpPointer(dpy, None, c->par.win, 0, 0, 0, 0,
-    c->x1, c->y1);
+    c->par.w, c->par.h);
+  */
   XUngrabPointer(dpy, CurrentTime);
 }
 

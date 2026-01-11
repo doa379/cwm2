@@ -118,7 +118,7 @@ int const x_root, int const y_root) {
   if (c) {
     if (c->mode == RES && c->hdr.win == win)
       wm_cli_translate(c, x_root, y_root);
-    else if (c->mode == RES && c->par.win == win)
+    else if (c->mode == RES && c->siz.win == win)
       wm_cli_resize(c);
     else if (win == c->min.win)
       wm_cli_min(c);
@@ -155,6 +155,8 @@ evcalls_enter_notify(Window const win) {
       wg_pixmap_fill(&c->res, wg_SEL);
     else if (win == c->cls.win)
       wg_pixmap_fill(&c->cls, wg_SEL);
+    else if (win == c->siz.win)
+      wg_pixmap_fill(&c->siz, wg_SEL);
     else if (c != c->wk->currc) {
       wm_cli_switch(c);
       panel_icos_arrange(c->wk);
@@ -176,6 +178,8 @@ evcalls_leave_notify(Window const win) {
       wg_pixmap_fill(&c->res, clr);
     else if (win == c->cls.win)
       wg_pixmap_fill(&c->cls, clr);
+    else if (win == c->siz.win)
+      wg_pixmap_fill(&c->siz, clr);
   }
 }
 
@@ -218,7 +222,8 @@ evcalls_expose(Window const win) {
     tray_mascot_conf();
   } else {
     cli_t* const c = wm_cli(win);
-    if (c)
+    if (c) {
       cli_wg_focus(c, c == currwk->currc ? wg_ACT : wg_BG);
+    }
   }
 }

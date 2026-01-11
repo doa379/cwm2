@@ -79,13 +79,11 @@ operation is complete. Operations are typically arrangements. It is possible to
 conceivably implement any number of operations. The default arrangement for 
 clients is a floating arrangement.
 
-The config.h file (in the root directory) lists a series of basic settings in 
-order to bootstrap operations. There are also a series of 
-keyboard/mouse-bindings listed in config.h. The config is not entirely 
-bomb-proof -- as such invalid settings may result in erroneous behaviour. Basic 
-user functionality corresponding to the bindings are implemented in the calls.c 
-file. It is recommended that you leave calls.c intact for reference, but instead 
-add your own extensions to the usercalls.c file instead.
+The ```config.h``` file (in the root directory) initialises the program. The 
+config is not entirely bomb-proof -- as such invalid values could result in 
+errors. The essential settings are implemented in the ```calls.c``` file. It is 
+recommended that you leave ```calls.c``` intact for reference, but instead add 
+your own extensions to the ```usercalls.c``` file instead.
 
 
 (C) 2023-2026 doa379

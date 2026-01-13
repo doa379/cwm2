@@ -56,48 +56,27 @@ arrange_sel_adj(int const gap) {
   cblk_clear(&sel);
 }
 
-/* Arrange only on currently selected mon */
-
 void
 arrange_sel_tile(unsigned const w, unsigned const h) {
   /* Arrange within contraint (w, h) */
   size_t const n = sel.size;
-  /* no of */
-  unsigned nc = 0;
-  for (; nc <= 0.5 * n; nc++)
-    if (nc * nc >= n)
-      break;
-
-  if (n == 3)
-    nc = 2;
-
-  unsigned nr = n / nc;
-  unsigned const currw = nc ? w / nc : w;
-  /* (c, r) nos */
-  unsigned cn = 0;
-  unsigned rn = 0;
-  wg_t** wg = sel.front; 
+  unsigned const nc = ceil(sqrt(n));
+  unsigned const nr = (n + nc - 1) / nc;
+  unsigned const cellw = w / nc;
+  unsigned const cellh = h / nr;
+  unsigned i = 0;
+  wg_t** wg = sel.front;
   do {
-    size_t i = cblk_dist(&sel, *wg);
-    if (i / nr + 1 > nc - n % nc)
-      nr = n / nc + 1;
+    unsigned const col = i % nc;
+    unsigned const row = i / nc;
+    unsigned const x = col * cellw;
+    unsigned const y = row * cellh;
+    if (wg_win_resize(*wg, cellw, cellh) == 0)
+      XMoveWindow(dpy, (*wg)->win, x, y);
 
-    unsigned const currh = nr ? w / nr : h;
-    unsigned const currx = cn * currw;
-    unsigned const curry = rn * currh;
-    Window const win = (*wg)->win;
-    if (wg_win_resize(*wg, currw, currh) == 0)
-      XMoveWindow(dpy, (*wg)->win, currx, curry);
-
-    rn++;
-    if (rn >= nr) {
-      rn = 0;
-      cn++;
-    }
-
+    i++;
     wg = cblk_next(&sel, wg);
   } while (wg != sel.front);
-
   cblk_clear(&sel);
 }
 

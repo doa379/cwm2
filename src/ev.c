@@ -70,6 +70,8 @@ static void
 ev_configure_request(void) {
   XConfigureRequestEvent const* conf =
     &xev.xconfigurerequest;
+  fprintf(stdout, "Client Config Window 0x%lx\n",
+    conf->window);
   XWindowChanges wc = {
     .x = conf->x,
     .y = conf->y,

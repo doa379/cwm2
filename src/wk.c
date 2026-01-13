@@ -15,6 +15,13 @@ wk_t
 wk_init(void) {
   wg_t const wg = wg_init(DefaultRootWindow(dpy), font.cw, 
     font.ch - 2 * bdrw, bdrw);
+  long const BTNMASK = 
+    EnterWindowMask |
+    LeaveWindowMask |
+    ButtonPressMask |
+    ButtonReleaseMask |
+    ExposureMask;
+  XSelectInput(dpy, wg.win, BTNMASK);
   wg_win_bgset(wg.win, wg_BG);
   wg_win_bdrset(wg.win, wg_ACT);
 

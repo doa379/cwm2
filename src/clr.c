@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "clr.h"
+#include "palette.h"
 
 extern Display* dpy;
 extern int const COLORS[];
@@ -28,7 +29,7 @@ static int
 clr_fg(clr_t* const clr) {
   /* Calc fg for clr */
   return clr_luminance(clr->xr.red, clr->xr.green, 
-    clr->xr.blue) > 0.5 ? 0x000000 : 0xffffff;
+    clr->xr.blue) > 0.5 ? palette_gray20 : palette_gray80;
 }
 
 static clr_t

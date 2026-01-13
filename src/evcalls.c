@@ -52,7 +52,7 @@ int const y, int const w, int const h) {
   cli_t* const c = wm_cli_map(currwk, win, w, h);
   if (c) {
     wg_str_set(&c->ico, prop_ico(win));
-    wg_str_set(&c->hdr, prop_name(win));
+    wg_str_set(&c->hd0, prop_name(win));
     wm_cli_switch(c);
     wm_cli_conf(c, w, h);
     wm_cli_arrange(c, x, y);
@@ -116,22 +116,22 @@ unsigned const button, int const x, int const y,
 int const x_root, int const y_root) {
   cli_t* const c = cli(win, currwk);
   if (c) {
-    if (c->mode == RES && c->hdr.win == win)
+    if (c->mode == RES && c->hd0.win == win)
       wm_cli_translate(c, x_root, y_root);
     else if (c->mode == RES && c->siz.win == win)
       wm_cli_resize(c);
-    else if (win == c->min.win)
+    else if (c->min.win == win)
       wm_cli_min(c);
-    else if (c->mode == RES && win == c->max.win)
+    else if (c->mode == RES && c->max.win == win)
       wm_cli_max(c);
-    else if (c->mode == MAX && win == c->res.win)
+    else if (c->mode == MAX && c->res.win == win)
       wm_cli_res(c);
-    else if (win == c->cls.win) {
+    else if (c->cls.win == win) {
       wk_t* const wk = c->wk;
       wm_cli_kill(c);
       panel_icos_arrange(wk);
       panel_arrange(wk);
-    } else if (win == c->ico.win) {
+    } else if (c->ico.win == win) {
       wm_cli_switch(c);
       if (c->mode == MIN)
         wm_cli_raise(c);
@@ -140,12 +140,19 @@ int const x_root, int const y_root) {
       if (input)
         input->call();
     }
+  } else {
+    wk_t* const wk = wm_wk(win);
+    if (wk && wk != currwk) {
+      wm_wk_switch(wk);
+      panel_icos_arrange(wk);
+      panel_arrange(wk);
+    }
   }
 }
 
 void
 evcalls_enter_notify(Window const win) {
-  cli_t* const c = cli(win, currwk);
+  cli_t* const c = wm_cli(win);
   if (c) {
     if (win == c->min.win)
       wg_pixmap_fill(&c->min, wg_SEL);
@@ -160,7 +167,16 @@ evcalls_enter_notify(Window const win) {
     else if (c != c->wk->currc) {
       wm_cli_switch(c);
       panel_icos_arrange(c->wk);
+    } else if (c->wk != currwk) {
+        wm_wk_switch(c->wk);
+        wm_cli_switch(c);
+        panel_icos_arrange(c->wk);
+        panel_arrange(c->wk);
     }
+  } else {
+    wk_t* const wk = wm_wk(win);
+    if (wk && wk != currwk)
+      wg_win_bgset(wk->wg.win, wg_SEL);
   }
 }
 
@@ -180,6 +196,11 @@ evcalls_leave_notify(Window const win) {
       wg_pixmap_fill(&c->cls, clr);
     else if (win == c->siz.win)
       wg_pixmap_fill(&c->siz, clr);
+  } else {
+    wk_t* const wk = wm_wk(win);
+    if (wk)
+      wg_win_bgset(wk->wg.win, 
+        wk == currwk ? wg_ACT : wg_BG);
   }
 }
 
@@ -205,8 +226,8 @@ evcalls_property_notify(Window const win) {
   } else {
     cli_t* const c = wm_cli(win);
     if (c) {
-      wg_str_set(&c->hdr, prop_name(win));
-      wg_str_draw(&c->hdr, c == c->wk->currc ? wg_ACT : 
+      wg_str_set(&c->hd0, prop_name(win));
+      wg_str_draw(&c->hd0, c == c->wk->currc ? wg_ACT : 
         wg_BG, c->par.bdrw);
     }
   }

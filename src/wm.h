@@ -4,6 +4,7 @@
 
 int wm_init(unsigned const);
 void wm_deinit(void);
+wk_t* wm_wk(Window const);
 wk_t* wm_wk_map(void);
 void wm_wk_deinit(wk_t* const);
 int wm_wk_unmap(wk_t* const);

@@ -15,7 +15,6 @@ typedef struct {
   int w;
   int h;
   int bdrw;
-  unsigned long mask;
   Pixmap pixmap;
   GC gc;
   XftDraw* xft;

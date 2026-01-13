@@ -50,6 +50,11 @@ static void
 panel_wk_conf(wk_t* const wk_) {
   /* Size the workspaces to available estate */
 
+  /* if space is tight, scrollable wks
+      if space is still tight, scrollable clis
+        if space is still tight summarise wk/clis
+  */
+
   unsigned n = 0;
   wk_t* wk = wks.front;
   do {
@@ -148,7 +153,7 @@ void
 panel_conf(void) {
   mon_t* const mon = mons.front;
   if (wg_win_resize(&panel, mon->w, panel.h) == 0) {
-    mon->h -= panel.h + 2 * panel.bdrw;
+    mon->h -= panel.h + 2 * panel.bdrw + bdrw;
     XMoveWindow(dpy, panel.win, 0, mon->h);
   }
 }

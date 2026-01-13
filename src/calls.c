@@ -26,10 +26,9 @@ calls_wk0(void) {
 
 }
 
-void
-calls_wk_prev(void) {
-  wk_t* const wk = cblk_prev(&wks, currwk);
-  if (wk && wk != currwk) {
+static void
+calls_wk_switch(wk_t* const wk) {
+  if (wk != currwk) {
     wm_wk_switch(wk);
     panel_icos_arrange(wk);
     panel_arrange(wk);
@@ -37,13 +36,17 @@ calls_wk_prev(void) {
 }
 
 void
+calls_wk_prev(void) {
+  wk_t* const wk = cblk_prev(&wks, currwk);
+  if (wk)
+    calls_wk_switch(wk);
+}
+
+void
 calls_wk_next(void) {
   wk_t* const wk = cblk_next(&wks, currwk);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
@@ -58,121 +61,85 @@ calls_wk_last(void) {
 void
 calls_wk1(void) {
   wk_t* const wk = cblk_itr(&wks, 0);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
 calls_wk2(void) {
   wk_t* const wk = cblk_itr(&wks, 1);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
 calls_wk3(void) {
   wk_t* const wk = cblk_itr(&wks, 2);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
 calls_wk4(void) {
   wk_t* const wk = cblk_itr(&wks, 3);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
 calls_wk5(void) {
   wk_t* const wk = cblk_itr(&wks, 4);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
 calls_wk6(void) {
   wk_t* const wk = cblk_itr(&wks, 5);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
 calls_wk7(void) {
   wk_t* const wk = cblk_itr(&wks, 6);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
 calls_wk8(void) {
   wk_t* const wk = cblk_itr(&wks, 7);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
 calls_wk9(void) {
   wk_t* const wk = cblk_itr(&wks, 8);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
 calls_wk10(void) {
   wk_t* const wk = cblk_itr(&wks, 9);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
 calls_wk11(void) {
   wk_t* const wk = cblk_itr(&wks, 10);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
 calls_wk12(void) {
   wk_t* const wk = cblk_itr(&wks, 12);
-  if (wk && wk != currwk) {
-    wm_wk_switch(wk);
-    panel_icos_arrange(wk);
-    panel_arrange(wk);
-  }
+  if (wk)
+    calls_wk_switch(wk);
 }
 
 void
@@ -490,7 +457,7 @@ calls_cli_move(void) {
   int x_root;
   int y_root;
   Window const child = root_ptr_query(&x_root, &y_root);
-  if (child == currwk->currc->hdr.win)
+  if (child == currwk->currc->hd0.win)
     wm_cli_translate(currwk->currc, x_root, y_root);
 }
 

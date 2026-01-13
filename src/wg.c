@@ -103,28 +103,51 @@ wg_pixmap_fill(wg_t const* wg, unsigned const clr) {
 }
 
 int
-wg_win_resize(wg_t* const wg, int const w, int const h) {
+wg_win_move(wg_t* const wg, int const x, int const y) {
   /* if (w != wg->w || h != wg->h) */
   /* might want to mitigate server traffic */
-    if (XResizeWindow(dpy, wg->win, w, h)) {
-      wg->h = h;
-      wg->w = w;
+    /*XSelectInput(dpy, wg->win, 0);*/
+    if (XMoveWindow(dpy, wg->win, x, y)) {
+      /*XSelectInput(dpy, wg->win, wg->mask);*/
       return 0;
     }
 
+  /*XSelectInput(dpy, wg->win, wg->mask);*/
   return -1;
 }
-      
+
+int
+wg_win_resize(wg_t* const wg, int const w, int const h) {
+  /* if (w != wg->w || h != wg->h) */
+  /* might want to mitigate server traffic */
+    /*XSelectInput(dpy, wg->win, 0);*/
+    if (XResizeWindow(dpy, wg->win, w, h)) {
+      wg->h = h;
+      wg->w = w;
+      /*XSelectInput(dpy, wg->win, wg->mask);*/
+      return 0;
+    }
+
+  /*XSelectInput(dpy, wg->win, wg->mask);*/
+  return -1;
+}
+ 
 void
 wg_unmap(wg_t* const wg) {
-  XSelectInput(dpy, wg->win, 0);
-  XUnmapWindow(dpy, wg->win);
-  XSelectInput(dpy, wg->win, wg->mask);
+  XWindowAttributes wa;
+  if (XGetWindowAttributes(dpy, wg->win, &wa)) {
+    XSelectInput(dpy, wg->win, 0);
+    XUnmapWindow(dpy, wg->win);
+    XSelectInput(dpy, wg->win, wa.your_event_mask);
+  }
 }
 
 void
 wg_map(wg_t* const wg) {
-  XSelectInput(dpy, wg->win, 0);
-  XMapWindow(dpy, wg->win);
-  XSelectInput(dpy, wg->win, wg->mask);
+  XWindowAttributes wa;
+  if (XGetWindowAttributes(dpy, wg->win, &wa)) {
+    XSelectInput(dpy, wg->win, 0);
+    XMapRaised(dpy, wg->win);
+    XSelectInput(dpy, wg->win, wa.your_event_mask);
+  }
 }

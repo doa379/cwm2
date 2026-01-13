@@ -9,16 +9,18 @@ typedef struct cli_s {
   Window win;
   int w;
   int h;
-  unsigned long mask;
-  /* Cli (par) origin */
-  int x;
-  int y;
+  /* Cli (par) org */
+  int x0;
+  int y0;
   /* Cli (par) bbox */
   int x1;
   int y1;
   /* Widgets */
   wg_t par;
-  wg_t hdr;
+  /* General */
+  wg_t hd0;
+  /* Special */
+  wg_t hd1;
   wg_t min;
   wg_t max;
   wg_t res;

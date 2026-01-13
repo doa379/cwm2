@@ -23,7 +23,7 @@ tray_init(void) {
   }
 
   tray.wg = wg_init(DefaultRootWindow(dpy), 1, 1, bdrw);
-  unsigned long const TRAYMASK = 
+  long const TRAYMASK = 
     ButtonPressMask |
     ButtonReleaseMask |
     PointerMotionMask |

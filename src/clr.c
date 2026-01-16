@@ -29,7 +29,7 @@ static int
 clr_fg(clr_t* const clr) {
   /* Calc fg for clr */
   return clr_luminance(clr->xr.red, clr->xr.green, 
-    clr->xr.blue) > 0.5 ? palette_gray20 : palette_gray80;
+    clr->xr.blue) > 0.5 ? palette_gray30 : palette_gray80;
 }
 
 static clr_t

@@ -66,7 +66,7 @@ Distribution: Run ```make``` in the project's root directory. This produces the
 executable ```cwm2.bin``` which is all you need to run the Wm (no shared/dynamic 
 libs required apart from the pre-installed system libs above).
 
-## Release: TBC
+## Release: TBC.
 
 ## Target(s): Any UNIX w/ X-Window System Ver. 11, Rel. 7
 

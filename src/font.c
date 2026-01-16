@@ -30,7 +30,7 @@ static void font_crs_deinit(font_crs_t* const crs) {
 int font_init(void) {
   font.xft = XftFontOpenName(dpy, DefaultScreen(dpy), 
       font_name);
-  if (!font.xft) {
+  if (font.xft == NULL) {
     fprintf(stderr, "Failed to load font\n");
     return -1;
   }

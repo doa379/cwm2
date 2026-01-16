@@ -17,7 +17,8 @@ ev_noop(void) {
 
 static void
 ev_map_notify(void) {
-
+  Window const win = xev.xmap.window;
+  (void) win;
 }
 
 static void
@@ -63,27 +64,13 @@ ev_map_request(void) {
 static void
 ev_destroy_notify(void) {
   Window const win = xev.xdestroywindow.window;
+  fprintf(stdout, "EV: Destroy Notify window 0x%lx\n", win);
   evcalls_destroy_notify(win);
 }
 
 static void
 ev_configure_request(void) {
-  XConfigureRequestEvent const* conf =
-    &xev.xconfigurerequest;
-  fprintf(stdout, "Client Config Window 0x%lx\n",
-    conf->window);
-  XWindowChanges wc = {
-    .x = conf->x,
-    .y = conf->y,
-    .width = conf->width,
-    .height = conf->height,
-    .border_width = conf->border_width,
-    .sibling = conf->above,
-    .stack_mode = conf->detail
-  };
-
-  XConfigureWindow(dpy, conf->window, conf->value_mask, 
-    &wc);
+  evcalls_configure_request(&xev.xconfigurerequest);
 }
 
 static void
@@ -117,7 +104,6 @@ ev_key_press(void) {
 
 static void
 ev_btn_press(void) {
-  fprintf(stdout, "EV: Btn Press\n");
   Window const win = xev.xbutton.window;
   unsigned const state = xev.xbutton.state;
   unsigned const button = xev.xbutton.button;
@@ -132,14 +118,12 @@ ev_btn_press(void) {
 static void
 ev_enter_notify(void) {
   Window const win = xev.xcrossing.window;
-  fprintf(stdout, "EV: Enter Notify window 0x%lx\n", win);
   evcalls_enter_notify(win);
 }
 
 static void
 ev_leave_notify(void) {
   Window const win = xev.xcrossing.window;
-  fprintf(stdout, "EV: Leave Notify window 0x%lx\n", win);
   evcalls_leave_notify(win);
 }
 
@@ -151,7 +135,6 @@ ev_focus_change(void) {
   (void) mode;
   int const detail = xfocus->detail;
   (void) detail;
-  fprintf(stdout, "EV: Focus Change Window 0x%lx\n", win);
   evcalls_focus_change(win);
 }
 

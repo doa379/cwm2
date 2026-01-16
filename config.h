@@ -117,6 +117,7 @@ input_t const KBD[] = {
   { Mod4Mask, XK_Escape, .cmd = "dmenu_run" },
   { Mod4Mask, XK_t, .cmd = "xclock" },
   { Mod4Mask, XK_e, .cmd = "xeyes" },
+  { Mod4Mask, XK_Return, .cmd = "xterm" },
   { Mod4Mask, XK_F1, .call = calls_wk1 },
   { Mod4Mask, XK_F2, .call = calls_wk2 },
   { Mod4Mask, XK_F3, .call = calls_wk3 },

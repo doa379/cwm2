@@ -11,8 +11,7 @@ int wm_wk_unmap(wk_t* const);
 void wm_wk_unfocus(wk_t* const);
 void wm_wk_focus(wk_t* const);
 void wm_wk_focus_all(void);
-cli_t* wm_cli_map(wk_t* const, Window const, int const, 
-  int const);
+cli_t* wm_cli_map(wk_t* const, Window const);
 cli_t* wm_cli(Window const);
 void wm_cli_unfocus(cli_t* const);
 void wm_cli_focus(cli_t* const);
@@ -30,3 +29,4 @@ void wm_cli_min(cli_t* const);
 void wm_cli_max(cli_t* const);
 void wm_cli_res(cli_t* const);
 void wm_cli_raise(cli_t* const);
+void wm_ico_enum(wk_t* const);

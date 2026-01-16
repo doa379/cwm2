@@ -42,23 +42,17 @@ arrange_sel_adj(int const gap) {
   wg_t** wg = sel.front; 
   do {
     int const X = x;
-    if (XMoveWindow(dpy, (*wg)->win, X, 0)) {
-      /*
-      (*wg)->x = X;
-      (*wg)->y = 0;
-      */
+    if (XMoveWindow(dpy, (*wg)->win, X, 0))
       x += (*wg)->w + 2 * (*wg)->bdrw + gap;
-    }
 
     wg = cblk_next(&sel, wg);
   } while (wg != sel.front); 
-
   cblk_clear(&sel);
 }
 
 void
 arrange_sel_tile(unsigned const w, unsigned const h) {
-  /* Arrange within contraint (w, h) */
+  /* Arrange within constraint (w, h) */
   size_t const n = sel.size;
   unsigned const nc = ceil(sqrt(n));
   unsigned const nr = (n + nc - 1) / nc;
@@ -71,8 +65,8 @@ arrange_sel_tile(unsigned const w, unsigned const h) {
     unsigned const row = i / nc;
     unsigned const x = col * cellw;
     unsigned const y = row * cellh;
-    if (wg_win_resize(*wg, cellw, cellh) == 0)
-      XMoveWindow(dpy, (*wg)->win, x, y);
+    wg_win_resize(*wg, cellw, cellh);
+    XMoveWindow(dpy, (*wg)->win, x, y);
 
     i++;
     wg = cblk_next(&sel, wg);

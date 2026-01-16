@@ -20,24 +20,39 @@ extern wg_t status;
 extern tray_t tray;
 
 void
+evcalls_configure_request(XConfigureRequestEvent const* 
+conf) {
+  fprintf(stdout, "Client Config Window 0x%lx\n",
+    conf->window);
+  cli_t* const c = wm_cli(conf->window);
+  if (c && c->win == conf->window)
+    wm_cli_conf(c, conf->width, conf->height);
+  else {
+    XWindowChanges wc = {
+      .x = conf->x,
+      .y = conf->y,
+      .width = conf->width,
+      .height = conf->height,
+      .border_width = conf->border_width,
+      .sibling = conf->above,
+      .stack_mode = conf->detail
+    };
+
+    XConfigureWindow(dpy, conf->window, conf->value_mask, 
+      &wc);
+  }
+}
+
+void
 evcalls_configure_notify(Window const win, int const w,
 int const h) {
   if (win == DefaultRootWindow(dpy)) {
     fprintf(stdout, "Reconfig root window\n");
-    /* Configure root window */
     mon_mons_clear();
     mon_conf();
     panel_conf();
     tray_conf();
     wm_cli_currmon_move();
-  } else {
-    cli_t* const c = wm_cli(win);
-    if (c && win == c->win) {
-      fprintf(stdout, "Reconfig client window\n");
-      cli_conf(c, w, h);
-      panel_icos_arrange(c->wk);
-      panel_arrange(c->wk);
-    }
   }
 }
 
@@ -49,13 +64,25 @@ evcalls_map_override_redirect(Window const win) {
 void
 evcalls_map_request(Window const win, int const x,
 int const y, int const w, int const h) {
-  cli_t* const c = wm_cli_map(currwk, win, w, h);
+  cli_t* const c = wm_cli_map(currwk, win);
   if (c) {
-    wg_str_set(&c->ico, prop_ico(win));
+    strncpy(c->strico, prop_ico(win), sizeof c->strico - 1);
     wg_str_set(&c->hd0, prop_name(win));
-    wm_cli_switch(c);
+   
     wm_cli_conf(c, w, h);
+    wm_cli_switch(c);
+    
+    /*
+    cli_t* const prev = cblk_prev(&c->wk->clis, c);
+    int const nextx = prev ? 
+      prev->x0 + c->hd0.h + c->par.bdrw : x;
+    int const nexty = prev ? 
+      prev->y0 + c->hd0.h + c->par.bdrw : y;
+    wm_cli_arrange(c, nextx, nexty);
+    
     wm_cli_arrange(c, x, y);
+    */
+    wm_ico_enum(c->wk);
     panel_icos_arrange(c->wk);
     panel_arrange(c->wk);
   }
@@ -64,9 +91,10 @@ int const y, int const w, int const h) {
 void
 evcalls_destroy_notify(Window const win) {
   cli_t* const c = wm_cli(win);
-  if (c) {
+  if (c && c->win == win) {
     wk_t* const wk = c->wk;
     wm_cli_kill(c);
+    wm_ico_enum(c->wk);
     panel_icos_arrange(wk);
     panel_arrange(wk);
   }
@@ -114,6 +142,7 @@ void
 evcalls_btn_press(Window const win, unsigned const state,
 unsigned const button, int const x, int const y,
 int const x_root, int const y_root) {
+  fprintf(stdout, "EV: Btn press Window 0x%lx\n", win);
   cli_t* const c = cli(win, currwk);
   if (c) {
     if (c->mode == RES && c->hd0.win == win)
@@ -131,7 +160,8 @@ int const x_root, int const y_root) {
       wm_cli_kill(c);
       panel_icos_arrange(wk);
       panel_arrange(wk);
-    } else if (c->ico.win == win) {
+    } else if (c != currwk->currc && (c->par.win == win || 
+        c->ico.win == win)) {
       wm_cli_switch(c);
       if (c->mode == MIN)
         wm_cli_raise(c);
@@ -164,7 +194,11 @@ evcalls_enter_notify(Window const win) {
       wg_pixmap_fill(&c->cls, wg_SEL);
     else if (win == c->siz.win)
       wg_pixmap_fill(&c->siz, wg_SEL);
-    else if (c != c->wk->currc) {
+    else if (win == c->ico.win && c != currwk->currc) {
+      wg_win_bgset(c->ico.win, wg_SEL);
+      wg_win_bdrset(c->ico.win, wg_SEL);
+      wg_str_draw(&c->ico, wg_SEL, 0);
+    } else if (c != currwk->currc && c->hd0.win == win) {
       wm_cli_switch(c);
       panel_icos_arrange(c->wk);
     } else if (c->wk != currwk) {
@@ -186,16 +220,22 @@ evcalls_leave_notify(Window const win) {
   if (c) {
     unsigned const clr = c == c->wk->currc ? wg_ACT : 
       wg_BG;
-    if (win == c->min.win)
+    if (c->min.win == win)
       wg_pixmap_fill(&c->min, clr);
-    else if (win == c->max.win)
+    else if (c->max.win == win)
       wg_pixmap_fill(&c->max, clr);
-    else if (win == c->res.win)
+    else if (c->res.win == win)
       wg_pixmap_fill(&c->res, clr);
-    else if (win == c->cls.win)
+    else if (c->cls.win == win)
       wg_pixmap_fill(&c->cls, clr);
-    else if (win == c->siz.win)
+    else if (c->siz.win == win)
       wg_pixmap_fill(&c->siz, clr);
+    else if (c->ico.win == win) {
+      int clr = c == currwk->currc ? wg_ACT : wg_BG;
+      wg_win_bgset(c->ico.win, clr);
+      wg_win_bdrset(c->ico.win, clr);
+      wg_str_draw(&c->ico, clr, 0);
+    }
   } else {
     wk_t* const wk = wm_wk(win);
     if (wk)
@@ -206,9 +246,9 @@ evcalls_leave_notify(Window const win) {
 
 void
 evcalls_focus_change(Window const win) {
+  fprintf(stdout, "EV: Focus Change Window 0x%lx\n", win);
   cli_t* const c = wm_cli(win);
   if (c && c != currwk->currc) {
-    /* notif, don't switch focus */
     if (c->wk == currwk)
       wg_win_bgset(c->ico.win, wg_SEL);
     else 
@@ -225,7 +265,7 @@ evcalls_property_notify(Window const win) {
     status_str_set(prop_root());
   } else {
     cli_t* const c = wm_cli(win);
-    if (c) {
+    if (c && c->win == win) {
       wg_str_set(&c->hd0, prop_name(win));
       wg_str_draw(&c->hd0, c == c->wk->currc ? wg_ACT : 
         wg_BG, c->par.bdrw);

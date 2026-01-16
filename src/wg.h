@@ -21,7 +21,7 @@ typedef struct {
   wg_str_t str;
 } wg_t;
 
-enum colors { wg_BG, wg_ACT, wg_SEL };
+enum wg_colors { wg_BG, wg_ACT, wg_SEL };
 
 wg_t wg_init(Window const parwin, int const, int const, 
   int const);
@@ -37,6 +37,4 @@ void wg_gc_bgfgset(GC const, unsigned const);
 void wg_gc_bgset(GC const, unsigned const);
 void wg_gc_fgset(GC const, unsigned const);
 void wg_pixmap_fill(wg_t const*, unsigned const);
-int wg_win_resize(wg_t* const, int const, int const);
-void wg_unmap(wg_t* const);
-void wg_map(wg_t* const);
+void wg_win_resize(wg_t* const, int const, int const);

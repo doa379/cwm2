@@ -31,6 +31,7 @@ static unsigned char const stipple_8x8[] = {
   0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55
 };
 
+static unsigned bdrw_twice;
 static unsigned btnw;
 static unsigned btnh;
 static unsigned btnx;
@@ -39,6 +40,7 @@ static unsigned char* BTN[5];
 
 void
 cli_wg_init(void) {
+  bdrw_twice = 2 * bdrw;
   BTN[MIN] = font.ch < 20 ? 
     cbox_16x16_bits : cbox_24x24_bits;
   BTN[MAX] = font.ch < 20 ? 
@@ -55,13 +57,14 @@ cli_wg_init(void) {
 }
 
 cli_t
-cli_init(Window const win, wk_t* const wk, int const w, 
-int const h) {
+cli_init(Window const win, wk_t* const wk) {
   /* Init parent */
   wg_t const par = wg_init(DefaultRootWindow(dpy), 
-      w, h, bdrw);
-  XReparentWindow(dpy, win, par.win, 0, font.ch);
+      1, 1, bdrw);
+  wg_win_bgset(par.win, wg_BG);
+  XReparentWindow(dpy, win, par.win, 0, 0);
   XSetWindowBorderWidth(dpy, win, 0);
+  XMapWindow(dpy, win);
   /* Init general header */
   wg_t hd0 = wg_init(par.win, 1, 1, 0);
   hd0.pixmap = XCreateBitmapFromData(dpy, hd0.win, 
@@ -70,8 +73,8 @@ int const h) {
   XSetFillStyle(dpy, hd0.gc, FillStippled);
   /* Init special header */
   wg_t hd1 = wg_init(par.win, 1, 1, 0);
-  XUnmapWindow(dpy, hd1.win);
   wg_win_bgset(hd1.win, wg_SEL);
+  XUnmapWindow(dpy, hd1.win);
   /* Init min */
   wg_t min = wg_init(hd0.win, btnw, btnh, 0);
   min.pixmap = XCreateBitmapFromData(dpy, min.win, 
@@ -89,12 +92,13 @@ int const h) {
   cls.pixmap = XCreateBitmapFromData(dpy, cls.win, 
     (char const*) BTN[CLS], btnw, btnh);
   /* Init siz */
-  wg_t siz = wg_init(par.win, btnw, btnh, 0);
+  wg_t siz = wg_init(hd0.win, btnw, btnh, 0);
   siz.pixmap = XCreateBitmapFromData(dpy, siz.win, 
     (char const*) BTN[SIZ], btnw, btnh);
   /* Init ico */
-  wg_t ico = wg_init(wk->wg.win, font.cw - 2 * bdrw, 
-    font.ch - 2 * bdrw, bdrw);
+  wg_t ico = wg_init(wk->wg.win, 
+    1.25 * font.cw - bdrw_twice, font.ch - bdrw_twice, 
+      bdrw);
 
   return (cli_t) {
     .wk = wk,
@@ -115,6 +119,7 @@ int const h) {
 
 void
 cli_deinit(cli_t* const c) {
+  wg_deinit(&c->ico);
   wg_deinit(&c->siz);
   wg_deinit(&c->cls);
   wg_deinit(&c->res);
@@ -123,7 +128,6 @@ cli_deinit(cli_t* const c) {
   wg_deinit(&c->hd1);
   wg_deinit(&c->hd0);
   wg_deinit(&c->par);
-  wg_deinit(&c->ico);
   cblk_unmap(&c->wk->clis, c);
 }
 
@@ -165,17 +169,13 @@ cli_wg(cli_t* const c, Window const win) {
 
 void
 cli_wg_focus(cli_t* const c, unsigned const clr) {
-  wg_win_bgset(c->par.win, clr);
   wg_win_bdrset(c->par.win, c->sel ? wg_SEL : clr);
-  wg_win_bgset(c->hd0.win, clr);
-  wg_gc_bgfgset(c->hd0.gc, clr);
-
-  unsigned hd0 = btnw + 2 * c->par.bdrw;
+  unsigned hd0 = btnw + bdrw_twice;
   /* hd0 offset */
-  XFillRectangle(dpy, c->hd0.win, c->hd0.gc,
-    c->hd0.str.ext + 2 + hd0, 0, c->hd0.w, 
-      font.ch - 2 * c->hd0.bdrw);
   wg_str_draw(&c->hd0, clr, hd0);
+  XFillRectangle(dpy, c->hd0.win, c->hd0.gc,
+    c->hd0.str.ext + 2 + hd0, 0, c->hd0.w,
+      c->hd0.h - 2 * c->hd0.bdrw);
 
   wg_pixmap_fill(&c->min, clr);
   wg_pixmap_fill(&c->max, clr);
@@ -190,72 +190,61 @@ cli_wg_focus(cli_t* const c, unsigned const clr) {
 void
 cli_conf(cli_t* const c, int const w, int const h) {
   /* Config elements given kernel dims */
-  if (wg_win_resize(&c->par, w, h + font.ch) == 0) {
-    if (wg_win_resize(&c->hd0, w, font.ch + c->par.bdrw) == 0) {
-      wg_win_resize(&c->hd1, c->hd0.w, c->hd0.h);
-      XMoveWindow(dpy, c->hd0.win, 0, 0);
-      int const y0 = 0.5 * (c->hd0.h - btnh);
-      /* Cls btn */
-      XMoveWindow(dpy, c->cls.win, 0, y0);
-      /* Max btn */
-      wg_unmap(&c->max);
-      /* Res btn */
-      wg_unmap(&c->res);
-      /* Res, Max selection */
-      if (c->mode == MAX) {
-        wg_map(&c->res);
-        wg_unmap(&c->siz);
-        XMoveWindow(dpy, c->res.win, 
-          c->hd0.w - btnw, y0);
-        /* Min btn */
-        XMoveWindow(dpy, c->min.win, 
-            c->hd0.w - 2 * btnw - 2 * bdrw, y0);
-      } else {
-        wg_map(&c->max);
-        XMoveWindow(dpy, c->max.win, 
-          c->hd0.w - 2 * btnw - 2 * bdrw, y0);
-        wg_map(&c->siz);
-        /* Min btn */
-        XMoveWindow(dpy, c->min.win, 
-            c->hd0.w - 3 * btnw - 4 * bdrw, y0);
-      }
-
-      /* Resize btn */
-      XMoveWindow(dpy, c->siz.win, c->hd0.w - btnw, y0);
-    }
-
-    if (XResizeWindow(dpy, c->win, w, h)) {
-      c->w = w;
-      c->h = h;
-    }
+  wg_win_resize(&c->par, w, h + font.ch);
+  wg_win_resize(&c->hd0, c->par.w, font.ch);
+  wg_win_resize(&c->hd1, c->hd0.w, c->hd0.h);
+  XMoveWindow(dpy, c->hd0.win, 0, 0);
+  int const y0 = 0.5 * (c->hd0.h - btnh);
+  /* Cls btn */
+  XMoveWindow(dpy, c->cls.win, 0, y0);
+  /* Max btn */
+  XUnmapWindow(dpy, c->max.win);
+  /* Res btn */
+  XUnmapWindow(dpy, c->res.win);
+  /* Res, Max selection */
+  if (c->mode == MAX) {
+    XMapWindow(dpy, c->res.win);
+    XUnmapWindow(dpy, c->siz.win);
+    XMoveWindow(dpy, c->res.win, c->hd0.w - btnw, y0);
+    /* Min btn */
+    XMoveWindow(dpy, c->min.win, 
+        c->hd0.w - 2 * btnw - bdrw_twice, y0);
+  } else {
+    XMapWindow(dpy, c->max.win);
+    XMoveWindow(dpy, c->max.win, 
+      c->hd0.w - 2 * btnw - bdrw_twice, y0);
+    XMapWindow(dpy, c->siz.win);
+    /* Min btn */
+    XMoveWindow(dpy, c->min.win, 
+        c->hd0.w - 3 * btnw - 2 * bdrw_twice, y0);
   }
+
+  /* Resize btn */
+  XMoveWindow(dpy, c->siz.win, c->hd0.w - btnw, y0);
+  /* Kernel */
+  if (XResizeWindow(dpy, c->win, w, h)) {
+    c->w = w;
+    c->h = h;
+  }
+
+  XMoveWindow(dpy, c->win, 0, c->hd0.h);
 }
 
 void
 cli_move(cli_t* const c, int const x, int const y) {
-  /* if (x != c->x || y != c->y) */
-  /* might want to mitigate server traffic */
-    if (XMoveWindow(dpy, c->par.win, x, y)) {
-      c->x0 = x;
-      c->y0 = y;
-      c->x1 = c->x0 + c->par.w + 2 * c->par.bdrw;
-      c->y1 = c->y0 + c->par.h + 2 * c->par.bdrw;
-    }
+  if (XMoveWindow(dpy, c->par.win, x, y)) {
+    c->x0 = x;
+    c->y0 = y;
+    c->x1 = c->x0 + c->par.w + bdrw_twice;
+    c->y1 = c->y0 + c->par.h + bdrw_twice;
+  }
 }
 
 void
 cli_resize(cli_t* const c, int const w, int const h) {
-  /*
-  if (wg_win_resize(&c->par, w, h) == 0) {
-    cli_conf(c, w, h - font.ch);
-    c->x1 = c->x + c->par.w + 2 * c->par.bdrw;
-    c->y1 = c->y + c->par.h + 2 * c->par.bdrw;
-  }
-  */
-  
-  cli_conf(c, w, h - font.ch);
-  c->x1 = c->x0 + c->par.w + 2 * c->par.bdrw;
-  c->y1 = c->y0 + c->par.h + 2 * c->par.bdrw;
+  cli_conf(c, w, h);
+  c->x1 = c->x0 + c->par.w + bdrw_twice;
+  c->y1 = c->y0 + c->par.h + bdrw_twice;
 }
 
 void
@@ -266,9 +255,8 @@ int const W, int const H, int const d) {
   int const dY = (Y - y) / d;
   int const dW = (W - w) / d;
   int const dH = (H - h) / d;
-  wg_unmap(&c->hd0);
-  XUnmapWindow(dpy, c->win);
-  wg_win_bgset(c->par.win, wg_BG);
+  XUnmapWindow(dpy, c->hd0.win);
+  /*XUnmapWindow(dpy, c->win);*/
   for (int n = 0; n < d; n++) {
     int const nextX = x + dX * n;
     int const nextY = y + dY * n;
@@ -280,12 +268,6 @@ int const W, int const H, int const d) {
     usleep(1000);
   }
 
-  /*
-  XResizeWindow(dpy, c->par.win, W, H);
-  XMoveWindow(dpy, c->par.win, X, Y);
-  */
-  
-  wg_win_bgset(c->par.win, wg_ACT);
-  XMapWindow(dpy, c->win);
-  wg_map(&c->hd0);
+  /*XMapWindow(dpy, c->win);*/
+  XMapWindow(dpy, c->hd0.win);
 }

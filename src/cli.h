@@ -5,7 +5,7 @@
 
 typedef struct cli_s {
   wk_t* wk;
-  /* Kernel Window */
+  /* Kernel */
   Window win;
   int w;
   int h;
@@ -27,15 +27,15 @@ typedef struct cli_s {
   wg_t cls;
   wg_t siz;
   wg_t ico;
+  char strico[4];
   int mode;
   int sel;
 } cli_t;
 
-enum mode { MIN, MAX, RES, CLS, SIZ, FS };
+enum cli_mode { MIN, MAX, RES, CLS, SIZ, FS };
 
 void cli_wg_init(void);
-cli_t cli_init(Window const, wk_t* const, int const, 
-  int const);
+cli_t cli_init(Window const, wk_t* const);
 void cli_deinit(cli_t* const);
 cli_t* cli(Window const, wk_t* const);
 wg_t* cli_wg(cli_t* const, Window const);

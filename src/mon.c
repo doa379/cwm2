@@ -39,11 +39,9 @@ mon_mons_clear(void) {
 mon_t*
 mon_currmon(int const x, int const y) {
   mon_t* mon = mons.front;
-  fprintf(stdout, "(x, y) %d %d\n", x, y);
   do {
     if (x >= mon->x && x < mon->x + mon->w &&
         y >= mon->y && y < mon->y + mon->h) {
-      fprintf(stdout, "Mon %lu\n", cblk_dist(&mons, mon));
       return mon;
     }
 
@@ -70,8 +68,6 @@ mon_conf(void) {
         };
         
         cblk_map(&mons, &mon);
-        fprintf(stdout, "Mon %d %d %d %d\n", 
-          mon.x, mon.y, mon.w, mon.h);
       }
 
       XFree(inf);

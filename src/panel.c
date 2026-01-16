@@ -34,7 +34,7 @@ panel_init(void) {
     wk = cblk_next(&wks, wk);
   } while (wk != wks.front);
 
-  wkw = font.cw;
+  wkw = 1.25 * font.cw;
   status_init(panel.win);
   panel_icos_arrange(wks.front);
   panel_arrange(wks.front);
@@ -63,7 +63,6 @@ panel_wk_conf(wk_t* const wk_) {
   } while (wk != wks.front);
 
   unsigned w = n * wkw + status.w;
-
   do {
     wg_win_resize(&wk->wg, 
       wk->clis.size ? wkw * wk->clis.size : wkw, wk->wg.h);
@@ -152,8 +151,7 @@ panel_arrange_all(void) {
 void
 panel_conf(void) {
   mon_t* const mon = mons.front;
-  if (wg_win_resize(&panel, mon->w, panel.h) == 0) {
-    mon->h -= panel.h + 2 * panel.bdrw + bdrw;
-    XMoveWindow(dpy, panel.win, 0, mon->h);
-  }
+  wg_win_resize(&panel, mon->w, panel.h);
+  mon->h -= panel.h + 2 * panel.bdrw;
+  XMoveWindow(dpy, panel.win, 0, mon->h);
 }

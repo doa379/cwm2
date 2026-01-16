@@ -2,6 +2,7 @@
 
 #include <X11/Xlib.h>
 
+void evcalls_configure_request(XConfigureRequestEvent const*);
 void evcalls_configure_notify(Window const, int const,
 int const);
 void evcalls_map_override_redirect(Window const);

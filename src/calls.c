@@ -163,6 +163,8 @@ calls_cli_wk_move(cli_t* const c, wk_t* const wk) {
   if (c && wk && wk != c->wk) {
     wk_t* const currwk = c->wk;
     if (wm_cli_move(c, wk)) {
+      wm_ico_enum(wk);
+      wm_ico_enum(currwk);
       panel_icos_arrange(currwk);
       panel_arrange(currwk);
     }
@@ -367,7 +369,7 @@ calls_cli9(void) {
 
 void
 calls_grid_arrange(void) {
-  if (currwk->clis.size == 0)
+  if (currwk->clis.size < 2)
     return;
 
   cli_t* c = currwk->clis.front;
@@ -378,8 +380,10 @@ calls_grid_arrange(void) {
 
   mon_t const* mon = mons.front;
   arrange_sel_tile(mon->w, mon->h);
+  unsigned const bdrw_twice = 2 * c->par.bdrw;
   do {
-    cli_conf(c, c->par.w, c->par.h);
+    cli_resize(c, c->par.w - bdrw_twice, 
+      c->par.h - bdrw_twice);
     c = cblk_next(&currwk->clis, c);
   } while (c != currwk->clis.front);
 }
@@ -446,6 +450,7 @@ calls_kill(void) {
   cli_t* const c = currwk->currc;
   if (c) {
     wm_cli_kill(c);
+    wm_ico_enum(c->wk);
     panel_icos_arrange(currwk);
     panel_arrange(currwk);
   }
@@ -453,17 +458,16 @@ calls_kill(void) {
 
 void
 calls_cli_move(void) {
-  fprintf(stdout, "Call move on client\n");
+  fprintf(stdout, "calls_cli_move()\n");
   int x_root;
   int y_root;
-  Window const child = root_ptr_query(&x_root, &y_root);
-  if (child == currwk->currc->hd0.win)
-    wm_cli_translate(currwk->currc, x_root, y_root);
+  root_ptr_query(&x_root, &y_root);
+  wm_cli_translate(currwk->currc, x_root, y_root);
 }
 
 void
 calls_cli_resize(void) {
-  fprintf(stdout, "Call resize on client\n");
+  fprintf(stdout, "calls_cli_resize()\n");
   wm_cli_resize(currwk->currc);
 }
 

@@ -45,13 +45,11 @@ tray_deinit(void) {
 void
 tray_conf(void) {
   mon_t* const mon = mons.front;
-  if (wg_win_resize(&tray.wg, trayw, 
-      mon->h - 2 * tray.wg.bdrw) == 0) {
-    /*mon->w -= tray.wg.w + 2 * tray.wg.bdrw;*/
-    int const x = mon->w - tray.wg.w - 2 * tray.wg.bdrw;
-    XMoveWindow(dpy, tray.wg.win, x, 0);
-    tray_mascot_conf();
-  }
+  wg_win_resize(&tray.wg, trayw, 
+    mon->h - 2 * tray.wg.bdrw);
+  int const x = mon->w - tray.wg.w - 2 * tray.wg.bdrw;
+  XMoveWindow(dpy, tray.wg.win, x, 0);
+  tray_mascot_conf();
 }
 
 void

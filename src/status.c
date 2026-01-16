@@ -30,8 +30,7 @@ void
 status_focus(unsigned const clr) {
   wg_win_bgset(status.win, clr);
   wg_str_draw(&status, clr, 0);
-  if (wg_win_resize(&status, status.str.ext, status.h) == 0)
-    ;
+  wg_win_resize(&status, status.str.ext, status.h);
 }
 
 void

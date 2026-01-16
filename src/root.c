@@ -20,7 +20,6 @@ root_init(void) {
     .event_mask =
       SubstructureRedirectMask |
       SubstructureNotifyMask |
-      ButtonPressMask |
       PointerMotionMask |
       EnterWindowMask |
       LeaveWindowMask |
@@ -66,8 +65,8 @@ void
 root_query(void) {
   Window root = DefaultRootWindow(dpy);
   Window parent;
-  Window *wins = NULL;
-  unsigned n = 0;
+  Window* wins;
+  unsigned n;
   if (XQueryTree(dpy, root, &root, &parent, &wins, &n)) {
     cblk_clear(&cblk);
     for (unsigned i = 0; i < n; i++)

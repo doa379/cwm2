@@ -57,8 +57,9 @@ char const* prop_root(void) {
 }
  
 char const* prop_name(Window const win) {
-  if (prop_text(win, XA_WM_NAME)[0] == '\0')
- 	  prop_text(win, XInternAtom(dpy, "_NET_WM_NAME", False));
+  if (prop_win_prop(win, XA_WM_NAME)[0] == '\0')
+ 	  prop_win_prop(win, XInternAtom(dpy, "_NET_WM_NAME", 
+      False));
 
   return BUF;
 }

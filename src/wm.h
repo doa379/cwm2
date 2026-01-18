@@ -30,3 +30,5 @@ void wm_cli_max(cli_t* const);
 void wm_cli_res(cli_t* const);
 void wm_cli_raise(cli_t* const);
 void wm_ico_enum(wk_t* const);
+void wm_tray_cli_map(cli_t* const);
+void wm_tray_cli_unmap(wg_t* const);

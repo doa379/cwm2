@@ -126,8 +126,11 @@ wm_wk_focus_all(void) {
 
 cli_t*
 wm_cli_map(wk_t* const wk, Window const win) {
-  long const CLIMASK = 
+  long const KMASK = 
     ButtonPressMask |
+    EnterWindowMask |
+    LeaveWindowMask;
+  long const CLIMASK = 
     FocusChangeMask | 
     PropertyChangeMask |
     SubstructureNotifyMask |
@@ -146,6 +149,7 @@ wm_cli_map(wk_t* const wk, Window const win) {
   cli_t const c = cli_init(win, wk);
   cli_t* const nextc = cblk_map(&wk->clis, &c);
   if (nextc) {
+    XSelectInput(dpy, nextc->win, KMASK);
     XSelectInput(dpy, nextc->par.win, CLIMASK);
     XSelectInput(dpy, nextc->hd0.win, HDRMASK);
     XSelectInput(dpy, nextc->min.win, BTNMASK);
@@ -246,13 +250,11 @@ wm_cli_translate(cli_t* const c, int const x_root,
       unsigned hdr0 = 2 * c->par.bdrw;
       wg_str_draw(&c->hd1, wg_SEL, hdr0);
     
-      if (tray_d < par_d &&
-        /* but why, par will be raised anyway */
-          currmon == mons.front && 
-          xev.xmotion.x > currmon->w - tray.wg.w &&
-          xev.xmotion.x < currmon->w) {
+      if (tray_d < par_d && currmon == mons.front && 
+          xev.xmotion.x_root > currmon->w - tray.wg.w &&
+          xev.xmotion.x_root < currmon->w) {
         wg_win_bdrset(tray.wg.win, wg_SEL);
-        tray_map_cb = tray_cli_map;
+        tray_map_cb = wm_tray_cli_map;
       } else {
           wg_win_bdrset(tray.wg.win, wg_BG);
           tray_map_cb = NULL;
@@ -354,8 +356,7 @@ wm_cli_unfocus(cli_t* const c) {
 
 void
 wm_cli_focus(cli_t* const c) {
-  XMapRaised(dpy, c->par.win);
-  XMapRaised(dpy, c->ico.win);
+  XRaiseWindow(dpy, c->ico.win);
   input_btns_grab(c->win);
   XSetInputFocus(dpy, c->win, RevertToPointerRoot,
     CurrentTime);
@@ -419,23 +420,32 @@ wm_wk_switch(wk_t* const wk) {
 
 void
 wm_cli_conf(cli_t* const c, int const w, int const h) {
-  /*if (w != c->w || h != c->h)*/
-    cli_resize(c, w, h);
-    /*
-    cli_resize(c, c->par.w + 2 * c->par.bdrw > currmon->w ? 
-      currmon->w : w, 
-        c->par.h + 2 * c->par.bdrw > currmon->h ? 
-          currmon->h : h);
-    */
+  cli_resize(c, c->par.w + 2 * c->par.bdrw > currmon->w ? 
+    currmon->w : w, 
+      c->par.h + 2 * c->par.bdrw > currmon->h ? 
+        currmon->h : h);
 }
 
 void
 wm_cli_arrange(cli_t* const c, int const x, int const y) {
   int const nextx = 
-    x + c->par.w + 2 * c->par.bdrw > currmon->w ? 0 : x;
+    x + c->par.w + 2 * c->par.bdrw > currmon->w ? 
+      currmon->w - c->par.w - 2 * c->par.bdrw : x;
   int const nexty = 
-    y + c->par.h + 2 * c->par.bdrw > currmon->h ? 0 : y;
+    y + c->par.h + 2 * c->par.bdrw > currmon->h ? 
+      currmon->h - c->par.h - 2 * c->par.bdrw : y;
   cli_move(c, nextx, nexty);
+
+
+  /*  
+  cli_t* const prev = cblk_prev(&c->wk->clis, c);
+  int const nextx = prev ? 
+    prev->x0 + c->hd0.h + c->par.bdrw : x;
+  int const nexty = prev ? 
+    prev->y0 + c->hd0.h + c->par.bdrw : y;
+  wm_cli_arrange(c, nextx, nexty);
+  */
+
 }
 
 void wm_cli_currmon_move(void) {
@@ -473,6 +483,7 @@ wm_cli_max(cli_t* const c) {
   int const w_org = c->w;
   int const h_org = c->h;
   c->mode = MAX;
+  XRaiseWindow(dpy, c->par.win);
   cli_anim(c, c->x0, c->y0, c->par.w, c->par.h, 
     currmon->x, currmon->y, currmon->w, currmon->h, 100);
   cli_resize(c, currmon->w, currmon->h);
@@ -516,4 +527,55 @@ wm_ico_enum(wk_t* const wk) {
     n++;
     c = cblk_next(&wk->clis, c);
   } while (c != wk->clis.front);
+}
+
+void wm_tray_cli_map(cli_t* const c) {
+  /* Determine required vertical offset */
+  unsigned v = 0;
+  if (tray.clis.size) {
+    wg_t* wg = tray.clis.front;
+    do {
+      v+= wg->h;
+      wg = cblk_next(&tray.clis, wg);
+    } while (wg != tray.clis.front);
+    /* Horizontal offset will be tray width */
+  }
+
+  XReparentWindow(dpy, c->win, tray.wg.win, 0, v);
+  cli_t* const prevc = c->wk->clis.size == 1 ? NULL : 
+    cblk_prev(&c->wk->clis, c);
+  if (prevc)
+    wm_cli_switch(prevc);
+  else {
+    wm_cli_unfocus(c);
+    c->wk->prevc = c->wk->currc = NULL;
+  }
+ 
+  wg_t wg = {
+    .win = c->win,
+  };
+
+  wg_t* const nextwg = cblk_map(&tray.clis, &wg);
+  if (nextwg) {
+    wg_win_bdrset(nextwg->win, wg_SEL);
+    wg_win_resize(nextwg, tray.wg.w, 
+      c->w / c->h * tray.wg.w);
+    cli_deinit(c);
+    cblk_unmap(&c->wk->clis, c);
+  }
+}
+
+void wm_tray_cli_unmap(wg_t* const wg) {
+  XEvent xev = {
+    .xmaprequest = (XMapRequestEvent) {
+      .type = MapRequest,
+      .display = dpy,
+      .send_event = False,
+      .parent = DefaultRootWindow(dpy),
+      .window = wg->win
+    }
+  };
+
+  XPutBackEvent(dpy, &xev);
+  cblk_unmap(&tray.clis, wg);
 }

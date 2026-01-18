@@ -16,19 +16,15 @@ tray_t tray;
 
 int
 tray_init(void) {
-  tray.clis = cblk_init(sizeof(Window), NRES);
+  tray.clis = cblk_init(sizeof(wg_t), NRES);
   if (tray.clis.blk == NULL) {
     fprintf(stderr, "Failed to alloc tray\n");
     return -1;
   }
 
   tray.wg = wg_init(DefaultRootWindow(dpy), 1, 1, bdrw);
-  long const TRAYMASK = 
-    ButtonPressMask |
-    ButtonReleaseMask |
-    PointerMotionMask |
+  long const TRAYMASK =
     ExposureMask;
-
   XSelectInput(dpy, tray.wg.win, TRAYMASK);
   wg_win_bgset(tray.wg.win, wg_BG);
   wg_win_bdrset(tray.wg.win, wg_BG);
@@ -57,6 +53,15 @@ tray_mascot_conf(void) {
   mascot_draw(&tray.wg, 0, tray.wg.h);
 }
 
-void tray_cli_map(cli_t* const c) {
+wg_t* tray_cli(Window const win) {
+  if (tray.clis.size == 0)
+    return NULL;
 
+  wg_t* wg = tray.clis.front;
+  do {
+    if (wg->win == win)
+      return wg;
+    wg = cblk_next(&tray.clis, wg);
+  } while (wg != tray.clis.front);
+  return NULL;
 }

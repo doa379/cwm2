@@ -67,7 +67,6 @@ arrange_sel_tile(unsigned const w, unsigned const h) {
     unsigned const y = row * cellh;
     wg_win_resize(*wg, cellw, cellh);
     XMoveWindow(dpy, (*wg)->win, x, y);
-
     i++;
     wg = cblk_next(&sel, wg);
   } while (wg != sel.front);
@@ -77,11 +76,19 @@ arrange_sel_tile(unsigned const w, unsigned const h) {
 void
 arrange_sel_casc(unsigned const w, unsigned const h) {
   /* Arrange within contraint (w, h) */
+  size_t const n = sel.size;
+  unsigned const m = 16;
+  unsigned const cellw = w - m * n;
+  unsigned const cellh = h - m * n;
   wg_t** wg = sel.front;
+  int x = 0;
+  int y = 0;
   do {
-
+    wg_win_resize(*wg, cellw, cellh);
+    XMoveWindow(dpy, (*wg)->win, x, y);
+    x += m;
+    y += m;
     wg = cblk_next(&sel, wg);
   } while (wg != sel.front);
-  
   cblk_clear(&sel);
 }

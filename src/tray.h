@@ -13,4 +13,4 @@ int tray_init(void);
 void tray_deinit(void);
 void tray_conf(void);
 void tray_mascot_conf(void);
-void tray_cli_map(cli_t* const);
+wg_t* tray_cli(Window const);

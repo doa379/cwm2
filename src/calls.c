@@ -255,12 +255,18 @@ calls_cli_wk12_move(void) {
   calls_cli_wk_move(currwk->currc, wk);
 }
 
+static void
+calls_cli_switch(cli_t* const c) {
+  wm_cli_switch(c);
+  XRaiseWindow(dpy, c->par.win);
+  panel_icos_arrange(c->wk);
+}
+
 void
 calls_cli_prev(void) {
   cli_t* const c = cblk_prev(&currwk->clis, currwk->currc);
   if (c && c != currwk->currc) {
-    wm_cli_switch(c);
-    panel_icos_arrange(c->wk);
+    calls_cli_switch(c);
   }
 }
 
@@ -268,8 +274,7 @@ void
 calls_cli_next(void) {
   cli_t* const c = cblk_next(&currwk->clis, currwk->currc);
   if (c && c != currwk->currc) {
-    wm_cli_switch(c);
-    panel_icos_arrange(c->wk);
+    calls_cli_switch(c);
   }
 }
 
@@ -277,6 +282,7 @@ void
 calls_cli_last(void) {
   if (currwk->prevc && currwk->prevc != currwk->currc) {
     wm_cli_switch(currwk->prevc);
+    XRaiseWindow(dpy, currwk->currc->par.win);
     panel_icos_arrange(currwk);
   }
 }
@@ -290,8 +296,7 @@ void
 calls_cli1(void) {
   cli_t* const c = cblk_itr(&currwk->clis, 0);
   if (c && c != currwk->currc) {
-    wm_cli_switch(c);
-    panel_icos_arrange(c->wk);
+    calls_cli_switch(c);
   }
 }
 
@@ -299,8 +304,7 @@ void
 calls_cli2(void) {
   cli_t* const c = cblk_itr(&currwk->clis, 1);
   if (c && c != currwk->currc) {
-    wm_cli_switch(c);
-    panel_icos_arrange(c->wk);
+    calls_cli_switch(c);
   }
 }
 
@@ -308,8 +312,7 @@ void
 calls_cli3(void) {
   cli_t* const c = cblk_itr(&currwk->clis, 2);
   if (c && c != currwk->currc) {
-    wm_cli_switch(c);
-    panel_icos_arrange(c->wk);
+    calls_cli_switch(c);
   }
 }
 
@@ -317,8 +320,7 @@ void
 calls_cli4(void) {
   cli_t* const c = cblk_itr(&currwk->clis, 3);
   if (c && c != currwk->currc) {
-    wm_cli_switch(c);
-    panel_icos_arrange(c->wk);
+    calls_cli_switch(c);
   }
 }
 
@@ -326,8 +328,7 @@ void
 calls_cli5(void) {
   cli_t* const c = cblk_itr(&currwk->clis, 4);
   if (c && c != currwk->currc) {
-    wm_cli_switch(c);
-    panel_icos_arrange(c->wk);
+    calls_cli_switch(c);
   }
 }
 
@@ -335,8 +336,7 @@ void
 calls_cli6(void) {
   cli_t* const c = cblk_itr(&currwk->clis, 5);
   if (c && c != currwk->currc) {
-    wm_cli_switch(c);
-    panel_icos_arrange(c->wk);
+    calls_cli_switch(c);
   }
 }
 
@@ -344,8 +344,7 @@ void
 calls_cli7(void) {
   cli_t* const c = cblk_itr(&currwk->clis, 6);
   if (c && c != currwk->currc) {
-    wm_cli_switch(c);
-    panel_icos_arrange(c->wk);
+    calls_cli_switch(c);
   }
 }
 
@@ -353,8 +352,7 @@ void
 calls_cli8(void) {
   cli_t* const c = cblk_itr(&currwk->clis, 7);
   if (c && c != currwk->currc) {
-    wm_cli_switch(c);
-    panel_icos_arrange(c->wk);
+    calls_cli_switch(c);
   }
 }
 
@@ -362,13 +360,14 @@ void
 calls_cli9(void) {
   cli_t* const c = cblk_itr(&currwk->clis, 8);
   if (c && c != currwk->currc) {
-    wm_cli_switch(c);
-    panel_icos_arrange(c->wk);
+    calls_cli_switch(c);
   }
 }
 
-void
-calls_grid_arrange(void) {
+enum calls_lt { lt_grid, lt_casc };
+
+static void
+calls_lt_arrange(int const lt) {
   if (currwk->clis.size < 2)
     return;
 
@@ -379,13 +378,23 @@ calls_grid_arrange(void) {
   } while (c != currwk->clis.front);
 
   mon_t const* mon = mons.front;
-  arrange_sel_tile(mon->w, mon->h);
+  if (lt == lt_grid)
+    arrange_sel_tile(mon->w, mon->h);
+  else if (lt == lt_casc)
+    arrange_sel_casc(mon->w, mon->h);
   unsigned const bdrw_twice = 2 * c->par.bdrw;
   do {
     cli_resize(c, c->par.w - bdrw_twice, 
       c->par.h - bdrw_twice);
     c = cblk_next(&currwk->clis, c);
   } while (c != currwk->clis.front);
+}
+
+void
+calls_arrange_toggle(void) {
+  static int lt;
+  calls_lt_arrange(lt++);
+  lt %= 2;
 }
 
 void
@@ -396,6 +405,7 @@ calls_cli_mode_toggle(void) {
       wm_cli_max(c);
     } else if (c->mode == MAX) {
       wm_cli_res(c);
+      XRaiseWindow(dpy, c->par.win);
     }
   }
 }
@@ -408,6 +418,7 @@ calls_cli_raise_toggle(void) {
       wm_cli_min(c);
     } else if (c->mode == MIN) {
       wm_cli_res(c);
+      XRaiseWindow(dpy, c->par.win);
     }
   }
 }
@@ -461,8 +472,13 @@ calls_cli_move(void) {
   fprintf(stdout, "calls_cli_move()\n");
   int x_root;
   int y_root;
-  root_ptr_query(&x_root, &y_root);
-  wm_cli_translate(currwk->currc, x_root, y_root);
+  Window const win = root_ptr_query(&x_root, &y_root);
+  cli_t* const c = cli(win, currwk);
+  if (c) {
+    wm_cli_switch(c);
+    XRaiseWindow(dpy, c->par.win);
+    wm_cli_translate(c, x_root, y_root);
+  }
 }
 
 void

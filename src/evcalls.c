@@ -25,9 +25,10 @@ conf) {
   fprintf(stdout, "Client Config Window 0x%lx\n",
     conf->window);
   cli_t* const c = wm_cli(conf->window);
-  if (c && c->win == conf->window)
+  if (c && c->win == conf->window) {
     wm_cli_conf(c, conf->width, conf->height);
-  else {
+    wm_cli_arrange(c, conf->x, conf->y);
+  } else {
     XWindowChanges wc = {
       .x = conf->x,
       .y = conf->y,
@@ -68,20 +69,9 @@ int const y, int const w, int const h) {
   if (c) {
     strncpy(c->strico, prop_ico(win), sizeof c->strico - 1);
     wg_str_set(&c->hd0, prop_name(win));
-   
     wm_cli_conf(c, w, h);
     wm_cli_switch(c);
-    
-    /*
-    cli_t* const prev = cblk_prev(&c->wk->clis, c);
-    int const nextx = prev ? 
-      prev->x0 + c->hd0.h + c->par.bdrw : x;
-    int const nexty = prev ? 
-      prev->y0 + c->hd0.h + c->par.bdrw : y;
-    wm_cli_arrange(c, nextx, nexty);
-    
     wm_cli_arrange(c, x, y);
-    */
     wm_ico_enum(c->wk);
     panel_icos_arrange(c->wk);
     panel_arrange(c->wk);
@@ -143,7 +133,7 @@ evcalls_btn_press(Window const win, unsigned const state,
 unsigned const button, int const x, int const y,
 int const x_root, int const y_root) {
   fprintf(stdout, "EV: Btn press Window 0x%lx\n", win);
-  cli_t* const c = cli(win, currwk);
+  cli_t* const c = wm_cli(win);
   if (c) {
     if (c->mode == RES && c->hd0.win == win)
       wm_cli_translate(c, x_root, y_root);
@@ -160,9 +150,15 @@ int const x_root, int const y_root) {
       wm_cli_kill(c);
       panel_icos_arrange(wk);
       panel_arrange(wk);
-    } else if (c != currwk->currc && (c->par.win == win || 
-        c->ico.win == win)) {
+    } else if (c->wk != currwk && c->ico.win == win) {
+      wm_wk_switch(c->wk);
       wm_cli_switch(c);
+      panel_icos_arrange(c->wk);
+      panel_arrange(c->wk);
+    } else if ((c != currwk->currc && c->par.win == win) || 
+        c->ico.win == win) {
+      wm_cli_switch(c);
+      XMapRaised(dpy, c->par.win);
       if (c->mode == MIN)
         wm_cli_raise(c);
     } else {
@@ -176,6 +172,13 @@ int const x_root, int const y_root) {
       wm_wk_switch(wk);
       panel_icos_arrange(wk);
       panel_arrange(wk);
+      return;
+    }
+
+    wg_t* const cli = tray_cli(win);
+    if (cli) {
+      wm_tray_cli_unmap(cli);
+      return;
     }
   }
 }
@@ -198,27 +201,30 @@ evcalls_enter_notify(Window const win) {
       wg_win_bgset(c->ico.win, wg_SEL);
       wg_win_bdrset(c->ico.win, wg_SEL);
       wg_str_draw(&c->ico, wg_SEL, 0);
-    } else if (c != currwk->currc && c->hd0.win == win) {
+    } else if (c != currwk->currc) {
       wm_cli_switch(c);
       panel_icos_arrange(c->wk);
-    } else if (c->wk != currwk) {
-        wm_wk_switch(c->wk);
-        wm_cli_switch(c);
-        panel_icos_arrange(c->wk);
-        panel_arrange(c->wk);
     }
   } else {
     wk_t* const wk = wm_wk(win);
-    if (wk && wk != currwk)
+    if (wk && wk != currwk) {
       wg_win_bgset(wk->wg.win, wg_SEL);
+      return;
+    }
+    
+    wg_t* const cli = tray_cli(win);
+    if (cli) {
+      XSetWindowBorderWidth(dpy, cli->win, tray.wg.bdrw);
+      return;
+    }
   }
 }
 
 void
 evcalls_leave_notify(Window const win) {
-  cli_t* const c = cli(win, currwk);
+  cli_t* const c = wm_cli(win);
   if (c) {
-    unsigned const clr = c == c->wk->currc ? wg_ACT : 
+    unsigned const clr = c == currwk->currc ? wg_ACT : 
       wg_BG;
     if (c->min.win == win)
       wg_pixmap_fill(&c->min, clr);
@@ -231,16 +237,23 @@ evcalls_leave_notify(Window const win) {
     else if (c->siz.win == win)
       wg_pixmap_fill(&c->siz, clr);
     else if (c->ico.win == win) {
-      int clr = c == currwk->currc ? wg_ACT : wg_BG;
       wg_win_bgset(c->ico.win, clr);
       wg_win_bdrset(c->ico.win, clr);
       wg_str_draw(&c->ico, clr, 0);
     }
   } else {
     wk_t* const wk = wm_wk(win);
-    if (wk)
+    if (wk) {
       wg_win_bgset(wk->wg.win, 
         wk == currwk ? wg_ACT : wg_BG);
+      return;
+    }
+    
+    wg_t* const cli = tray_cli(win);
+    if (cli) {
+      XSetWindowBorderWidth(dpy, cli->win, 0);
+      return;
+    }
   }
 }
 

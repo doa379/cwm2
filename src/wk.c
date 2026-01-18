@@ -18,9 +18,7 @@ wk_init(void) {
   long const BTNMASK = 
     EnterWindowMask |
     LeaveWindowMask |
-    ButtonPressMask |
-    ButtonReleaseMask |
-    ExposureMask;
+    ButtonPressMask;
   XSelectInput(dpy, wg.win, BTNMASK);
   wg_win_bgset(wg.win, wg_BG);
   wg_win_bdrset(wg.win, wg_ACT);

@@ -46,16 +46,12 @@ void calls_cli6(void);
 void calls_cli7(void);
 void calls_cli8(void);
 void calls_cli9(void);
-void calls_grid_arrange(void);
+void calls_arrange_toggle(void);
 void calls_cli_mode_toggle(void);
 void calls_sel_clear(void);
 void calls_sel_toggle(void);
 void calls_quit(void);
 void calls_kill(void);
-/*
-void calls_rotate_next(void);
-void calls_rotate_prev(void);
-*/
 void calls_cli_move(void);
 void calls_cli_resize(void);
 void calls_debug(void);

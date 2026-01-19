@@ -36,8 +36,9 @@ void
 wg_deinit(wg_t* const wg) {
   XftDrawDestroy(wg->xft);
   XFreeGC(dpy, wg->gc);
-  if (wg->pixmap)
+  if (wg->pixmap) {
     XFreePixmap(dpy, wg->pixmap);
+  }
 
   XDestroyWindow(dpy, wg->win);
 }

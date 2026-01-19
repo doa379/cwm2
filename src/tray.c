@@ -53,14 +53,18 @@ tray_mascot_conf(void) {
   mascot_draw(&tray.wg, 0, tray.wg.h);
 }
 
-wg_t* tray_cli(Window const win) {
-  if (tray.clis.size == 0)
+wg_t* 
+tray_cli(Window const win) {
+  if (tray.clis.size == 0) {
     return NULL;
+  }
 
   wg_t* wg = tray.clis.front;
   do {
-    if (wg->win == win)
+    if (wg->win == win) {
       return wg;
+    }
+
     wg = cblk_next(&tray.clis, wg);
   } while (wg != tray.clis.front);
   return NULL;

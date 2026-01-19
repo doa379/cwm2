@@ -20,27 +20,15 @@ extern wg_t status;
 extern tray_t tray;
 
 void
-evcalls_configure_request(XConfigureRequestEvent const* 
-conf) {
-  fprintf(stdout, "Client Config Window 0x%lx\n",
-    conf->window);
-  cli_t* const c = wm_cli(conf->window);
-  if (c && c->win == conf->window) {
-    wm_cli_conf(c, conf->width, conf->height);
-    wm_cli_arrange(c, conf->x, conf->y);
+evcalls_configure_request(Window const win, int const x,
+  int const y, int const w, int const h) {
+  fprintf(stdout, "Client Config Window 0x%lx\n", win);
+  cli_t* const c = wm_cli(win);
+  if (c && c->win == win) {
+    wm_cli_conf(c, w, h);
+    wm_cli_arrange(c, x, y);
   } else {
-    XWindowChanges wc = {
-      .x = conf->x,
-      .y = conf->y,
-      .width = conf->width,
-      .height = conf->height,
-      .border_width = conf->border_width,
-      .sibling = conf->above,
-      .stack_mode = conf->detail
-    };
-
-    XConfigureWindow(dpy, conf->window, conf->value_mask, 
-      &wc);
+    /* fine */
   }
 }
 
@@ -58,8 +46,13 @@ int const h) {
 }
 
 void
-evcalls_map_override_redirect(Window const win) {
-  XMapRaised(dpy, win);
+evcalls_map_override_redirect(Window const win, int const x,
+int const y, int const w, int const h) {
+  Window* const c = wm_ord_map(win);
+  if (c) {
+    wm_ord_conf(win, w, h);
+    wm_ord_arrange(win, x, y);
+  }
 }
 
 void
@@ -80,13 +73,19 @@ int const y, int const w, int const h) {
 
 void
 evcalls_destroy_notify(Window const win) {
-  cli_t* const c = wm_cli(win);
+  cli_t* c = wm_cli(win);
   if (c && c->win == win) {
     wk_t* const wk = c->wk;
     wm_cli_kill(c);
     wm_ico_enum(c->wk);
     panel_icos_arrange(wk);
     panel_arrange(wk);
+    return;
+  }
+  
+  Window* const ord_win = wm_ord(win);
+  if (ord_win) {
+    wm_ord_unmap(ord_win);
   }
 }
 
@@ -123,8 +122,9 @@ unsigned const keycode) {
         char* const args[] = { NULL };
         execvp(input->cmd, args);
       }
-    } else if (input->call)
-        input->call();
+    } else if (input->call) {
+      input->call();
+    }
   }
 }
 
@@ -135,17 +135,20 @@ int const x_root, int const y_root) {
   fprintf(stdout, "EV: Btn press Window 0x%lx\n", win);
   cli_t* const c = wm_cli(win);
   if (c) {
-    if (c->mode == RES && c->hd0.win == win)
+    if (c->mode == cli_RES && c->hd0.win == win) {
       wm_cli_translate(c, x_root, y_root);
-    else if (c->mode == RES && c->siz.win == win)
+      /* Just in case pinned to tray */
+      panel_icos_arrange(c->wk);
+      panel_arrange(c->wk);
+    } else if (c->mode == cli_RES && c->siz.win == win) {
       wm_cli_resize(c);
-    else if (c->min.win == win)
+    } else if (c->min.win == win) {
       wm_cli_min(c);
-    else if (c->mode == RES && c->max.win == win)
+    } else if (c->mode == cli_RES && c->max.win == win) {
       wm_cli_max(c);
-    else if (c->mode == MAX && c->res.win == win)
+    } else if (c->mode == cli_MAX && c->res.win == win) {
       wm_cli_res(c);
-    else if (c->cls.win == win) {
+    } else if (c->cls.win == win) {
       wk_t* const wk = c->wk;
       wm_cli_kill(c);
       panel_icos_arrange(wk);
@@ -153,18 +156,21 @@ int const x_root, int const y_root) {
     } else if (c->wk != currwk && c->ico.win == win) {
       wm_wk_switch(c->wk);
       wm_cli_switch(c);
+      XRaiseWindow(dpy, c->par.win);
       panel_icos_arrange(c->wk);
       panel_arrange(c->wk);
     } else if ((c != currwk->currc && c->par.win == win) || 
         c->ico.win == win) {
       wm_cli_switch(c);
       XMapRaised(dpy, c->par.win);
-      if (c->mode == MIN)
+      if (c->mode == cli_MIN) {
         wm_cli_raise(c);
+      }
     } else {
       input_t const* input = input_btn(state, button);
-      if (input)
+      if (input) {
         input->call();
+      }
     }
   } else {
     wk_t* const wk = wm_wk(win);
@@ -187,24 +193,25 @@ void
 evcalls_enter_notify(Window const win) {
   cli_t* const c = wm_cli(win);
   if (c) {
-    if (win == c->min.win)
+    if (win == c->min.win) {
       wg_pixmap_fill(&c->min, wg_SEL);
-    else if (win == c->max.win)
+    } else if (win == c->max.win) {
       wg_pixmap_fill(&c->max, wg_SEL);
-    else if (win == c->res.win)
+    } else if (win == c->res.win) {
       wg_pixmap_fill(&c->res, wg_SEL);
-    else if (win == c->cls.win)
+    } else if (win == c->cls.win) {
       wg_pixmap_fill(&c->cls, wg_SEL);
-    else if (win == c->siz.win)
+    } else if (win == c->siz.win) {
       wg_pixmap_fill(&c->siz, wg_SEL);
-    else if (win == c->ico.win && c != currwk->currc) {
+    } else if (win == c->ico.win && c != currwk->currc) {
       wg_win_bgset(c->ico.win, wg_SEL);
       wg_win_bdrset(c->ico.win, wg_SEL);
       wg_str_draw(&c->ico, wg_SEL, 0);
     } else if (c != currwk->currc) {
       wm_cli_switch(c);
       panel_icos_arrange(c->wk);
-    }
+    } else if (c->hd0.win == win)
+      XRaiseWindow(dpy, c->par.win);
   } else {
     wk_t* const wk = wm_wk(win);
     if (wk && wk != currwk) {
@@ -212,9 +219,15 @@ evcalls_enter_notify(Window const win) {
       return;
     }
     
-    wg_t* const cli = tray_cli(win);
-    if (cli) {
-      XSetWindowBorderWidth(dpy, cli->win, tray.wg.bdrw);
+    wg_t* const c = tray_cli(win);
+    if (c) {
+      XRaiseWindow(dpy, win);
+      XSetWindowBorderWidth(dpy, win, tray.wg.bdrw);
+      /*
+      unsigned const bdrw_twice = 2 * tray.wg.bdrw;
+      XResizeWindow(dpy, win, c->w - 2 * bdrw_twice,
+        c->h - 2 * bdrw_twice);
+      */
       return;
     }
   }
@@ -226,17 +239,17 @@ evcalls_leave_notify(Window const win) {
   if (c) {
     unsigned const clr = c == currwk->currc ? wg_ACT : 
       wg_BG;
-    if (c->min.win == win)
+    if (c->min.win == win) {
       wg_pixmap_fill(&c->min, clr);
-    else if (c->max.win == win)
+    } else if (c->max.win == win) {
       wg_pixmap_fill(&c->max, clr);
-    else if (c->res.win == win)
+    } else if (c->res.win == win) {
       wg_pixmap_fill(&c->res, clr);
-    else if (c->cls.win == win)
+    } else if (c->cls.win == win) {
       wg_pixmap_fill(&c->cls, clr);
-    else if (c->siz.win == win)
+    } else if (c->siz.win == win) {
       wg_pixmap_fill(&c->siz, clr);
-    else if (c->ico.win == win) {
+    } else if (c->ico.win == win) {
       wg_win_bgset(c->ico.win, clr);
       wg_win_bdrset(c->ico.win, clr);
       wg_str_draw(&c->ico, clr, 0);
@@ -249,9 +262,14 @@ evcalls_leave_notify(Window const win) {
       return;
     }
     
-    wg_t* const cli = tray_cli(win);
-    if (cli) {
-      XSetWindowBorderWidth(dpy, cli->win, 0);
+    wg_t* const c = tray_cli(win);
+    if (c) {
+      XSetWindowBorderWidth(dpy, win, 0);
+      /*
+      unsigned const bdrw_twice = 2 * tray.wg.bdrw;
+      XResizeWindow(dpy, win, c->w + 2 * bdrw_twice,
+        c->h + 2 * bdrw_twice);
+      */
       return;
     }
   }
@@ -262,10 +280,11 @@ evcalls_focus_change(Window const win) {
   fprintf(stdout, "EV: Focus Change Window 0x%lx\n", win);
   cli_t* const c = wm_cli(win);
   if (c && c != currwk->currc) {
-    if (c->wk == currwk)
+    if (c->wk == currwk) {
       wg_win_bgset(c->ico.win, wg_SEL);
-    else 
+    } else {
       wk_wg_focus(c->wk, wg_SEL);
+    }
 
     wg_str_draw(&c->ico, wg_SEL, 0);
   }

@@ -42,8 +42,9 @@ arrange_sel_adj(int const gap) {
   wg_t** wg = sel.front; 
   do {
     int const X = x;
-    if (XMoveWindow(dpy, (*wg)->win, X, 0))
+    if (XMoveWindow(dpy, (*wg)->win, X, 0)) {
       x += (*wg)->w + 2 * (*wg)->bdrw + gap;
+    }
 
     wg = cblk_next(&sel, wg);
   } while (wg != sel.front); 

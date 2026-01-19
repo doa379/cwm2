@@ -55,7 +55,8 @@ ev_map_request(void) {
   if (XGetWindowAttributes(dpy, win, &wa) == 0)
     return;
   else if (wa.override_redirect)
-    evcalls_map_override_redirect(win);
+    evcalls_map_override_redirect(win, wa.x, wa.y,
+      wa.width, wa.height);
   else 
     evcalls_map_request(win, wa.x, wa.y, wa.width, 
       wa.height);
@@ -70,7 +71,22 @@ ev_destroy_notify(void) {
 
 static void
 ev_configure_request(void) {
-  evcalls_configure_request(&xev.xconfigurerequest);
+  XConfigureRequestEvent const* const conf =
+    &xev.xconfigurerequest;
+  evcalls_configure_request(conf->window, conf->x, conf->y, 
+    conf->width, conf->height);
+  XWindowChanges wc = {
+    .x = conf->x,
+    .y = conf->y,
+    .width = conf->width,
+    .height = conf->height,
+    .border_width = conf->border_width,
+    .sibling = conf->above,
+    .stack_mode = conf->detail
+  };
+
+  XConfigureWindow(dpy, conf->window, conf->value_mask, 
+    &wc);
 }
 
 static void

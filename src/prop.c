@@ -12,9 +12,9 @@ static char const* prop_text(Window const win, Atom atom) {
       prop.nitems) {
     char** list = NULL;
     int n = 0;
- 	  if (prop.encoding == XA_STRING)
+ 	  if (prop.encoding == XA_STRING) {
  		  strncpy(BUF, (char*) prop.value, sizeof BUF - 1);
- 	  else if (XmbTextPropertyToTextList(dpy, &prop, &list, &n)
+ 	  } else if (XmbTextPropertyToTextList(dpy, &prop, &list, &n)
       && n > 0 && *list) {
  		  strncpy(BUF, *list, sizeof BUF - 1);
  		  XFreeStringList(list);
@@ -33,10 +33,10 @@ static char const* prop_win_prop(Window const win,
   int actual_format;
   unsigned long nitems;
   unsigned long bytes_after;
-  static unsigned char* data;
+  unsigned char* data;
   BUF[0] = '\0';
   if (XGetWindowProperty(dpy, win, 
-    atom, 0, sizeof *data, False, 
+    atom, 0, sizeof atom, False, 
       AnyPropertyType, &actual_type, 
         &actual_format, &nitems, &bytes_after, 
           &data) == Success && actual_type != None) {
@@ -50,16 +50,18 @@ static char const* prop_win_prop(Window const win,
 
 char const* prop_root(void) {
   if (prop_text(DefaultRootWindow(dpy), XA_WM_NAME)[0] ==
-      '\0')
+      '\0') {
  	  strcpy(BUF, "status");
+  }
 
   return BUF;
 }
  
 char const* prop_name(Window const win) {
-  if (prop_win_prop(win, XA_WM_NAME)[0] == '\0')
+  if (prop_win_prop(win, XA_WM_NAME)[0] == '\0') {
  	  prop_win_prop(win, XInternAtom(dpy, "_NET_WM_NAME", 
       False));
+  }
 
   return BUF;
 }
@@ -80,7 +82,9 @@ char const* prop_ico(Window const win) {
   if (prop_win_prop(win, 
         XInternAtom(dpy, "_NET_WM_ICON_NAME", False))[0] != '\0' || 
       prop_win_prop(win, 
-        XInternAtom(dpy, "WM_ICON_NAME", False)));
+        XInternAtom(dpy, "WM_ICON_NAME", False))) {
+
+  }
 
   return BUF;
 }

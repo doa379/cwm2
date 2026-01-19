@@ -32,7 +32,14 @@ typedef struct cli_s {
   int sel;
 } cli_t;
 
-enum cli_mode { MIN, MAX, RES, CLS, SIZ, FS };
+enum cli_mode { 
+  cli_MIN, 
+  cli_MAX, 
+  cli_RES, 
+  cli_CLS, 
+  cli_SIZ, 
+  cli_FSC
+};
 
 void cli_wg_init(void);
 cli_t cli_init(Window const, wk_t* const);
@@ -46,3 +53,4 @@ void cli_resize(cli_t* const, int const, int const);
 void cli_anim(cli_t* const, int const, int const, int const, 
   int const, int const, int const, int const, int const, 
   int const);
+void cli_ord_init(Window const);

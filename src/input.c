@@ -17,11 +17,14 @@ static unsigned numlockmask;
 static void 
 input_numlockmask_update(void) {
   XModifierKeymap* modmap = XGetModifierMapping(dpy);
-  for (unsigned i = 0; i < 8; i++)
-    for (unsigned j = 0; j < modmap->max_keypermod; j++)
+  for (unsigned i = 0; i < 8; i++) {
+    for (unsigned j = 0; j < modmap->max_keypermod; j++) {
       if (modmap->modifiermap[i * modmap->max_keypermod +
-          j] == XKeysymToKeycode(dpy, XK_Num_Lock))
+          j] == XKeysymToKeycode(dpy, XK_Num_Lock)) {
         numlockmask = (1 << i);
+      }
+    }
+  }
 
   XFreeModifiermap(modmap);
 }
@@ -53,15 +56,20 @@ input_keys_grab(Window const win) {
 	KeySym* syms = XGetKeyboardMapping(dpy, 
     start, end - start + 1, &skip);
 
-	if (syms == NULL)
+	if (syms == NULL) {
 		return;
+  }
 
-	for (int k = start; k <= end; k++)
-    for (size_t i = 0; i < kbdlen; i++)
-      if (KBD[i].sym == syms[(k - start) * skip])
- 				for (int j = 0; j < 4; j++)
+	for (int k = start; k <= end; k++) {
+    for (size_t i = 0; i < kbdlen; i++) {
+      if (KBD[i].sym == syms[(k - start) * skip]) {
+ 				for (int j = 0; j < 4; j++) {
  					XGrabKey(dpy, k, KBD[i].mod | modifiers[j], 
             win, True, GrabModeAsync, GrabModeAsync);
+        }
+      }
+    }
+  }
 
  	XFree(syms);
 }
@@ -74,12 +82,14 @@ input_btns_grab(Window const win) {
   };
   /* We anticipate modifiers change during runtime */
   XUngrabButton(dpy, AnyButton, AnyModifier, win);
-  for (size_t i = 0; i < btnlen; i++)
-    for (int j = 0; j < 4; j++)
+  for (size_t i = 0; i < btnlen; i++) {
+    for (int j = 0; j < 4; j++) {
       XGrabButton(dpy, BTN[i].sym, 
         BTN[i].mod | modifiers[j],
           win, False, ButtonPressMask | ButtonReleaseMask, 
             GrabModeAsync, GrabModeSync, None, None);
+    }
+  }
 }
 
 void
@@ -95,10 +105,12 @@ input_btns_ungrab(Window const win) {
 input_t const* 
 input_key(unsigned const mask, unsigned const code) {
   unsigned const mod = input_cleanmask(mask);
-  for (size_t i = 0; i < kbdlen; i++)
+  for (size_t i = 0; i < kbdlen; i++) {
     if (input_cleanmask(KBD[i].mod) == mod && 
-        XKeysymToKeycode(dpy, KBD[i].sym) == code)
+        XKeysymToKeycode(dpy, KBD[i].sym) == code) {
       return &KBD[i];
+    }
+  }
   
   return NULL;
 }
@@ -106,10 +118,12 @@ input_key(unsigned const mask, unsigned const code) {
 input_t const* 
 input_btn(unsigned const state, unsigned const code) {
   unsigned const mod = input_cleanmask(state);
-  for (size_t i = 0; i < btnlen; i++)
+  for (size_t i = 0; i < btnlen; i++) {
     if (input_cleanmask(BTN[i].mod) == mod &&
-          BTN[i].sym == code)
+          BTN[i].sym == code) {
       return &BTN[i];
+    }
+  }
   
   return NULL;
 }

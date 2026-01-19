@@ -31,6 +31,29 @@ static unsigned char const stipple_8x8[] = {
   0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55
 };
 
+static long const KMASK = 
+  ButtonPressMask |
+  EnterWindowMask |
+  LeaveWindowMask |
+  SubstructureNotifyMask |
+  SubstructureRedirectMask;
+static long const CLIMASK = 
+  FocusChangeMask | 
+  PropertyChangeMask |
+  EnterWindowMask |
+  SubstructureNotifyMask |
+  SubstructureRedirectMask;
+static long const HDRMASK =
+  EnterWindowMask |
+  ButtonPressMask |
+  ButtonReleaseMask |
+  ExposureMask;
+static long const BTNMASK = 
+  EnterWindowMask |
+  LeaveWindowMask |
+  ButtonPressMask |
+  ButtonReleaseMask |
+  ExposureMask;
 static unsigned bdrw_twice;
 static unsigned btnw;
 static unsigned btnh;
@@ -41,15 +64,15 @@ static unsigned char* BTN[5];
 void
 cli_wg_init(void) {
   bdrw_twice = 2 * bdrw;
-  BTN[MIN] = font.ch < 20 ? 
+  BTN[cli_MIN] = font.ch < 20 ? 
     cbox_16x16_bits : cbox_24x24_bits;
-  BTN[MAX] = font.ch < 20 ? 
+  BTN[cli_MAX] = font.ch < 20 ? 
     cboxf_16x16_bits : cboxf_24x24_bits;
-  BTN[RES] = font.ch < 20 ? 
+  BTN[cli_RES] = font.ch < 20 ? 
     cboxff_16x16_bits : cboxff_24x24_bits;
-  BTN[CLS] = font.ch < 20 ? 
+  BTN[cli_CLS] = font.ch < 20 ? 
     cx_16x16_bits : cx_24x24_bits;
-  BTN[SIZ] = font.ch < 20 ? 
+  BTN[cli_SIZ] = font.ch < 20 ? 
     siz_16x16_bits : siz_24x24_bits;
   btnh = btnw = font.ch < 20 ? 16 : 24;
   btnx = 0.5 * (font.cw - btnw);
@@ -63,14 +86,17 @@ cli_init(Window const win, wk_t* const wk) {
       1, 1, bdrw);
   wg_win_bgset(par.win, wg_BG);
   XReparentWindow(dpy, win, par.win, 0, 0);
+  XSelectInput(dpy, par.win, CLIMASK);
   XSetWindowBorderWidth(dpy, win, 0);
   XMapWindow(dpy, win);
+  XSelectInput(dpy, win, KMASK);
   /* Init general header */
   wg_t hd0 = wg_init(par.win, 1, 1, 0);
   hd0.pixmap = XCreateBitmapFromData(dpy, hd0.win, 
     (char*) stipple_8x8, 8, 8);
   XSetStipple(dpy, hd0.gc, hd0.pixmap);
   XSetFillStyle(dpy, hd0.gc, FillStippled);
+  XSelectInput(dpy, hd0.win, HDRMASK);
   /* Init special header */
   wg_t hd1 = wg_init(par.win, 1, 1, 0);
   wg_win_bgset(hd1.win, wg_SEL);
@@ -78,28 +104,34 @@ cli_init(Window const win, wk_t* const wk) {
   /* Init min */
   wg_t min = wg_init(hd0.win, btnw, btnh, 0);
   min.pixmap = XCreateBitmapFromData(dpy, min.win, 
-    (char const*) BTN[MIN], btnw, btnh);
+    (char const*) BTN[cli_MIN], btnw, btnh);
+  XSelectInput(dpy, min.win, BTNMASK);
   /* Init max */
   wg_t max = wg_init(hd0.win, btnw, btnh, 0);
   max.pixmap = XCreateBitmapFromData(dpy, max.win, 
-    (char const*) BTN[MAX], btnw, btnh);
+    (char const*) BTN[cli_MAX], btnw, btnh);
+  XSelectInput(dpy, max.win, BTNMASK);
   /* Init res */
   wg_t res = wg_init(hd0.win, btnw, btnh, 0);
   res.pixmap = XCreateBitmapFromData(dpy, res.win, 
-    (char const*) BTN[RES], btnw, btnh);
+    (char const*) BTN[cli_RES], btnw, btnh);
+  XSelectInput(dpy, res.win, BTNMASK);
   /* Init cls */
   wg_t cls = wg_init(hd0.win, btnw, btnh, 0);
   cls.pixmap = XCreateBitmapFromData(dpy, cls.win, 
-    (char const*) BTN[CLS], btnw, btnh);
+    (char const*) BTN[cli_CLS], btnw, btnh);
+  XSelectInput(dpy, cls.win, BTNMASK);
   /* Init siz */
   wg_t siz = wg_init(hd0.win, btnw, btnh, 0);
   siz.pixmap = XCreateBitmapFromData(dpy, siz.win, 
-    (char const*) BTN[SIZ], btnw, btnh);
+    (char const*) BTN[cli_SIZ], btnw, btnh);
+  XSelectInput(dpy, siz.win, BTNMASK);
   /* Init ico */
   wg_t ico = wg_init(wk->wg.win, 
     1.25 * font.cw - bdrw_twice, font.ch - bdrw_twice, 
       bdrw);
-
+  XSelectInput(dpy, ico.win, BTNMASK);
+  /* */
   return (cli_t) {
     .wk = wk,
     .win = win,
@@ -112,7 +144,7 @@ cli_init(Window const win, wk_t* const wk) {
     .cls = cls,
     .siz = siz,
     .ico = ico,
-    .mode = RES,
+    .mode = cli_RES,
     .sel = 0,
   };
 }
@@ -128,13 +160,13 @@ cli_deinit(cli_t* const c) {
   wg_deinit(&c->hd1);
   wg_deinit(&c->hd0);
   wg_deinit(&c->par);
-  cblk_unmap(&c->wk->clis, c);
 }
 
 cli_t*
 cli(Window const win, wk_t* const wk) {
-  if (wk->clis.size == 0)
+  if (wk->clis.size == 0) {
     return NULL;
+  }
 
   cli_t* c = wk->clis.front; 
   do {
@@ -146,8 +178,9 @@ cli(Window const win, wk_t* const wk) {
         c->res.win == win ||
         c->cls.win == win ||
         c->siz.win == win ||
-        c->ico.win == win)
+        c->ico.win == win) {
       return c;
+    }
 
     c = cblk_next(&wk->clis, c);
   } while (c != wk->clis.front); 
@@ -202,7 +235,7 @@ cli_conf(cli_t* const c, int const w, int const h) {
   /* Res btn */
   XUnmapWindow(dpy, c->res.win);
   /* Res, Max selection */
-  if (c->mode == MAX) {
+  if (c->mode == cli_MAX) {
     XMapWindow(dpy, c->res.win);
     XUnmapWindow(dpy, c->siz.win);
     XMoveWindow(dpy, c->res.win, c->hd0.w - btnw, y0);
@@ -271,3 +304,11 @@ int const W, int const H, int const d) {
   /*XMapWindow(dpy, c->win);*/
   XMapWindow(dpy, c->hd0.win);
 }
+
+void
+cli_ord_init(Window const win) {
+  XSetWindowBorderWidth(dpy, win, 0);
+  XMapWindow(dpy, win);
+  XSelectInput(dpy, win, KMASK);
+}
+

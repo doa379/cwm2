@@ -17,6 +17,9 @@ extern font_t font;
 extern cblk_t mons;
 extern tray_t tray;
 
+static size_t const NRES_ORD = 10;
+static cblk_t ord;
+
 cblk_t wks;
 wk_t* prevwk;
 wk_t* currwk;
@@ -26,7 +29,13 @@ int
 wm_init(unsigned const n) {
   wks = cblk_init(sizeof(wk_t), n > 0 ? n : 1);
   if (wks.blk == NULL) {
-    fprintf(stderr, "Failed to alloc wm\n");
+    fprintf(stderr, "Failed to alloc wks\n");
+    return -1;
+  }
+  /* override redirects */
+  ord = cblk_init(sizeof(Window), NRES_ORD);
+  if (ord.blk == NULL) {
+    fprintf(stderr, "Failed to alloc ord\n");
     return -1;
   }
 
@@ -45,6 +54,7 @@ wm_init(unsigned const n) {
 
 void
 wm_deinit(void) {
+  cblk_deinit(&ord);
   wk_t* wk;
   while ((wk = cblk_back(&wks))) {
     /* Destroy from the end */
@@ -56,7 +66,7 @@ wm_deinit(void) {
       XReparentWindow(dpy, c->win, 
           DefaultRootWindow(dpy), c->x0, c->y0);
       XMapWindow(dpy, c->win);
-      cli_deinit(c);
+      wm_cli_unmap(c);
     }
 
     wm_wk_deinit(wk);
@@ -69,8 +79,9 @@ wk_t*
 wm_wk(Window const win) {
   wk_t* wk = wks.front;
   do {
-    if (wk->wg.win == win)
+    if (wk->wg.win == win) {
       return wk;
+    }
 
     wk = cblk_next(&wks, wk);
   } while (wk != wks.front);
@@ -101,8 +112,9 @@ wm_wk_deinit(wk_t* const wk) {
 int
 wm_wk_unmap(wk_t* const wk) {
   if (wks.size == 1 ||
-      wk->clis.size == 0)
+      wk->clis.size == 0) {
     return -1;
+  }
 
   wk_t* const nextwk = cblk_next(&wks, wk);
   while (wk->clis.size) {
@@ -110,8 +122,9 @@ wm_wk_unmap(wk_t* const wk) {
     wm_cli_move(c, nextwk);
   }
 
-  if (prevwk == currwk)
+  if (prevwk == currwk) {
     prevwk = nextwk;
+  }
 
   wm_wk_focus(nextwk);
   currwk = nextwk;
@@ -126,42 +139,14 @@ wm_wk_focus_all(void) {
 
 cli_t*
 wm_cli_map(wk_t* const wk, Window const win) {
-  long const KMASK = 
-    ButtonPressMask |
-    EnterWindowMask |
-    LeaveWindowMask;
-  long const CLIMASK = 
-    FocusChangeMask | 
-    PropertyChangeMask |
-    SubstructureNotifyMask |
-    SubstructureRedirectMask;
-  long const HDRMASK =
-    EnterWindowMask |
-    ButtonPressMask |
-    ButtonReleaseMask |
-    ExposureMask;
-  long const BTNMASK = 
-    EnterWindowMask |
-    LeaveWindowMask |
-    ButtonPressMask |
-    ButtonReleaseMask |
-    ExposureMask;
   cli_t const c = cli_init(win, wk);
-  cli_t* const nextc = cblk_map(&wk->clis, &c);
-  if (nextc) {
-    XSelectInput(dpy, nextc->win, KMASK);
-    XSelectInput(dpy, nextc->par.win, CLIMASK);
-    XSelectInput(dpy, nextc->hd0.win, HDRMASK);
-    XSelectInput(dpy, nextc->min.win, BTNMASK);
-    XSelectInput(dpy, nextc->max.win, BTNMASK);
-    XSelectInput(dpy, nextc->res.win, BTNMASK);
-    XSelectInput(dpy, nextc->cls.win, BTNMASK);
-    XSelectInput(dpy, nextc->siz.win, BTNMASK);
-    XSelectInput(dpy, nextc->ico.win, BTNMASK);
-    return nextc;
-  }
+  return cblk_map(&wk->clis, &c);
+}
 
-  return NULL;
+void
+wm_cli_unmap(cli_t* const c) {
+  cli_deinit(c);
+  cblk_unmap(&c->wk->clis, c);
 }
 
 cli_t*
@@ -169,12 +154,12 @@ wm_cli(Window const win) {
   wk_t* wk = wks.front;
   do {
     cli_t* const c = cli(win, wk);
-    if (c)
+    if (c) {
       return c;
+    }
 
     wk = cblk_next(&wks, wk);
   } while (wk != wks.front);
-
   return NULL;
 }
 
@@ -184,9 +169,9 @@ wm_cli_move(cli_t* const c, wk_t* const wk) {
   cli_t* const nextc = cblk_map(&wk->clis, c);
   if (nextc) {
     nextc->wk = wk;
-    if (wk->clis.size == 1)
+    if (wk->clis.size == 1) {
       wk->prevc = wk->currc = nextc;
-    else {
+    } else {
       wk->prevc = wk->currc;
       wk->currc = nextc;
     }
@@ -194,9 +179,9 @@ wm_cli_move(cli_t* const c, wk_t* const wk) {
     XReparentWindow(dpy, nextc->ico.win, wk->wg.win, 0, 0);
     cli_t* const prevc = c->wk->clis.size == 1 ? NULL : 
       cblk_prev(&c->wk->clis, c);
-    if (prevc)
+    if (prevc) {
       wm_cli_switch(prevc);
-    else {
+    } else {
       wm_cli_unfocus(c);
       c->wk->prevc = c->wk->currc = NULL;
     }
@@ -219,8 +204,9 @@ wm_cli_translate(cli_t* const c, int const x_root,
     ExposureMask;
   if (XGrabPointer(dpy, c->par.win, False, 
         MOUSEMASK, GrabModeAsync, GrabModeAsync, None, 
-          font.crs.move, CurrentTime) != GrabSuccess)
+          font.crs.move, CurrentTime) != GrabSuccess) {
     return;
+  }
 
   XEvent xev;
   int const x0 = c->x0;
@@ -239,8 +225,9 @@ wm_cli_translate(cli_t* const c, int const x_root,
       nextx = x0 + xev.xmotion.x_root - x_root;
       nexty = y0 + xev.xmotion.y_root - y_root;
       unsigned const dh = c->par.h + 2 * c->par.bdrw;
-      if (nexty + dh > currmon->h)
+      if (nexty + dh > currmon->h) {
         nexty = currmon->h - dh;
+      }
       
       XMoveWindow(dpy, c->par.win, nextx, nexty);
       char str[16];
@@ -253,7 +240,7 @@ wm_cli_translate(cli_t* const c, int const x_root,
       if (tray_d < par_d && currmon == mons.front && 
           xev.xmotion.x_root > currmon->w - tray.wg.w &&
           xev.xmotion.x_root < currmon->w) {
-        wg_win_bdrset(tray.wg.win, wg_SEL);
+        wg_win_bdrset(tray.wg.win, wg_ACT);
         tray_map_cb = wm_tray_cli_map;
       } else {
           wg_win_bdrset(tray.wg.win, wg_BG);
@@ -273,8 +260,9 @@ wm_cli_translate(cli_t* const c, int const x_root,
   cli_move(c, nextx, nexty);
   cli_wg_focus(c, wg_ACT);
   wg_win_bdrset(tray.wg.win, wg_BG);
-  if (tray_map_cb)
+  if (tray_map_cb) {
     tray_map_cb(c);
+  }
 }
 
 void
@@ -286,8 +274,9 @@ wm_cli_resize(cli_t* const c) {
     ExposureMask;
   if (XGrabPointer(dpy, c->par.win, False, 
         MOUSEMASK, GrabModeAsync, GrabModeAsync, None, 
-          font.crs.resize, CurrentTime) != GrabSuccess)
+          font.crs.resize, CurrentTime) != GrabSuccess) {
     return;
+  }
   
   XWarpPointer(dpy, None, c->par.win, 0, 0, 0, 0, 
     c->par.w, c->par.h);
@@ -337,13 +326,14 @@ wm_cli_kill(cli_t* const c) {
   if (prevc && prevc != c) {
     wm_cli_focus(prevc);
     prevc->wk->currc = prevc;
-  } else if (prevc)
+  } else if (prevc) {
     c->wk->prevc = c->wk->currc = NULL;
+  }
   
   XReparentWindow(dpy, c->win, DefaultRootWindow(dpy), 
       0, 0);
   XDestroyWindow(dpy, c->win);
-  cli_deinit(c);
+  wm_cli_unmap(c);
 }
 
 void
@@ -368,8 +358,9 @@ wm_cli_switch(cli_t* const c) {
   if (c->wk->currc) {
     wm_cli_unfocus(c->wk->currc);
     c->wk->prevc = c->wk->currc;
-  } else
+  } else {
     c->wk->prevc = c;
+  }
 
   wm_cli_focus(c);
   c->wk->currc = c;
@@ -380,8 +371,9 @@ wm_wk_unfocus(wk_t* const wk) {
   if (wk->clis.size) {
     cli_t* c = wk->clis.front;
     do {
-      if (c == wk->currc)
+      if (c == wk->currc) {
         wm_cli_unfocus(c);
+      }
 
       XUnmapWindow(dpy, c->par.win);
       c = cblk_next(&wk->clis, c);
@@ -474,7 +466,7 @@ wm_cli_min(cli_t* const c) {
   cli_anim(c, c->x0, c->y0, c->par.w, c->par.h, 
     0, currmon->h, 0, 0, 100);
   XUnmapWindow(dpy, c->par.win);
-  c->mode = MIN;
+  c->mode = cli_MIN;
 }
 
 void
@@ -482,7 +474,7 @@ wm_cli_max(cli_t* const c) {
   XSetWindowBorderWidth(dpy, c->par.win, 0);
   int const w_org = c->w;
   int const h_org = c->h;
-  c->mode = MAX;
+  c->mode = cli_MAX;
   XRaiseWindow(dpy, c->par.win);
   cli_anim(c, c->x0, c->y0, c->par.w, c->par.h, 
     currmon->x, currmon->y, currmon->w, currmon->h, 100);
@@ -495,7 +487,7 @@ wm_cli_max(cli_t* const c) {
 void
 wm_cli_res(cli_t* const c) {
   XSetWindowBorderWidth(dpy, c->par.win, c->par.bdrw);
-  c->mode = RES;
+  c->mode = cli_RES;
   cli_anim(c, currmon->x, currmon->y, currmon->w,
     currmon->h, c->x0, c->y0, c->w, c->h, 100);
   cli_conf(c, c->w, c->h);
@@ -505,7 +497,7 @@ wm_cli_res(cli_t* const c) {
 void
 wm_cli_raise(cli_t* const c) {
   XSetWindowBorderWidth(dpy, c->par.win, c->par.bdrw);
-  c->mode = RES;
+  c->mode = cli_RES;
   cli_anim(c, 0, currmon->h, 0, 0, c->x0, c->y0, c->w, c->h, 
     100);
   cli_conf(c, c->w, c->h);
@@ -514,8 +506,9 @@ wm_cli_raise(cli_t* const c) {
 
 void
 wm_ico_enum(wk_t* const wk) {
-  if (wk->clis.size == 0)
+  if (wk->clis.size == 0) {
     return;
+  }
 
   cli_t* c = wk->clis.front;
   size_t n = 0;
@@ -529,24 +522,25 @@ wm_ico_enum(wk_t* const wk) {
   } while (c != wk->clis.front);
 }
 
-void wm_tray_cli_map(cli_t* const c) {
+void
+wm_tray_cli_map(cli_t* const c) {
   /* Determine required vertical offset */
-  unsigned v = 0;
+  unsigned v0 = 0;
   if (tray.clis.size) {
     wg_t* wg = tray.clis.front;
     do {
-      v+= wg->h;
+      v0+= wg->h;
       wg = cblk_next(&tray.clis, wg);
     } while (wg != tray.clis.front);
-    /* Horizontal offset will be tray width */
   }
-
-  XReparentWindow(dpy, c->win, tray.wg.win, 0, v);
+  /* Horizontal offset will be null */
+  unsigned const h0 = 0;
+  XReparentWindow(dpy, c->win, tray.wg.win, h0, v0);
   cli_t* const prevc = c->wk->clis.size == 1 ? NULL : 
     cblk_prev(&c->wk->clis, c);
-  if (prevc)
+  if (prevc) {
     wm_cli_switch(prevc);
-  else {
+  } else {
     wm_cli_unfocus(c);
     c->wk->prevc = c->wk->currc = NULL;
   }
@@ -557,15 +551,16 @@ void wm_tray_cli_map(cli_t* const c) {
 
   wg_t* const nextwg = cblk_map(&tray.clis, &wg);
   if (nextwg) {
-    wg_win_bdrset(nextwg->win, wg_SEL);
+    wg_win_bdrset(nextwg->win, wg_ACT);
     wg_win_resize(nextwg, tray.wg.w, 
       c->w / c->h * tray.wg.w);
-    cli_deinit(c);
+    wm_cli_unmap(c);
     cblk_unmap(&c->wk->clis, c);
   }
 }
 
-void wm_tray_cli_unmap(wg_t* const wg) {
+void
+wm_tray_cli_unmap(wg_t* const wg) {
   XEvent xev = {
     .xmaprequest = (XMapRequestEvent) {
       .type = MapRequest,
@@ -578,4 +573,53 @@ void wm_tray_cli_unmap(wg_t* const wg) {
 
   XPutBackEvent(dpy, &xev);
   cblk_unmap(&tray.clis, wg);
+  /* Rearrange the remainders */
+  unsigned v0 = 0;
+  if (tray.clis.size) {
+    wg_t* wg = tray.clis.front;
+    do {
+      XMoveWindow(dpy, wg->win, 0, v0);
+      v0+= wg->h;
+      wg = cblk_next(&tray.clis, wg);
+    } while (wg != tray.clis.front);
+  }
+}
+
+Window*
+wm_ord_map(Window const win) {
+  cli_ord_init(win);
+  return cblk_map(&ord, &win);
+}
+
+void
+wm_ord_unmap(Window* const win) {
+  cblk_unmap(&ord, win);
+  XDestroyWindow(dpy, *win);
+}
+
+Window*
+wm_ord(Window const win) {
+  if (ord.size == 0) {
+    return NULL;
+  }
+
+  Window* c = ord.front;
+  do {
+    if (*c == win) {
+      return c;
+    }
+
+    c = cblk_next(&ord, c);
+  } while (c != ord.front);
+  return NULL;
+}
+
+void
+wm_ord_conf(Window const win, int const w, int const h) {
+  XResizeWindow(dpy, win, w, h);
+}
+
+void
+wm_ord_arrange(Window const win, int const x, int const y) {
+  XMoveWindow(dpy, win, x, y);
 }

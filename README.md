@@ -102,25 +102,45 @@ Can be entirely keyboard driven.
 ### Call options:
 
   ```.cmd  = "<...>"``` Fork a command
+  
   ```.call = calls_wk<...>``` Switch to a wk (between 1, 12)
+  
   ```.call = calls_cli_last``` Switch to last client
-  ```.call = calls_cli<...> Switch to a cli (between 1, 12)
+  
+  ```.call = calls_cli<...>``` Switch to a cli (between 1, 12)
+  
   ```.call = calls_cli_next``` Switch to next client
+  
   ```.call = calls_cli_prev``` Switch to prev client
+  
   ```.call = calls_cli_raise_toggle``` Raise a client
+  
   ```.call = calls_arrange_toggle``` Toggle client arrangement
+  
   ```.call = calls_cli_mode_toggle``` Toggle client mode
+  
   ```.call = calls_sel_toggle``` Select current client
+  
   ```.call = calls_sel_clear``` Clear client selection
+  
   ```.call = calls_cli_last``` Switch to last focused client
+  
   ```.call = calls_wk_prev``` Switch to prev wk
+  
   ```.call = calls_wk_next``` Switch to next wk
+  
   ```.call = calls_wk_map``` Add a wk
+  
   ```.call = calls_wk_unmap``` Remove current wk
+  
   ```.call = calls_kill``` Close current client
+  
   ```.call = calls_cli_wk_prev_move``` Move client to prev wk
+  
   ```.call = calls_cli_wk_next_move``` Move client to next wk
+  
   ```.call = calls_cli_wk<...>_move``` Move client to a wk (between 1, 12)
+  
   ```.call = calls_quit``` Exit the program
 
 The theme here is simplicity for use and maintenance, transparency, low 

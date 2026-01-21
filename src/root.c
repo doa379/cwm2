@@ -42,7 +42,9 @@ void
 root_deinit(void) {
   XClearWindow(dpy, DefaultRootWindow(dpy));
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot,
-      CurrentTime);
+    CurrentTime);
+  XUngrabKey(dpy, AnyKey, AnyModifier, 
+    DefaultRootWindow(dpy));
 }
 
 int

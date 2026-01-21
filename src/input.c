@@ -17,10 +17,12 @@ static unsigned numlockmask;
 static void 
 input_numlockmask_update(void) {
   XModifierKeymap* modmap = XGetModifierMapping(dpy);
+  numlockmask = 0;
   for (unsigned i = 0; i < 8; i++) {
     for (unsigned j = 0; j < modmap->max_keypermod; j++) {
-      if (modmap->modifiermap[i * modmap->max_keypermod +
-          j] == XKeysymToKeycode(dpy, XK_Num_Lock)) {
+      unsigned const k = i * modmap->max_keypermod + j;
+      if (modmap->modifiermap[k] == 
+          XKeysymToKeycode(dpy, XK_Num_Lock)) {
         numlockmask = (1 << i);
       }
     }
@@ -77,15 +79,15 @@ input_keys_grab(Window const win) {
 void
 input_btns_grab(Window const win) {
   input_numlockmask_update();
-	unsigned const modifiers[] = {
+	unsigned const mods[] = {
     0, LockMask, numlockmask, numlockmask | LockMask
   };
+  unsigned const nmods = 4;
   /* We anticipate modifiers change during runtime */
   XUngrabButton(dpy, AnyButton, AnyModifier, win);
   for (size_t i = 0; i < btnlen; i++) {
-    for (int j = 0; j < 4; j++) {
-      XGrabButton(dpy, BTN[i].sym, 
-        BTN[i].mod | modifiers[j],
+    for (int j = 0; j < nmods; j++) {
+      XGrabButton(dpy, BTN[i].sym, BTN[i].mod | mods[j],
           win, False, ButtonPressMask | ButtonReleaseMask, 
             GrabModeAsync, GrabModeSync, None, None);
     }
@@ -95,11 +97,6 @@ input_btns_grab(Window const win) {
 void
 input_btns_ungrab(Window const win) {
   XUngrabButton(dpy, AnyButton, AnyModifier, win);
-  /*
-  XGrabButton(dpy, AnyButton, AnyModifier, win,
-    False, ButtonPressMask | ButtonReleaseMask, 
-      GrabModeSync, GrabModeSync, None, None);
-  */
 }
 
 input_t const* 

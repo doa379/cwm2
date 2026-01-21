@@ -12,9 +12,6 @@ typedef struct cli_s {
   /* Cli (par) org */
   int x0;
   int y0;
-  /* Cli (par) bbox */
-  int x1;
-  int y1;
   /* Widgets */
   wg_t par;
   /* General */

@@ -69,3 +69,53 @@ tray_cli(Window const win) {
   } while (wg != tray.clis.front);
   return NULL;
 }
+
+unsigned
+tray_cli_vd(void) {
+  unsigned d = 0;
+  if (tray.clis.size) {
+    wg_t* wg = tray.clis.front;
+    do {
+      d += wg->h;
+      wg = cblk_next(&tray.clis, wg);
+    } while (wg != tray.clis.front);
+  }
+
+  return d;
+}
+
+void
+tray_cli_map(wg_t* const wg) {
+  unsigned const vd = tray_cli_vd();
+  wg_t* const nextwg = cblk_map(&tray.clis, wg);
+  if (nextwg) {
+    XReparentWindow(dpy, nextwg->win, tray.wg.win, 
+      -tray.wg.bdrw, vd);
+    long const KMASK =
+      ButtonPressMask |
+      EnterWindowMask |
+      LeaveWindowMask |
+      SubstructureNotifyMask |
+      SubstructureRedirectMask;
+    XSelectInput(dpy, nextwg->win, KMASK);
+    XSetWindowBorderWidth(dpy, nextwg->win, tray.wg.bdrw);
+    wg_win_bdrset(nextwg->win, wg_BG);
+    wg_win_resize(nextwg, tray.wg.w, 
+      tray.wg.w * (float) wg->h / wg->w);
+  }
+}
+  
+void
+tray_cli_unmap(wg_t* const wg) {
+  cblk_unmap(&tray.clis, wg);
+  /* Rearrange the remainders */
+  unsigned d = 0;
+  if (tray.clis.size) {
+    wg_t* wg = tray.clis.front;
+    do {
+      XMoveWindow(dpy, wg->win, -tray.wg.bdrw, d);
+      d += wg->h;
+      wg = cblk_next(&tray.clis, wg);
+    } while (wg != tray.clis.front);
+  }
+}

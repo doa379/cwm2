@@ -40,9 +40,11 @@ ev_client_message(void) {
 static void
 ev_configure_notify(void) {
   Window const win = xev.xconfigure.window;
+  int const x = xev.xconfigure.x;
+  int const y = xev.xconfigure.y;
   int const w = xev.xconfigure.width;
   int const h = xev.xconfigure.height;
-  evcalls_configure_notify(win, w, h);
+  evcalls_configure_notify(win, x, y, w, h);
 }
 
 static void
@@ -73,20 +75,22 @@ static void
 ev_configure_request(void) {
   XConfigureRequestEvent const* const conf =
     &xev.xconfigurerequest;
-  evcalls_configure_request(conf->window, conf->x, conf->y, 
-    conf->width, conf->height);
-  XWindowChanges wc = {
-    .x = conf->x,
-    .y = conf->y,
-    .width = conf->width,
-    .height = conf->height,
-    .border_width = conf->border_width,
-    .sibling = conf->above,
-    .stack_mode = conf->detail
-  };
+  
+  if (evcalls_configure_request(conf->window, conf->x, 
+      conf->y, conf->width, conf->height) == 0) {
+    XWindowChanges wc = {
+      .x = conf->x,
+      .y = conf->y,
+      .width = conf->width,
+      .height = conf->height,
+      .border_width = conf->border_width,
+      .sibling = conf->above,
+      .stack_mode = conf->detail
+    };
 
-  XConfigureWindow(dpy, conf->window, conf->value_mask, 
-    &wc);
+    XConfigureWindow(dpy, conf->window, conf->value_mask, 
+      &wc);
+  }
 }
 
 static void
@@ -134,13 +138,23 @@ ev_btn_press(void) {
 static void
 ev_enter_notify(void) {
   Window const win = xev.xcrossing.window;
-  evcalls_enter_notify(win);
+  int const mode = xev.xcrossing.mode;
+  int const detail = xev.xcrossing.detail; 
+  if (mode == NotifyNormal && detail != NotifyInferior && 
+      win != DefaultRootWindow(dpy)) {
+    evcalls_enter_notify(win);
+  }
 }
 
 static void
 ev_leave_notify(void) {
   Window const win = xev.xcrossing.window;
-  evcalls_leave_notify(win);
+  int const mode = xev.xcrossing.mode;
+  int const detail = xev.xcrossing.detail; 
+  if (mode == NotifyNormal && detail != NotifyInferior && 
+      win != DefaultRootWindow(dpy)) {
+    evcalls_leave_notify(win);
+  }
 }
 
 static void
@@ -195,6 +209,4 @@ void
 ev_call(void) {
   if (XNextEvent(dpy, &xev) == 0)
     EV[xev.type]();
-
-  XSync(dpy, False);
 }

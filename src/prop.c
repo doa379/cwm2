@@ -33,7 +33,7 @@ static char const* prop_win_prop(Window const win,
   int actual_format;
   unsigned long nitems;
   unsigned long bytes_after;
-  unsigned char* data;
+  unsigned char* data = NULL;
   BUF[0] = '\0';
   if (XGetWindowProperty(dpy, win, 
     atom, 0, sizeof atom, False, 
@@ -67,7 +67,6 @@ char const* prop_name(Window const win) {
 }
 
 char const* prop_ico(Window const win) {
-  /*
   BUF[0] = '\0';
   XTextProperty prop;
   if (XGetWMIconName(dpy, win, &prop) && prop.nitems > 0) {
@@ -76,16 +75,13 @@ char const* prop_ico(Window const win) {
     XFree(prop.value);
   }
 
-  return BUF;
-  */
-
+  /*
   if (prop_win_prop(win, 
-        XInternAtom(dpy, "_NET_WM_ICON_NAME", False))[0] != '\0' || 
-      prop_win_prop(win, 
-        XInternAtom(dpy, "WM_ICON_NAME", False))) {
-
+      XInternAtom(dpy, "WM_ICON_NAME", False))[0] == '\0') {
+    prop_win_prop(win, 
+        XInternAtom(dpy, "_NET_WM_ICON_NAME", False)); 
   }
-
+  */
   return BUF;
 }
 
@@ -107,23 +103,15 @@ void prop_hints(Window const win, GC const gc) {
   }
 }
 
-int prop_sendmsg(Window const win, Atom const atom) {
-  XEvent dummy;
-  dummy.type = ClientMessage;
-  dummy.xclient.type = ClientMessage;
-  dummy.xclient.serial = 0;
-  dummy.xclient.send_event = True;
-  dummy.xclient.display = dpy;
-  dummy.xclient.window = win;
-  dummy.xclient.message_type = atom;
-    /*XInternAtom(dpy, "DUMMY_EVENT", False);*/
-    /*XInternAtom(dpy, "WM_PROTOCOLS", False);*/
-  dummy.xclient.format = 32;
-  dummy.xclient.data.l[0] = atom;
-  dummy.xclient.data.l[1] = CurrentTime;
-  int const mask = NoEventMask | (1L << 17);
-  Status const status = 
-    XSendEvent(dpy, win, False, mask, &dummy);
-  XSync(dpy, False);
-  return status;
+void
+prop_win_del(Window const win) {
+  XEvent ev = { .type = ClientMessage };
+  ev.xclient.window = win;
+  ev.xclient.message_type = 
+      XInternAtom(dpy, "WM_PROTOCOLS", False);
+  ev.xclient.format = 32;
+  ev.xclient.data.l[0] = 
+      XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+  ev.xclient.data.l[1] = CurrentTime;
+  XSendEvent(dpy, win, False, NoEventMask, &ev);
 }

@@ -109,7 +109,7 @@ int const COLORS[] = {
 /* Color Scheme { BG, ACT, SEL } */
   palette_cyan10,
   palette_cyan50,
-  palette_gray80
+  palette_red80
 };
 
 input_t const KBD[] = {
@@ -184,8 +184,7 @@ input_t const KBD[] = {
     .call = calls_cli_wk11_move },
   { ShiftMask | Mod4Mask, XK_F12,
     .call = calls_cli_wk12_move },
-  { ShiftMask | ControlMask | Mod4Mask, XK_q, 
-    .call = calls_quit },
+  { ShiftMask | Mod4Mask, XK_q, .call = calls_quit },
   { Mod4Mask, XK_z, .call = calls_debug },
 };
 

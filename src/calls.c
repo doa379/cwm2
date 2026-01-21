@@ -10,6 +10,7 @@
 #include "tray.h"
 #include "panel.h"
 #include "arrange.h"
+#include "prop.h"
 
 extern Display* dpy;
 
@@ -460,10 +461,7 @@ void
 calls_kill(void) {
   cli_t* const c = currwk->currc;
   if (c) {
-    wm_cli_kill(c);
-    wm_ico_enum(c->wk);
-    panel_icos_arrange(currwk);
-    panel_arrange(currwk);
+    prop_win_del(c->win);
   }
 }
 

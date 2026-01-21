@@ -2,7 +2,7 @@
 
 ## cwm2 X11 WM
 
-Introducing a next-gen Unix'y WM for X11.
+Introducing a next-gen Unix'y Window Manager for X11.
 
 This projects aims to explore "new paradigms" in managing window clients under 
 the X-Window System. You compile the config a la dwm style. If you are familiar 
@@ -32,9 +32,10 @@ don't conform to any corporate or vested interests.
 
 ## Features in a nut-shell:
 
-* No relation to cwm, but motivated by dopenbox-wm.
+* No relation to cwm, but inspired by dopenbox-wm in the tradition of twm, the 
+canonical Wm for the X-Window System.
 
-* Completely new project designed & impl. from scratch.
+* Completely new project imagined, designed & impl. from scratch.
 
 * Borrows and improves the user experience from dwm.
 
@@ -58,17 +59,23 @@ don't conform to any corporate or vested interests.
 
 * Open to ricing without using patches.
 
+* Slop free.
+
+* Woke free.
+
+* Cult free.
+
 ## Build prerequisites/deps:
 
-CC, Make, lib-X11, lib-Xinerama
+```CC, Make, lib-X11, lib-Xinerama```
 
 Distribution: Run ```make``` in the project's root directory. This produces the 
 executable ```cwm2.bin``` which is all you need to run the Wm (no shared/dynamic 
 libs required apart from the pre-installed system libs above).
 
-## Release: TBC.
+## Release: rc1.
 
-## Target(s): Any UNIX w/ X-Window System Ver. 11, Rel. 7
+## Target(s): Any UNIX w/ X-Window System Ver. 11.
 
 ## User's Guide:
 
@@ -85,5 +92,39 @@ errors. The essential settings are implemented in the ```calls.c``` file. It is
 recommended that you leave ```calls.c``` intact for reference, but instead add 
 your own extensions to the ```usercalls.c``` file instead.
 
+You can pin simple apps to the tray.
+
+The panel shows all clients across all workspaces. It is easy to keep track of 
+clients. Clients are easily switchable.
+
+Can be entirely keyboard driven.
+
+### Call options:
+
+  ```.cmd  = "<...>"``` Fork a command
+  ```.call = calls_wk<...>``` Switch to a wk (between 1, 12)
+  ```.call = calls_cli_last``` Switch to last client
+  ```.call = calls_cli<...> Switch to a cli (between 1, 12)
+  ```.call = calls_cli_next``` Switch to next client
+  ```.call = calls_cli_prev``` Switch to prev client
+  ```.call = calls_cli_raise_toggle``` Raise a client
+  ```.call = calls_arrange_toggle``` Toggle client arrangement
+  ```.call = calls_cli_mode_toggle``` Toggle client mode
+  ```.call = calls_sel_toggle``` Select current client
+  ```.call = calls_sel_clear``` Clear client selection
+  ```.call = calls_cli_last``` Switch to last focused client
+  ```.call = calls_wk_prev``` Switch to prev wk
+  ```.call = calls_wk_next``` Switch to next wk
+  ```.call = calls_wk_map``` Add a wk
+  ```.call = calls_wk_unmap``` Remove current wk
+  ```.call = calls_kill``` Close current client
+  ```.call = calls_cli_wk_prev_move``` Move client to prev wk
+  ```.call = calls_cli_wk_next_move``` Move client to next wk
+  ```.call = calls_cli_wk<...>_move``` Move client to a wk (between 1, 12)
+  ```.call = calls_quit``` Exit the program
+
+The theme here is simplicity for use and maintenance, transparency, low 
+maintenance, low overheads. It may be simple, but still be fun to use, and sharp 
+for the job.
 
 (C) 2023-2026 doa379

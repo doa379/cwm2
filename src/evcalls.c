@@ -19,7 +19,7 @@ extern cblk_t mons;
 extern wg_t status;
 extern tray_t tray;
 
-void
+int
 evcalls_configure_request(Window const win, int const x,
   int const y, int const w, int const h) {
   fprintf(stdout, "Client Config Window 0x%lx\n", win);
@@ -27,13 +27,16 @@ evcalls_configure_request(Window const win, int const x,
   if (c && c->win == win) {
     wm_cli_conf(c, w, h);
     wm_cli_arrange(c, x, y);
+    return -1;
   } else {
-    /* fine */
   }
+
+  return 0;
 }
 
 void
-evcalls_configure_notify(Window const win, int const w,
+evcalls_configure_notify(Window const win, int const x,
+int const y, int const w,
 int const h) {
   if (win == DefaultRootWindow(dpy)) {
     fprintf(stdout, "Reconfig root window\n");
@@ -42,6 +45,7 @@ int const h) {
     panel_conf();
     tray_conf();
     wm_cli_currmon_move();
+  } else {
   }
 }
 
@@ -76,8 +80,8 @@ evcalls_destroy_notify(Window const win) {
   cli_t* c = wm_cli(win);
   if (c && c->win == win) {
     wk_t* const wk = c->wk;
-    wm_cli_kill(c);
-    wm_ico_enum(c->wk);
+    wm_cli_del(c);
+    wm_ico_enum(wk);
     panel_icos_arrange(wk);
     panel_arrange(wk);
     return;
@@ -149,17 +153,14 @@ int const x_root, int const y_root) {
     } else if (c->mode == cli_MAX && c->res.win == win) {
       wm_cli_res(c);
     } else if (c->cls.win == win) {
-      wk_t* const wk = c->wk;
-      wm_cli_kill(c);
-      panel_icos_arrange(wk);
-      panel_arrange(wk);
+      prop_win_del(c->win);
     } else if (c->wk != currwk && c->ico.win == win) {
       wm_wk_switch(c->wk);
       wm_cli_switch(c);
       XRaiseWindow(dpy, c->par.win);
       panel_icos_arrange(c->wk);
       panel_arrange(c->wk);
-    } else if ((c != currwk->currc && c->par.win == win) || 
+    } else if ((c != currwk->currc && c->win == win) || 
         c->ico.win == win) {
       wm_cli_switch(c);
       XMapRaised(dpy, c->par.win);
@@ -210,8 +211,9 @@ evcalls_enter_notify(Window const win) {
     } else if (c != currwk->currc) {
       wm_cli_switch(c);
       panel_icos_arrange(c->wk);
-    } else if (c->hd0.win == win)
-      XRaiseWindow(dpy, c->par.win);
+    } else if (c->hd0.win == win) {
+      /* XRaiseWindow(dpy, c->par.win); */
+    }
   } else {
     wk_t* const wk = wm_wk(win);
     if (wk && wk != currwk) {
@@ -221,13 +223,8 @@ evcalls_enter_notify(Window const win) {
     
     wg_t* const c = tray_cli(win);
     if (c) {
-      XRaiseWindow(dpy, win);
-      XSetWindowBorderWidth(dpy, win, tray.wg.bdrw);
-      /*
-      unsigned const bdrw_twice = 2 * tray.wg.bdrw;
-      XResizeWindow(dpy, win, c->w - 2 * bdrw_twice,
-        c->h - 2 * bdrw_twice);
-      */
+      XRaiseWindow(dpy, c->win);
+      wg_win_bdrset(c->win, wg_ACT);
       return;
     }
   }
@@ -264,12 +261,7 @@ evcalls_leave_notify(Window const win) {
     
     wg_t* const c = tray_cli(win);
     if (c) {
-      XSetWindowBorderWidth(dpy, win, 0);
-      /*
-      unsigned const bdrw_twice = 2 * tray.wg.bdrw;
-      XResizeWindow(dpy, win, c->w + 2 * bdrw_twice,
-        c->h + 2 * bdrw_twice);
-      */
+      wg_win_bdrset(c->win, wg_BG);
       return;
     }
   }
@@ -282,6 +274,7 @@ evcalls_focus_change(Window const win) {
   if (c && c != currwk->currc) {
     if (c->wk == currwk) {
       wg_win_bgset(c->ico.win, wg_SEL);
+      wg_win_bdrset(c->ico.win, wg_SEL);
     } else {
       wk_wg_focus(c->wk, wg_SEL);
     }

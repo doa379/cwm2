@@ -31,12 +31,7 @@ static unsigned char const stipple_8x8[] = {
   0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55
 };
 
-static long const KMASK = 
-  ButtonPressMask |
-  EnterWindowMask |
-  LeaveWindowMask |
-  SubstructureNotifyMask |
-  SubstructureRedirectMask;
+static long const KMASK = NoEventMask;
 static long const CLIMASK = 
   FocusChangeMask | 
   PropertyChangeMask |
@@ -151,14 +146,27 @@ cli_init(Window const win, wk_t* const wk) {
 
 void
 cli_deinit(cli_t* const c) {
+  XSelectInput(dpy, c->ico.win, NoEventMask);
   wg_deinit(&c->ico);
+  XSelectInput(dpy, c->siz.win, NoEventMask);
   wg_deinit(&c->siz);
+  XSelectInput(dpy, c->cls.win, NoEventMask);
   wg_deinit(&c->cls);
+  XSelectInput(dpy, c->res.win, NoEventMask);
   wg_deinit(&c->res);
+  XSelectInput(dpy, c->max.win, NoEventMask);
   wg_deinit(&c->max);
+  XSelectInput(dpy, c->min.win, NoEventMask);
   wg_deinit(&c->min);
+  XSelectInput(dpy, c->hd1.win, NoEventMask);
   wg_deinit(&c->hd1);
+  XSelectInput(dpy, c->hd0.win, NoEventMask);
   wg_deinit(&c->hd0);
+  XMapWindow(dpy, c->win);
+  XSelectInput(dpy, c->win, NoEventMask);
+  XReparentWindow(dpy, c->win, DefaultRootWindow(dpy), 
+    c->x0, c->y0);
+  XSelectInput(dpy, c->par.win, NoEventMask);
   wg_deinit(&c->par);
 }
 
@@ -268,16 +276,12 @@ cli_move(cli_t* const c, int const x, int const y) {
   if (XMoveWindow(dpy, c->par.win, x, y)) {
     c->x0 = x;
     c->y0 = y;
-    c->x1 = c->x0 + c->par.w + bdrw_twice;
-    c->y1 = c->y0 + c->par.h + bdrw_twice;
   }
 }
 
 void
 cli_resize(cli_t* const c, int const w, int const h) {
   cli_conf(c, w, h);
-  c->x1 = c->x0 + c->par.w + bdrw_twice;
-  c->y1 = c->y0 + c->par.h + bdrw_twice;
 }
 
 void

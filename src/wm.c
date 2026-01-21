@@ -60,12 +60,6 @@ wm_deinit(void) {
     /* Destroy from the end */
     cli_t* c;
     while ((c = cblk_back(&wk->clis))) {
-      if (c == wk->currc)
-        input_btns_ungrab(c->par.win);
-
-      XReparentWindow(dpy, c->win, 
-          DefaultRootWindow(dpy), c->x0, c->y0);
-      XMapWindow(dpy, c->win);
       wm_cli_unmap(c);
     }
 
@@ -145,6 +139,7 @@ wm_cli_map(wk_t* const wk, Window const win) {
 
 void
 wm_cli_unmap(cli_t* const c) {
+  wm_cli_unfocus(c);
   cli_deinit(c);
   cblk_unmap(&c->wk->clis, c);
 }
@@ -202,17 +197,15 @@ wm_cli_translate(cli_t* const c, int const x_root,
     PointerMotionMask;
   long const MASK = 
     ExposureMask;
-  if (XGrabPointer(dpy, c->par.win, False, 
+  if (XGrabPointer(dpy, c->win, False, 
         MOUSEMASK, GrabModeAsync, GrabModeAsync, None, 
           font.crs.move, CurrentTime) != GrabSuccess) {
     return;
   }
 
   XEvent xev;
-  int const x0 = c->x0;
-  int const y0 = c->y0;
-  int nextx = x0;
-  int nexty = y0;
+  int nextx = c->x0;
+  int nexty = c->y0;
   XUnmapWindow(dpy, c->hd0.win);
   XMapWindow(dpy, c->hd1.win);
   void (*tray_map_cb)(cli_t* const) = NULL;
@@ -222,11 +215,37 @@ wm_cli_translate(cli_t* const c, int const x_root,
   do {
     XMaskEvent(dpy, MASK | MOUSEMASK, &xev);
     if (xev.type == MotionNotify) {
-      nextx = x0 + xev.xmotion.x_root - x_root;
-      nexty = y0 + xev.xmotion.y_root - y_root;
+      nextx = c->x0 + xev.xmotion.x_root - x_root;
+      nexty = c->y0 + xev.xmotion.y_root - y_root;
       unsigned const dh = c->par.h + 2 * c->par.bdrw;
       if (nexty + dh > currmon->h) {
         nexty = currmon->h - dh;
+      } else {
+        int const snap = 16;
+        if (nextx > currmon->x - snap && 
+            nextx < currmon->x + snap) {
+          nextx = currmon->x;
+        } else {
+          int const x0 = nextx + c->par.w + 
+            2 * c->par.bdrw;
+          int const x1 = currmon->x + currmon->w;
+          if (x0 > x1 - snap && x0 < x1 + snap) {
+            nextx = x1 - c->par.w - 2 * c->par.bdrw;
+          }
+        }
+
+        if (nexty > currmon->y - snap&& 
+            nexty < currmon->y + snap) {
+          nexty = currmon->y;
+        } else {
+          int const y0 = nexty + c->par.h + 
+            2 * c->par.bdrw;
+          int const y1 = currmon->y + currmon->h;
+          if (y0 > y1 - snap && y0 < y1 + snap) {
+            nexty = currmon->y + currmon->h - c->par.h -
+              2 * c->par.bdrw;
+          }
+        }
       }
       
       XMoveWindow(dpy, c->par.win, nextx, nexty);
@@ -272,7 +291,7 @@ wm_cli_resize(cli_t* const c) {
     PointerMotionMask;
   long const MASK = 
     ExposureMask;
-  if (XGrabPointer(dpy, c->par.win, False, 
+  if (XGrabPointer(dpy, c->win, False, 
         MOUSEMASK, GrabModeAsync, GrabModeAsync, None, 
           font.crs.resize, CurrentTime) != GrabSuccess) {
     return;
@@ -321,18 +340,20 @@ wm_cli_resize(cli_t* const c) {
 }
 
 void
-wm_cli_kill(cli_t* const c) {
+wm_cli_del(cli_t* const c) {
   cli_t* const prevc = cblk_prev(&c->wk->clis, c);
   if (prevc && prevc != c) {
+    wm_cli_unfocus(c);
     wm_cli_focus(prevc);
+    if (prevc->mode != cli_MIN) {
+      XRaiseWindow(dpy, prevc->par.win);
+    }
+
     prevc->wk->currc = prevc;
   } else if (prevc) {
     c->wk->prevc = c->wk->currc = NULL;
   }
-  
-  XReparentWindow(dpy, c->win, DefaultRootWindow(dpy), 
-      0, 0);
-  XDestroyWindow(dpy, c->win);
+
   wm_cli_unmap(c);
 }
 
@@ -340,8 +361,8 @@ void
 wm_cli_unfocus(cli_t* const c) {
   cli_wg_focus(c, wg_BG);
   input_btns_ungrab(c->win);
-  XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, 
-    CurrentTime);
+  XSetInputFocus(dpy, DefaultRootWindow(dpy), 
+    RevertToPointerRoot, CurrentTime);
 }
 
 void
@@ -412,10 +433,12 @@ wm_wk_switch(wk_t* const wk) {
 
 void
 wm_cli_conf(cli_t* const c, int const w, int const h) {
-  cli_resize(c, c->par.w + 2 * c->par.bdrw > currmon->w ? 
-    currmon->w : w, 
-      c->par.h + 2 * c->par.bdrw > currmon->h ? 
-        currmon->h : h);
+  if (c->w != w || c->h != h) {
+    cli_resize(c, c->par.w + 2 * c->par.bdrw > currmon->w ? 
+      currmon->w : w, 
+        c->par.h + 2 * c->par.bdrw > currmon->h ? 
+          currmon->h : h);
+  }
 }
 
 void
@@ -524,18 +547,6 @@ wm_ico_enum(wk_t* const wk) {
 
 void
 wm_tray_cli_map(cli_t* const c) {
-  /* Determine required vertical offset */
-  unsigned v0 = 0;
-  if (tray.clis.size) {
-    wg_t* wg = tray.clis.front;
-    do {
-      v0+= wg->h;
-      wg = cblk_next(&tray.clis, wg);
-    } while (wg != tray.clis.front);
-  }
-  /* Horizontal offset will be null */
-  unsigned const h0 = 0;
-  XReparentWindow(dpy, c->win, tray.wg.win, h0, v0);
   cli_t* const prevc = c->wk->clis.size == 1 ? NULL : 
     cblk_prev(&c->wk->clis, c);
   if (prevc) {
@@ -547,16 +558,13 @@ wm_tray_cli_map(cli_t* const c) {
  
   wg_t wg = {
     .win = c->win,
+    .w = c->w,
+    .h = c->h
   };
 
-  wg_t* const nextwg = cblk_map(&tray.clis, &wg);
-  if (nextwg) {
-    wg_win_bdrset(nextwg->win, wg_ACT);
-    wg_win_resize(nextwg, tray.wg.w, 
-      c->w / c->h * tray.wg.w);
-    wm_cli_unmap(c);
-    cblk_unmap(&c->wk->clis, c);
-  }
+  wm_cli_unmap(c);
+  cblk_unmap(&c->wk->clis, c);
+  tray_cli_map(&wg);
 }
 
 void
@@ -572,17 +580,7 @@ wm_tray_cli_unmap(wg_t* const wg) {
   };
 
   XPutBackEvent(dpy, &xev);
-  cblk_unmap(&tray.clis, wg);
-  /* Rearrange the remainders */
-  unsigned v0 = 0;
-  if (tray.clis.size) {
-    wg_t* wg = tray.clis.front;
-    do {
-      XMoveWindow(dpy, wg->win, 0, v0);
-      v0+= wg->h;
-      wg = cblk_next(&tray.clis, wg);
-    } while (wg != tray.clis.front);
-  }
+  tray_cli_unmap(wg);
 }
 
 Window*

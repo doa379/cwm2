@@ -31,10 +31,11 @@ void wg_str_set(wg_t* const, char const*);
 void wg_str_draw(wg_t* const, unsigned const, 
     unsigned const);
 
-void wg_win_bgset(Window const, unsigned const);
-void wg_win_bdrset(Window const, unsigned const);
-void wg_gc_bgfgset(GC const, unsigned const);
-void wg_gc_bgset(GC const, unsigned const);
-void wg_gc_fgset(GC const, unsigned const);
+void wg_win_bgclr(Window const, unsigned const);
+void wg_win_bdrclr(Window const, unsigned const);
+void wg_bdrw(wg_t* const, int const);
+void wg_gc_bgfgclr(GC const, unsigned const);
+void wg_gc_bgclr(GC const, unsigned const);
+void wg_gc_fgclr(GC const, unsigned const);
 void wg_pixmap_fill(wg_t const*, unsigned const);
 void wg_win_resize(wg_t* const, int const, int const);

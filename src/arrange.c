@@ -52,13 +52,13 @@ arrange_sel_adj(int const gap) {
 }
 
 void
-arrange_sel_tile(unsigned const w, unsigned const h) {
-  /* Arrange within constraint (w, h) */
+arrange_sel_tile(unsigned const W, unsigned const H) {
+  /* Constraint (W, H) */
   size_t const n = sel.size;
   unsigned const nc = ceil(sqrt(n));
   unsigned const nr = (n + nc - 1) / nc;
-  unsigned const cellw = w / nc;
-  unsigned const cellh = h / nr;
+  unsigned const cellw = W / nc;
+  unsigned const cellh = H / nr;
   unsigned i = 0;
   wg_t** wg = sel.front;
   do {
@@ -75,12 +75,12 @@ arrange_sel_tile(unsigned const w, unsigned const h) {
 }
 
 void
-arrange_sel_casc(unsigned const w, unsigned const h) {
-  /* Arrange within contraint (w, h) */
+arrange_sel_casc(unsigned const W, unsigned const H) {
+  /* Constraint (W, H) */
   size_t const n = sel.size;
   unsigned const m = 16;
-  unsigned const cellw = w - m * n;
-  unsigned const cellh = h - m * n;
+  unsigned const cellw = W - m * n;
+  unsigned const cellh = H - m * n;
   wg_t** wg = sel.front;
   int x = 0;
   int y = 0;

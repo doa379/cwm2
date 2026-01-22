@@ -385,8 +385,7 @@ calls_lt_arrange(int const lt) {
     arrange_sel_casc(mon->w, mon->h);
   unsigned const bdrw_twice = 2 * c->par.bdrw;
   do {
-    cli_resize(c, c->par.w - bdrw_twice, 
-      c->par.h - bdrw_twice);
+    wm_cli_conf(c, c->par.w, c->par.h);
     c = cblk_next(&currwk->clis, c);
   } while (c != currwk->clis.front);
 }
@@ -432,7 +431,7 @@ calls_sel_toggle(void) {
   cli_t* c = currwk->clis.front;
   do {
     c->sel = !c->sel;
-    wg_win_bdrset(c->par.win, c->sel ? wg_SEL :
+    wg_win_bdrclr(c->par.win, c->sel ? wg_SEL :
       c == c->wk->currc ? wg_ACT : wg_BG);
     c = cblk_next(&currwk->clis, c);
   } while (c != currwk->clis.front);
@@ -446,8 +445,8 @@ calls_sel_clear(void) {
   cli_t* c = currwk->clis.front;
   do {
     c->sel = 0;
-    wg_win_bdrset(c->par.win, c == c->wk->currc ? wg_ACT : 
-      wg_BG);
+    wg_win_bdrclr(c->par.win, 
+      c == c->wk->currc ? wg_ACT : wg_BG);
     c = cblk_next(&currwk->clis, c);
   } while (c != currwk->clis.front);
 }

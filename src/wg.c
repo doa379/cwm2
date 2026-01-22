@@ -59,7 +59,7 @@ void
 wg_str_draw(wg_t* const wg, unsigned const clr, 
     unsigned const tx) {
   if (wg->str.len) {
-    wg_win_bgset(wg->win, clr);
+    wg_win_bgclr(wg->win, clr);
     int const ty = 0.5 * 
       (wg->h - 2 * wg->bdrw + font.scent);
     XftDrawStringUtf8(wg->xft, &clr_pair[clr].fg.xft, 
@@ -69,35 +69,42 @@ wg_str_draw(wg_t* const wg, unsigned const clr,
 }
 
 void
-wg_win_bgset(Window const win, unsigned const clr) {
+wg_win_bgclr(Window const win, unsigned const clr) {
   XSetWindowBackground(dpy, win, clr_pair[clr].bg.pix);
   XClearWindow(dpy, win);
 }
 
 void
-wg_win_bdrset(Window const win, unsigned const clr) {
+wg_win_bdrclr(Window const win, unsigned const clr) {
   XSetWindowBorder(dpy, win, clr_pair[clr].bg.pix);
+}
+  
+void
+wg_bdrw(wg_t* const wg, int const w) {
+  if (XSetWindowBorderWidth(dpy, wg->win, w)) {
+    wg->bdrw = w;
+  }
 }
 
 void
-wg_gc_bgfgset(GC const gc, unsigned const clr) {
+wg_gc_bgfgclr(GC const gc, unsigned const clr) {
   XSetBackground(dpy, gc, clr_pair[clr].bg.pix);
   XSetForeground(dpy, gc, clr_pair[clr].fg.pix);
 }
 
 void
-wg_gc_bgset(GC const gc, unsigned const clr) {
+wg_gc_bgclr(GC const gc, unsigned const clr) {
   XSetBackground(dpy, gc, clr_pair[clr].bg.pix);
 }
 
 void
-wg_gc_fgset(GC const gc, unsigned const clr) {
+wg_gc_fgclr(GC const gc, unsigned const clr) {
   XSetForeground(dpy, gc, clr_pair[clr].fg.pix);
 }
 
 void
 wg_pixmap_fill(wg_t const* wg, unsigned const clr) {
-  wg_gc_bgfgset(wg->gc, clr);
+  wg_gc_bgfgclr(wg->gc, clr);
   XFillRectangle(dpy, wg->win, wg->gc, 
       0, 0, wg->w, wg->h);
   XCopyPlane(dpy, wg->pixmap, wg->win, wg->gc, 

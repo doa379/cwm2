@@ -197,7 +197,7 @@ wm_cli_translate(cli_t* const c, int const x_root,
     PointerMotionMask;
   long const MASK = 
     ExposureMask;
-  if (XGrabPointer(dpy, c->win, False, 
+  if (XGrabPointer(dpy, c->par.win, False, 
         MOUSEMASK, GrabModeAsync, GrabModeAsync, None, 
           font.crs.move, CurrentTime) != GrabSuccess) {
     return;
@@ -259,10 +259,10 @@ wm_cli_translate(cli_t* const c, int const x_root,
       if (tray_d < par_d && currmon == mons.front && 
           xev.xmotion.x_root > currmon->w - tray.wg.w &&
           xev.xmotion.x_root < currmon->w) {
-        wg_win_bdrset(tray.wg.win, wg_ACT);
+        wg_win_bdrclr(tray.wg.win, wg_ACT);
         tray_map_cb = wm_tray_cli_map;
       } else {
-          wg_win_bdrset(tray.wg.win, wg_BG);
+          wg_win_bdrclr(tray.wg.win, wg_BG);
           tray_map_cb = NULL;
       }
     }
@@ -276,9 +276,9 @@ wm_cli_translate(cli_t* const c, int const x_root,
   XUngrabPointer(dpy, CurrentTime);
   XUnmapWindow(dpy, c->hd1.win);
   XMapWindow(dpy, c->hd0.win);
-  cli_move(c, nextx, nexty);
+  wm_cli_arrange(c, nextx, nexty);
   cli_wg_focus(c, wg_ACT);
-  wg_win_bdrset(tray.wg.win, wg_BG);
+  wg_win_bdrclr(tray.wg.win, wg_BG);
   if (tray_map_cb) {
     tray_map_cb(c);
   }
@@ -291,7 +291,7 @@ wm_cli_resize(cli_t* const c) {
     PointerMotionMask;
   long const MASK = 
     ExposureMask;
-  if (XGrabPointer(dpy, c->win, False, 
+  if (XGrabPointer(dpy, c->par.win, False, 
         MOUSEMASK, GrabModeAsync, GrabModeAsync, None, 
           font.crs.resize, CurrentTime) != GrabSuccess) {
     return;
@@ -335,26 +335,29 @@ wm_cli_resize(cli_t* const c) {
   XUngrabPointer(dpy, CurrentTime);
   XUnmapWindow(dpy, c->hd1.win);
   XMapWindow(dpy, c->hd0.win);
-  cli_resize(c, nextw, nexth - c->hd1.h);
+  wm_cli_conf(c, nextw, nexth - c->hd1.h);
   cli_wg_focus(c, wg_ACT);
 }
 
 void
 wm_cli_del(cli_t* const c) {
-  cli_t* const prevc = cblk_prev(&c->wk->clis, c);
-  if (prevc && prevc != c) {
-    wm_cli_unfocus(c);
-    wm_cli_focus(prevc);
-    if (prevc->mode != cli_MIN) {
-      XRaiseWindow(dpy, prevc->par.win);
-    }
+  wk_t* const wk = c->wk;
+  cli_t* const prevc = cblk_prev(&wk->clis, c);
+  if (prevc != c) {
+    wk->currc = prevc;
+    /* wm_cli_focus(wk->currc); */
+  } else {
+    wk->prevc = wk->currc = NULL;
+  }
 
-    prevc->wk->currc = prevc;
-  } else if (prevc) {
-    c->wk->prevc = c->wk->currc = NULL;
+  if (wk->prevc == c) {
+    wk->prevc = wk->currc;
   }
 
   wm_cli_unmap(c);
+  if (wk->currc) {
+    wm_cli_focus(wk->currc);
+  }
 }
 
 void
@@ -434,33 +437,15 @@ wm_wk_switch(wk_t* const wk) {
 void
 wm_cli_conf(cli_t* const c, int const w, int const h) {
   if (c->w != w || c->h != h) {
-    cli_resize(c, c->par.w + 2 * c->par.bdrw > currmon->w ? 
-      currmon->w : w, 
-        c->par.h + 2 * c->par.bdrw > currmon->h ? 
-          currmon->h : h);
+    cli_resize(c, w, h, currmon->w, currmon->h);
   }
 }
 
 void
 wm_cli_arrange(cli_t* const c, int const x, int const y) {
-  int const nextx = 
-    x + c->par.w + 2 * c->par.bdrw > currmon->w ? 
-      currmon->w - c->par.w - 2 * c->par.bdrw : x;
-  int const nexty = 
-    y + c->par.h + 2 * c->par.bdrw > currmon->h ? 
-      currmon->h - c->par.h - 2 * c->par.bdrw : y;
-  cli_move(c, nextx, nexty);
-
-
-  /*  
-  cli_t* const prev = cblk_prev(&c->wk->clis, c);
-  int const nextx = prev ? 
-    prev->x0 + c->hd0.h + c->par.bdrw : x;
-  int const nexty = prev ? 
-    prev->y0 + c->hd0.h + c->par.bdrw : y;
-  wm_cli_arrange(c, nextx, nexty);
-  */
-
+  if (c->x0 != x || c->y0 != y) {
+    cli_move(c, x, y, currmon->w, currmon->h);
+  }
 }
 
 void wm_cli_currmon_move(void) {
@@ -472,7 +457,8 @@ void wm_cli_currmon_move(void) {
         mon_t* const back = mons.back;
         if (c->x0 > back->x + back->w ||
             c->y0 > back->y + back->h) {
-          cli_move(c, back->x, back->y);
+          cli_move(c, back->x, back->y, 
+            currmon->w, currmon->h);
         }
 
         c = cblk_next(&wk->clis, c);
@@ -501,7 +487,8 @@ wm_cli_max(cli_t* const c) {
   XRaiseWindow(dpy, c->par.win);
   cli_anim(c, c->x0, c->y0, c->par.w, c->par.h, 
     currmon->x, currmon->y, currmon->w, currmon->h, 100);
-  cli_resize(c, currmon->w, currmon->h);
+  cli_resize(c, currmon->w, currmon->h,
+    currmon->w, currmon->h);
   c->w = w_org;
   c->h = h_org;
   XMoveWindow(dpy, c->par.win, currmon->x, currmon->y);
@@ -514,7 +501,7 @@ wm_cli_res(cli_t* const c) {
   cli_anim(c, currmon->x, currmon->y, currmon->w,
     currmon->h, c->x0, c->y0, c->w, c->h, 100);
   cli_conf(c, c->w, c->h);
-  cli_move(c, c->x0, c->y0);
+  cli_move(c, c->x0, c->y0, currmon->w, currmon->h);
 }
 
 void
@@ -524,7 +511,7 @@ wm_cli_raise(cli_t* const c) {
   cli_anim(c, 0, currmon->h, 0, 0, c->x0, c->y0, c->w, c->h, 
     100);
   cli_conf(c, c->w, c->h);
-  cli_move(c, c->x0, c->y0);
+  cli_move(c, c->x0, c->y0, currmon->w, currmon->h);
 }
 
 void

@@ -8,6 +8,7 @@
 #include "status.h"
 #include "tray.h"
 #include "prop.h"
+#include "root.h"
 
 extern Display* dpy;
 
@@ -44,6 +45,15 @@ int const h) {
     mon_conf();
     panel_conf();
     tray_conf();
+    /* Set currmon */ 
+    int x_root;
+    int y_root;
+    root_ptr_query(&x_root, &y_root);
+    mon_t* const mon = mon_currmon(x_root, y_root);
+    if (mon) {
+      currmon = mon;
+    }
+
     wm_cli_currmon_move();
   } else {
   }
@@ -52,6 +62,10 @@ int const h) {
 void
 evcalls_map_override_redirect(Window const win, int const x,
 int const y, int const w, int const h) {
+  if (wm_ord(win)) {
+    /* Shoot duplicates */
+    return;
+  }
   Window* const c = wm_ord_map(win);
   if (c) {
     wm_ord_conf(win, w, h);
@@ -62,6 +76,11 @@ int const y, int const w, int const h) {
 void
 evcalls_map_request(Window const win, int const x,
 int const y, int const w, int const h) {
+  if (wm_cli(win)) {
+    /* Shoot duplicates */
+    return;
+  }
+
   cli_t* const c = wm_cli_map(currwk, win);
   if (c) {
     strncpy(c->strico, prop_ico(win), sizeof c->strico - 1);
@@ -90,6 +109,7 @@ evcalls_destroy_notify(Window const win) {
   Window* const ord_win = wm_ord(win);
   if (ord_win) {
     wm_ord_unmap(ord_win);
+    return;
   }
 }
 
@@ -205,26 +225,26 @@ evcalls_enter_notify(Window const win) {
     } else if (win == c->siz.win) {
       wg_pixmap_fill(&c->siz, wg_SEL);
     } else if (win == c->ico.win && c != currwk->currc) {
-      wg_win_bgset(c->ico.win, wg_SEL);
-      wg_win_bdrset(c->ico.win, wg_SEL);
+      wg_win_bgclr(c->ico.win, wg_SEL);
+      wg_win_bdrclr(c->ico.win, wg_SEL);
       wg_str_draw(&c->ico, wg_SEL, 0);
-    } else if (c != currwk->currc) {
+    } else if (c != c->wk->currc) {
       wm_cli_switch(c);
       panel_icos_arrange(c->wk);
     } else if (c->hd0.win == win) {
-      /* XRaiseWindow(dpy, c->par.win); */
+      XRaiseWindow(dpy, c->par.win);
     }
   } else {
     wk_t* const wk = wm_wk(win);
     if (wk && wk != currwk) {
-      wg_win_bgset(wk->wg.win, wg_SEL);
+      wg_win_bgclr(wk->wg.win, wg_SEL);
       return;
     }
     
     wg_t* const c = tray_cli(win);
     if (c) {
       XRaiseWindow(dpy, c->win);
-      wg_win_bdrset(c->win, wg_ACT);
+      wg_win_bdrclr(c->win, wg_ACT);
       return;
     }
   }
@@ -247,21 +267,21 @@ evcalls_leave_notify(Window const win) {
     } else if (c->siz.win == win) {
       wg_pixmap_fill(&c->siz, clr);
     } else if (c->ico.win == win) {
-      wg_win_bgset(c->ico.win, clr);
-      wg_win_bdrset(c->ico.win, clr);
+      wg_win_bgclr(c->ico.win, clr);
+      wg_win_bdrclr(c->ico.win, clr);
       wg_str_draw(&c->ico, clr, 0);
     }
   } else {
     wk_t* const wk = wm_wk(win);
     if (wk) {
-      wg_win_bgset(wk->wg.win, 
+      wg_win_bgclr(wk->wg.win, 
         wk == currwk ? wg_ACT : wg_BG);
       return;
     }
     
     wg_t* const c = tray_cli(win);
     if (c) {
-      wg_win_bdrset(c->win, wg_BG);
+      wg_win_bdrclr(c->win, wg_BG);
       return;
     }
   }
@@ -273,8 +293,8 @@ evcalls_focus_change(Window const win) {
   cli_t* const c = wm_cli(win);
   if (c && c != currwk->currc) {
     if (c->wk == currwk) {
-      wg_win_bgset(c->ico.win, wg_SEL);
-      wg_win_bdrset(c->ico.win, wg_SEL);
+      wg_win_bgclr(c->ico.win, wg_SEL);
+      wg_win_bdrclr(c->ico.win, wg_SEL);
     } else {
       wk_wg_focus(c->wk, wg_SEL);
     }

@@ -31,10 +31,11 @@ static void
 ev_client_message(void) {
   Window const win = xev.xclient.window;
   Atom const prop = xev.xclient.message_type;
-  if (win == DefaultRootWindow(dpy))
+  if (win == DefaultRootWindow(dpy)) {
     fprintf(stdout, "Recv prop %ld, msg %ld\n", 
       prop,
       xev.xclient.data.l[0]);
+  }
 }
 
 static void
@@ -54,14 +55,15 @@ ev_map_request(void) {
   Window const win = xev.xmaprequest.window;
   fprintf(stdout, "MapRequest Window 0x%lx\n", win);
   XWindowAttributes wa;
-  if (XGetWindowAttributes(dpy, win, &wa) == 0)
+  if (XGetWindowAttributes(dpy, win, &wa) == 0) {
     return;
-  else if (wa.override_redirect)
+  } else if (wa.override_redirect) {
     evcalls_map_override_redirect(win, wa.x, wa.y,
       wa.width, wa.height);
-  else 
+  } else {
     evcalls_map_request(win, wa.x, wa.y, wa.width, 
       wa.height);
+  }
 }
 
 static void
@@ -108,8 +110,9 @@ ev_mapping_notify(void) {
   XMappingEvent* ev = &xev.xmapping;
   Window const win = xev.xmapping.window;
   XRefreshKeyboardMapping(ev);
-  if (ev->request == MappingKeyboard)
+  if (ev->request == MappingKeyboard) {
     input_keys_grab(win);
+  }
 }
 
 static void

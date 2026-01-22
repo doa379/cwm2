@@ -109,7 +109,7 @@ int const COLORS[] = {
 /* Color Scheme { BG, ACT, SEL } */
   palette_cyan10,
   palette_cyan50,
-  palette_red80
+  palette_gray80
 };
 
 input_t const KBD[] = {

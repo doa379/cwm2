@@ -79,7 +79,7 @@ cli_init(Window const win, wk_t* const wk) {
   /* Init parent */
   wg_t const par = wg_init(DefaultRootWindow(dpy), 
       1, 1, bdrw);
-  wg_win_bgset(par.win, wg_BG);
+  wg_win_bgclr(par.win, wg_BG);
   XReparentWindow(dpy, win, par.win, 0, 0);
   XSelectInput(dpy, par.win, CLIMASK);
   XSetWindowBorderWidth(dpy, win, 0);
@@ -94,7 +94,7 @@ cli_init(Window const win, wk_t* const wk) {
   XSelectInput(dpy, hd0.win, HDRMASK);
   /* Init special header */
   wg_t hd1 = wg_init(par.win, 1, 1, 0);
-  wg_win_bgset(hd1.win, wg_SEL);
+  wg_win_bgclr(hd1.win, wg_SEL);
   XUnmapWindow(dpy, hd1.win);
   /* Init min */
   wg_t min = wg_init(hd0.win, btnw, btnh, 0);
@@ -162,7 +162,7 @@ cli_deinit(cli_t* const c) {
   wg_deinit(&c->hd1);
   XSelectInput(dpy, c->hd0.win, NoEventMask);
   wg_deinit(&c->hd0);
-  XMapWindow(dpy, c->win);
+  XMapWindow(dpy, c->par.win);
   XSelectInput(dpy, c->win, NoEventMask);
   XReparentWindow(dpy, c->win, DefaultRootWindow(dpy), 
     c->x0, c->y0);
@@ -210,7 +210,7 @@ cli_wg(cli_t* const c, Window const win) {
 
 void
 cli_wg_focus(cli_t* const c, unsigned const clr) {
-  wg_win_bdrset(c->par.win, c->sel ? wg_SEL : clr);
+  wg_win_bdrclr(c->par.win, c->sel ? wg_SEL : clr);
   unsigned hd0 = btnw + bdrw_twice;
   /* hd0 offset */
   wg_str_draw(&c->hd0, clr, hd0);
@@ -223,8 +223,8 @@ cli_wg_focus(cli_t* const c, unsigned const clr) {
   wg_pixmap_fill(&c->res, clr);
   wg_pixmap_fill(&c->cls, clr);
   wg_pixmap_fill(&c->siz, clr);
-  wg_win_bgset(c->ico.win, clr);
-  wg_win_bdrset(c->ico.win, clr);
+  wg_win_bgclr(c->ico.win, clr);
+  wg_win_bdrclr(c->ico.win, clr);
   wg_str_draw(&c->ico, clr, 0);
 }
 
@@ -272,16 +272,38 @@ cli_conf(cli_t* const c, int const w, int const h) {
 }
 
 void
-cli_move(cli_t* const c, int const x, int const y) {
+cli_move(cli_t* const c, int const x, int const y, 
+int const W, int const H) {
+  /* Constraint (W, H) */
   if (XMoveWindow(dpy, c->par.win, x, y)) {
     c->x0 = x;
     c->y0 = y;
   }
+
+  int const cw = c->par.w + bdrw_twice;
+  if (c->x0 + cw > W) {
+    int const x = W - cw;
+    if (XMoveWindow(dpy, c->par.win, x, c->y0)) {
+      c->x0 = x;
+    }
+  }
+
+  int const ch = c->par.h + bdrw_twice;
+  if (c->y0 + ch > H) {
+    int const y = H - ch;
+    if (XMoveWindow(dpy, c->par.win, c->x0, y)) {
+      c->y0 = y;
+    }
+  }
 }
 
 void
-cli_resize(cli_t* const c, int const w, int const h) {
-  cli_conf(c, w, h);
+cli_resize(cli_t* const c, int const w, int const h,
+int const W, int const H) {
+  /* Constraint (W, H) */
+  int const cw = w + bdrw_twice > W ? W : w;
+  int const ch = h + font.ch + bdrw_twice > H ? H : h;
+  cli_conf(c, cw, ch);
 }
 
 void

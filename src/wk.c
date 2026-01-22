@@ -20,8 +20,8 @@ wk_init(void) {
     LeaveWindowMask |
     ButtonPressMask;
   XSelectInput(dpy, wg.win, BTNMASK);
-  wg_win_bgset(wg.win, wg_BG);
-  wg_win_bdrset(wg.win, wg_ACT);
+  wg_win_bgclr(wg.win, wg_BG);
+  wg_win_bdrclr(wg.win, wg_ACT);
 
   return (wk_t) {
     .clis = cblk_init(sizeof(cli_t), NRES),
@@ -39,5 +39,5 @@ wk_deinit(wk_t* const wk) {
 
 void
 wk_wg_focus(wk_t* const wk, unsigned const clr) {
-  wg_win_bgset(wk->wg.win, clr);
+  wg_win_bgclr(wk->wg.win, clr);
 }

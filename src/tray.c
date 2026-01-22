@@ -26,8 +26,8 @@ tray_init(void) {
   long const TRAYMASK =
     ExposureMask;
   XSelectInput(dpy, tray.wg.win, TRAYMASK);
-  wg_win_bgset(tray.wg.win, wg_BG);
-  wg_win_bdrset(tray.wg.win, wg_BG);
+  wg_win_bgclr(tray.wg.win, wg_BG);
+  wg_win_bdrclr(tray.wg.win, wg_BG);
   mascot_init(&tray.wg);
   return 0;
 }
@@ -99,7 +99,7 @@ tray_cli_map(wg_t* const wg) {
       SubstructureRedirectMask;
     XSelectInput(dpy, nextwg->win, KMASK);
     XSetWindowBorderWidth(dpy, nextwg->win, tray.wg.bdrw);
-    wg_win_bdrset(nextwg->win, wg_BG);
+    wg_win_bdrclr(nextwg->win, wg_BG);
     wg_win_resize(nextwg, tray.wg.w, 
       tray.wg.w * (float) wg->h / wg->w);
   }

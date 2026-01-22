@@ -17,7 +17,7 @@ status_init(Window const win) {
     PropertyChangeMask |
     ExposureMask;
   XSelectInput(dpy, status.win, STATUSMASK);
-  wg_win_bgset(status.win, wg_BG);
+  wg_win_bgclr(status.win, wg_BG);
   status_focus(wg_ACT);
 }
 
@@ -28,7 +28,7 @@ status_deinit(void) {
 
 void
 status_focus(unsigned const clr) {
-  wg_win_bgset(status.win, clr);
+  wg_win_bgclr(status.win, clr);
   wg_str_draw(&status, clr, 0);
   wg_win_resize(&status, status.str.ext, status.h);
 }

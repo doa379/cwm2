@@ -71,16 +71,18 @@ root_query(void) {
   unsigned n;
   if (XQueryTree(dpy, root, &root, &parent, &wins, &n)) {
     cblk_clear(&cblk);
-    for (unsigned i = 0; i < n; i++)
+    for (unsigned i = 0; i < n; i++) {
       cblk_map(&cblk, &wins[i]);
+    }
   
     XFree(wins);
   }
 }
 
 void root_ev_enqueue(void) {
-  if (cblk.size == 0)
+  if (cblk.size == 0) {
     return;
+  }
 
   XWindowAttributes wa;
   Window* win = cblk.front;
@@ -106,8 +108,9 @@ void root_ev_enqueue(void) {
 
 int
 root_stack_dist(Window query) {
-  if (cblk.size == 0)
+  if (cblk.size == 0) {
     return -1;
+  }
 
   Window const* win = cblk_val_find(&cblk, &query);
   return win ? cblk_dist(&cblk, win) : -1;

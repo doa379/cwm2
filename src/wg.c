@@ -45,9 +45,11 @@ wg_deinit(wg_t* const wg) {
 
 void
 wg_str_set(wg_t* const wg, char const* str) {
-  strncpy(wg->str.data, str, sizeof wg->str.data - 1);
-  wg->str.len = strlen(str);
-  if (wg->str.len) {
+  unsigned const len = strlen(str);
+  if (len) {
+    wg->str.len = len > sizeof wg->str.data ? 
+      sizeof wg->str.data - 1 : len;
+    strncpy(wg->str.data, str, wg->str.len);
     XGlyphInfo extents;
     XftTextExtentsUtf8(dpy, font.xft, 
       (XftChar8*) wg->str.data, wg->str.len, &extents);

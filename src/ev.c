@@ -134,8 +134,8 @@ ev_btn_press(void) {
   int const y = xev.xbutton.y;
   int const x_root = xev.xbutton.x_root;
   int const y_root = xev.xbutton.y_root;
-  evcalls_btn_press(win, state, button, x, y, x_root, 
-    y_root);
+  evcalls_btn_press(win, state, button, x, y, 
+    x_root, y_root);
 }
 
 static void

@@ -487,6 +487,8 @@ wm_cli_max(cli_t* const c) {
   XRaiseWindow(dpy, c->par.win);
   cli_anim(c, c->x0, c->y0, c->par.w, c->par.h, 
     currmon->x, currmon->y, currmon->w, currmon->h, 100);
+  /* We set the bdrw = 0 but cli_resize expects to reset
+      bdrw */
   cli_resize(c, currmon->w, currmon->h,
     currmon->w, currmon->h);
   c->w = w_org;
@@ -578,8 +580,8 @@ wm_ord_map(Window const win) {
 
 void
 wm_ord_unmap(Window* const win) {
-  cblk_unmap(&ord, win);
   XDestroyWindow(dpy, *win);
+  cblk_unmap(&ord, win);
 }
 
 Window*

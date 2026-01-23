@@ -31,10 +31,10 @@ static unsigned char const stipple_8x8[] = {
   0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55
 };
 
-static long const KMASK = NoEventMask;
-static long const CLIMASK = 
+static long const KMASK =
   FocusChangeMask | 
-  PropertyChangeMask |
+  PropertyChangeMask;
+static long const CLIMASK = 
   EnterWindowMask |
   SubstructureNotifyMask |
   SubstructureRedirectMask;
@@ -130,6 +130,10 @@ cli_init(Window const win, wk_t* const wk) {
   return (cli_t) {
     .wk = wk,
     .win = win,
+    .w = 1,
+    .h = 1,
+    .x0 = 0,
+    .y0 = 0,
     .par = par,
     .hd0 = hd0,
     .hd1 = hd1,
@@ -302,7 +306,8 @@ cli_resize(cli_t* const c, int const w, int const h,
 int const W, int const H) {
   /* Constraint (W, H) */
   int const cw = w + bdrw_twice > W ? W : w;
-  int const ch = h + font.ch + bdrw_twice > H ? H : h;
+  int const dh = font.ch + bdrw_twice;
+  int const ch = h + dh > H ? H - dh : h;
   cli_conf(c, cw, ch);
 }
 

@@ -154,8 +154,4 @@ panel_conf(void) {
   wg_win_resize(&panel, mon->w, panel.h);
   mon->h -= panel.h + 2 * panel.bdrw;
   XMoveWindow(dpy, panel.win, 0, mon->h);
-  /*
-  XMoveWindow(dpy, panel.win, 0, 
-    mon->h - panel.h - 2 * panel.bdrw);
-  */
 }

@@ -83,10 +83,10 @@ int const y, int const w, int const h) {
 
   cli_t* const c = wm_cli_map(currwk, win);
   if (c) {
+    wm_cli_switch(c);
     strncpy(c->strico, prop_ico(win), sizeof c->strico - 1);
     wg_str_set(&c->hd0, prop_name(win));
     wm_cli_conf(c, w, h);
-    wm_cli_switch(c);
     wm_cli_arrange(c, x, y);
     wm_ico_enum(c->wk);
     panel_icos_arrange(c->wk);
@@ -103,6 +103,12 @@ evcalls_destroy_notify(Window const win) {
     wm_ico_enum(wk);
     panel_icos_arrange(wk);
     panel_arrange(wk);
+    return;
+  }
+
+  wg_t* const wg = tray_cli(win);
+  if (wg) {
+    tray_cli_unmap(wg);
     return;
   }
   
@@ -312,8 +318,7 @@ evcalls_property_notify(Window const win) {
     cli_t* const c = wm_cli(win);
     if (c && c->win == win) {
       wg_str_set(&c->hd0, prop_name(win));
-      wg_str_draw(&c->hd0, c == c->wk->currc ? wg_ACT : 
-        wg_BG, c->par.bdrw);
+      cli_wg_focus(c, c == c->wk->currc ? wg_ACT : wg_BG);
     }
   }
 }
@@ -321,7 +326,6 @@ evcalls_property_notify(Window const win) {
 void
 evcalls_expose(Window const win) {
   if (win == DefaultRootWindow(dpy)) {
-  
   } else if (win == status.win) {
     status_focus(wg_ACT);
   } else if (win == tray.wg.win) {

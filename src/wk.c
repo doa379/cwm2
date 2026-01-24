@@ -14,7 +14,7 @@ static size_t const NRES = 100;
 wk_t
 wk_init(void) {
   wg_t const wg = wg_init(DefaultRootWindow(dpy), 
-    font.cw, font.ch - 2 * bdrw, bdrw);
+    font.cw, font.ch, bdrw);
   long const BTNMASK = 
     EnterWindowMask |
     LeaveWindowMask |

@@ -31,10 +31,17 @@ static void
 ev_client_message(void) {
   Window const win = xev.xclient.window;
   Atom const prop = xev.xclient.message_type;
+  int const format = xev.xclient.format;
   if (win == DefaultRootWindow(dpy)) {
-    fprintf(stdout, "Recv prop %ld, msg %ld\n", 
-      prop,
-      xev.xclient.data.l[0]);
+    fprintf(stdout, "Recv prop %ld\n", prop);
+  } else {
+    if (format == 8) {
+      evcalls_byte_msg(win, prop, xev.xclient.data.b);
+    } else if (format == 16) {
+      evcalls_short_msg(win, prop, xev.xclient.data.s);
+    } else if (format == 32) {
+      evcalls_long_msg(win, prop, xev.xclient.data.l);
+    }
   }
 }
 

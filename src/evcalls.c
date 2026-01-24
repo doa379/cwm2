@@ -63,7 +63,7 @@ void
 evcalls_map_override_redirect(Window const win, int const x,
 int const y, int const w, int const h) {
   if (wm_ord(win)) {
-    /* Shoot duplicates */
+    /* Discount duplicates */
     return;
   }
   Window* const c = wm_ord_map(win);
@@ -77,7 +77,7 @@ void
 evcalls_map_request(Window const win, int const x,
 int const y, int const w, int const h) {
   if (wm_cli(win)) {
-    /* Shoot duplicates */
+    /* Discount duplicates */
     return;
   }
 
@@ -186,13 +186,13 @@ int const x_root, int const y_root) {
       XRaiseWindow(dpy, c->par.win);
       panel_icos_arrange(c->wk);
       panel_arrange(c->wk);
-    } else if ((c != currwk->currc && c->win == win) || 
-        c->ico.win == win) {
-      wm_cli_switch(c);
-      XMapRaised(dpy, c->par.win);
-      if (c->mode == cli_MIN) {
-        wm_cli_raise(c);
-      }
+    } else if (c->win == win || c->ico.win == win) {
+        XMapRaised(dpy, c->par.win);
+        if (c != currwk->currc) {
+          wm_cli_switch(c);
+        } else if (c->mode == cli_MIN) {
+          wm_cli_raise(c);
+        }
     } else {
       input_t const* input = input_btn(state, button);
       if (input) {
@@ -296,17 +296,20 @@ evcalls_leave_notify(Window const win) {
 void
 evcalls_focus_change(Window const win) {
   fprintf(stdout, "EV: Focus Change Window 0x%lx\n", win);
+  /*
   cli_t* const c = wm_cli(win);
   if (c && c != currwk->currc) {
     if (c->wk == currwk) {
       wg_win_bgclr(c->ico.win, wg_SEL);
       wg_win_bdrclr(c->ico.win, wg_SEL);
+      cli_wg_focus(c, wg_SEL);
     } else {
       wk_wg_focus(c->wk, wg_SEL);
     }
 
     wg_str_draw(&c->ico, wg_SEL, 0);
   }
+  */
 }
 
 void
@@ -334,6 +337,45 @@ evcalls_expose(Window const win) {
     cli_t* const c = wm_cli(win);
     if (c) {
       cli_wg_focus(c, c == currwk->currc ? wg_ACT : wg_BG);
+    }
+  }
+}
+
+void
+evcalls_byte_msg(Window const win, Atom const prop,
+long const b[]) {
+
+}
+
+void
+evcalls_short_msg(Window const win, Atom const prop,
+long const s[]) {
+
+}
+
+void
+evcalls_long_msg(Window const win, Atom const prop,
+long const l[]) {
+  cli_t* const c = wm_cli(win);
+  if (c) {
+    Atom const wm_state = 
+      XInternAtom(dpy, "_NET_WM_STATE", False);
+    Atom const act_win = 
+      XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False);
+    if (prop == wm_state) {
+      Atom const wm_fs = 
+        XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+      if (l[1] == wm_fs || l[2] == wm_fs) {
+        if (c->mode != cli_FSC) {
+          wm_cli_fs(c);
+        } else {
+          wm_cli_res(c);
+        }
+      }
+
+    } else if (prop == act_win) {
+      /* Show urgency */
+      cli_wg_focus(c, wg_SEL);
     }
   }
 }

@@ -3,10 +3,9 @@
 #include <string.h>
 
 extern Display* dpy;
-static char BUF[32];
+static char BUF[128];
 
 static char const* prop_text(Window const win, Atom atom) {
-  BUF[0] = '\0';
   XTextProperty prop;
   if (XGetTextProperty(dpy, win, &prop, atom) && 
       prop.nitems) {
@@ -16,7 +15,7 @@ static char const* prop_text(Window const win, Atom atom) {
  		  strncpy(BUF, (char*) prop.value, sizeof BUF - 1);
  	  } else if (XmbTextPropertyToTextList(dpy, &prop, &list, &n)
       && n > 0 && *list) {
- 		  strncpy(BUF, *list, sizeof BUF - 1);
+ 		  strcpy(BUF, *list);
  		  XFreeStringList(list);
  	  }
  	
@@ -34,13 +33,13 @@ static char const* prop_win_prop(Window const win,
   unsigned long nitems;
   unsigned long bytes_after;
   unsigned char* data = NULL;
-  BUF[0] = '\0';
+  memset(BUF, 0, sizeof BUF);
   if (XGetWindowProperty(dpy, win, 
     atom, 0, sizeof atom, False, 
       AnyPropertyType, &actual_type, 
         &actual_format, &nitems, &bytes_after, 
           &data) == Success && actual_type != None) {
-    strncpy(BUF, (char*) data, sizeof BUF - 1);
+    strcpy(BUF, (char*) data);
     BUF[sizeof BUF - 1] = '\0';
  	  XFree(data);
   }
@@ -67,10 +66,11 @@ char const* prop_name(Window const win) {
 }
 
 char const* prop_ico(Window const win) {
+
   BUF[0] = '\0';
   XTextProperty prop;
   if (XGetWMIconName(dpy, win, &prop) && prop.nitems > 0) {
-    strncpy(BUF, (char*) prop.value, sizeof BUF - 1);
+    strcpy(BUF, (char*) prop.value);
     BUF[sizeof BUF - 1] = '\0';
     XFree(prop.value);
   }
@@ -82,6 +82,7 @@ char const* prop_ico(Window const win) {
         XInternAtom(dpy, "_NET_WM_ICON_NAME", False)); 
   }
   */
+
   return BUF;
 }
 

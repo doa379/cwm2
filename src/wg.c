@@ -45,7 +45,7 @@ wg_deinit(wg_t* const wg) {
 
 void
 wg_str_set(wg_t* const wg, char const* str) {
-  unsigned const len = strlen(str);
+  size_t const len = strlen(str);
   if (len) {
     wg->str.len = len > sizeof wg->str.data ? 
       sizeof wg->str.data - 1 : len;

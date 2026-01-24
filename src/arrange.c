@@ -79,13 +79,17 @@ arrange_sel_casc(unsigned const W, unsigned const H) {
   /* Constraint (W, H) */
   size_t const n = sel.size;
   unsigned const m = 16;
+  /*
   unsigned const cellw = W - m * n;
   unsigned const cellh = H - m * n;
+  */
   wg_t** wg = sel.front;
   int x = 0;
   int y = 0;
   do {
+    /*
     wg_win_resize(*wg, cellw, cellh);
+    */
     XMoveWindow(dpy, (*wg)->win, x, y);
     x += m;
     y += m;

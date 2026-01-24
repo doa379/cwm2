@@ -354,6 +354,7 @@ wm_cli_del(cli_t* const c) {
     wk->prevc = wk->currc;
   }
 
+  cli_del_anim(c, 100);
   wm_cli_unmap(c);
   if (wk->currc) {
     wm_cli_focus(wk->currc);
@@ -387,6 +388,7 @@ wm_cli_switch(cli_t* const c) {
   }
 
   wm_cli_focus(c);
+  cli_switch_anim(c, 3);
   c->wk->currc = c;
 }
 
@@ -425,10 +427,6 @@ wm_wk_focus(wk_t* const wk) {
 void
 wm_wk_switch(wk_t* const wk) {
   wm_wk_unfocus(currwk);
-  if (currwk->currc) {
-    wm_cli_unfocus(currwk->currc);
-  }
-
   prevwk = currwk;
   wm_wk_focus(wk);
   currwk = wk;
@@ -437,7 +435,8 @@ wm_wk_switch(wk_t* const wk) {
 void
 wm_cli_conf(cli_t* const c, int const w, int const h) {
   if (c->w != w || c->h != h) {
-    cli_resize(c, w, h, currmon->w, currmon->h);
+    cli_resize(c, w, h, currmon->w, currmon->h,
+      c->par.bdrw);
   }
 }
 
@@ -480,28 +479,36 @@ wm_cli_min(cli_t* const c) {
 
 void
 wm_cli_max(cli_t* const c) {
-  XSetWindowBorderWidth(dpy, c->par.win, 0);
+  int const bdrw = 0;
+  XSetWindowBorderWidth(dpy, c->par.win, bdrw);
   int const w_org = c->w;
   int const h_org = c->h;
   c->mode = cli_MAX;
+  wm_cli_unfocus(c);
   XRaiseWindow(dpy, c->par.win);
   cli_anim(c, c->x0, c->y0, c->par.w, c->par.h, 
     currmon->x, currmon->y, currmon->w, currmon->h, 100);
-  /* We set the bdrw = 0 but cli_resize expects to reset
-      bdrw */
+  wm_cli_focus(c);
   cli_resize(c, currmon->w, currmon->h,
-    currmon->w, currmon->h);
+    currmon->w, currmon->h, bdrw);
   c->w = w_org;
   c->h = h_org;
   XMoveWindow(dpy, c->par.win, currmon->x, currmon->y);
 }
 
 void
+wm_cli_fs(cli_t* const c) {
+  cli_fs(c, currmon->x, currmon->y, currmon->w, currmon->h);
+}
+
+void
 wm_cli_res(cli_t* const c) {
   XSetWindowBorderWidth(dpy, c->par.win, c->par.bdrw);
   c->mode = cli_RES;
+  wm_cli_unfocus(c);
   cli_anim(c, currmon->x, currmon->y, currmon->w,
     currmon->h, c->x0, c->y0, c->w, c->h, 100);
+  wm_cli_focus(c);
   cli_conf(c, c->w, c->h);
   cli_move(c, c->x0, c->y0, currmon->w, currmon->h);
 }
@@ -512,6 +519,7 @@ wm_cli_raise(cli_t* const c) {
   c->mode = cli_RES;
   cli_anim(c, 0, currmon->h, 0, 0, c->x0, c->y0, c->w, c->h, 
     100);
+  wm_cli_focus(c);
   cli_conf(c, c->w, c->h);
   cli_move(c, c->x0, c->y0, currmon->w, currmon->h);
 }

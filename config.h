@@ -99,7 +99,7 @@ Modifiers {
 
 char const WMNAME[] = "cwm2-0.1";
 unsigned const num_wks = 4;
-char const* font_name = "Fixed:size=12";
+char const* font_name = "Sans:size=10";
 /* Values in px */
 unsigned const bdrw = 2;
 unsigned const gaps = 0;
@@ -109,7 +109,7 @@ int const COLORS[] = {
 /* Color Scheme { BG, ACT, SEL } */
   palette_cyan10,
   palette_cyan50,
-  palette_gray80
+  palette_gray50
 };
 
 input_t const KBD[] = {

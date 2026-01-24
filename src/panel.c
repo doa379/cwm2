@@ -25,7 +25,8 @@ wg_t panel;
 
 void
 panel_init(void) {
-  panel = wg_init(DefaultRootWindow(dpy), 1, font.ch, 0);
+  panel = wg_init(DefaultRootWindow(dpy), 1, 
+    font.ch + 2 * bdrw, 0);
   wg_win_bgclr(panel.win, wg_BG);
 
   wk_t* wk = wks.front;

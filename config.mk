@@ -23,8 +23,8 @@ DBG_LFLAGS=
 DBG_BIN=cwm2~dbg.bin
 
 # Compiler optim'n to be set manually :/
-#CFLAGS=${REL_CFLAGS}
-CFLAGS=${DBG_CFLAGS}
+CFLAGS=${REL_CFLAGS}
+#CFLAGS=${DBG_CFLAGS}
 
 HDR_CONFIG=config.h
 SRC=src/main.c \

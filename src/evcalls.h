@@ -21,3 +21,9 @@ void evcalls_leave_notify(Window const);
 void evcalls_focus_change(Window const);
 void evcalls_property_notify(Window const);
 void evcalls_expose(Window const);
+void evcalls_byte_msg(Window const, Atom const, 
+char const[]);
+void evcalls_short_msg(Window const, Atom const, 
+short const[]);
+void evcalls_long_msg(Window const, Atom const, 
+long const[]);

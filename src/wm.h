@@ -28,6 +28,7 @@ void wm_cli_arrange(cli_t* const, int const, int const);
 void wm_cli_currmon_move(void);
 void wm_cli_min(cli_t* const);
 void wm_cli_max(cli_t* const);
+void wm_cli_fs(cli_t* const);
 void wm_cli_res(cli_t* const);
 void wm_cli_raise(cli_t* const);
 void wm_ico_enum(wk_t* const);

@@ -4,7 +4,7 @@
 #include <X11/Xft/Xft.h>
 
 typedef struct {
-  char data[26];
+  char data[90];
   unsigned len;
   short ext;
 } wg_str_t;

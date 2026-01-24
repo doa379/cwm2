@@ -36,7 +36,7 @@ int font_init(void) {
   }
 
   font.scent = font.xft->ascent - font.xft->descent;
-  font.ch = 1.25 * font.xft->height;
+  font.ch = 1.0 * font.xft->height;
   font.cw = 2.0 * font.xft->height;
   font.crs = font_crs_init();
   setlocale(LC_ALL, "");

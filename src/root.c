@@ -1,17 +1,22 @@
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include <stdio.h>
 
 #include "root.h"
 #include "input.h"
 #include "font.h"
+#include "prop.h"
 #include "cblk.h"
 
 extern Display* dpy;
 extern font_t font;
 extern int rootbg;
+extern prop_t prop;
 
 static cblk_t cblk;
 static size_t const NRES = 100;
+
+static Window wmcheckwin;
 
 int
 root_init(void) {
@@ -21,8 +26,6 @@ root_init(void) {
       SubstructureRedirectMask |
       SubstructureNotifyMask |
       PointerMotionMask |
-      EnterWindowMask |
-      LeaveWindowMask |
       StructureNotifyMask |
       PropertyChangeMask |
       ExposureMask,
@@ -32,6 +35,37 @@ root_init(void) {
     CWEventMask | CWCursor, &wa);
   XSelectInput(dpy, DefaultRootWindow(dpy), 
       wa.event_mask);
+  /* Impl handshake window */
+  wmcheckwin = 
+    XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 
+      0, 0, 1, 1, 0, 0, 0);
+  XChangeProperty(dpy, wmcheckwin, prop.net_check, 
+    XA_WINDOW, 32, PropModeReplace, 
+      (unsigned char*) &wmcheckwin, 1);
+  XChangeProperty(dpy, wmcheckwin, prop.net_name, 
+    prop.utf8string, 8, PropModeReplace, 
+      (unsigned char*) "cwm2", 4);
+  XChangeProperty(dpy, DefaultRootWindow(dpy), 
+    prop.net_check, XA_WINDOW, 32, PropModeReplace, 
+      (unsigned char*) &wmcheckwin, 1);
+  /* */
+  /* Set root props */
+  Atom const supported[] = {
+    XA_WM_NAME,
+    prop.net_name,
+    prop.wm_iconame,
+    prop.net_iconame,
+    prop.net_state,
+    prop.net_fs
+  };
+
+  XChangeProperty(dpy, DefaultRootWindow(dpy),
+    prop.net_supported, XA_ATOM, 32, PropModeReplace,
+      (unsigned char*) supported,
+        sizeof supported / sizeof(Atom));  
+  XDeleteProperty(dpy, DefaultRootWindow(dpy), 
+    prop.net_clients);
+  /* */
   input_keys_grab(DefaultRootWindow(dpy));
   XSetWindowBackground(dpy, DefaultRootWindow(dpy), rootbg);
   XClearWindow(dpy, DefaultRootWindow(dpy));
@@ -40,6 +74,7 @@ root_init(void) {
 
 void
 root_deinit(void) {
+  XDestroyWindow(dpy, wmcheckwin);
   XClearWindow(dpy, DefaultRootWindow(dpy));
   XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot,
     CurrentTime);

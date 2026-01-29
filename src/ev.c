@@ -8,188 +8,159 @@
 extern Display* dpy;
 
 static XEvent xev;
+static XMapEvent* const xmap = &xev.xmap;
+static XUnmapEvent* const xunmap = &xev.xunmap;
+static XClientMessageEvent* const xclient = &xev.xclient;
+static XConfigureEvent* const xconfigure = &xev.xconfigure;
+static XMapRequestEvent* const xmaprequest = 
+  &xev.xmaprequest;
+static XDestroyWindowEvent* const xdestroywindow = 
+  &xev.xdestroywindow;
+static XConfigureRequestEvent const* const xconfrequest =
+  &xev.xconfigurerequest;
+static XMotionEvent* const xmotion = &xev.xmotion;
+static XMappingEvent* const xmapping = &xev.xmapping;
+static XKeyEvent* const xkey = &xev.xkey;
+static XButtonEvent* const xbutton = &xev.xbutton;
+static XCrossingEvent* const xcrossing = &xev.xcrossing;
+static XFocusChangeEvent const* xfocus = &xev.xfocus;
+static XPropertyEvent* const xproperty = &xev.xproperty;
+static XExposeEvent* const xexpose = &xev.xexpose;
 static void (*EV[LASTEvent])(void);
 
 static void
 ev_noop(void) {
-
 }
 
 static void
 ev_map_notify(void) {
-  Window const win = xev.xmap.window;
-  (void) win;
+  (void) xmap;
 }
 
 static void
 ev_unmap_notify(void) {
-  Window const win = xev.xunmap.window;
-  (void) win;
+  (void) xunmap;
 }
 
 static void
 ev_client_message(void) {
-  Window const win = xev.xclient.window;
-  Atom const prop = xev.xclient.message_type;
-  int const format = xev.xclient.format;
-  if (win == DefaultRootWindow(dpy)) {
-    fprintf(stdout, "Recv prop %ld\n", prop);
-  } else {
-    if (format == 8) {
-      evcalls_byte_msg(win, prop, xev.xclient.data.b);
-    } else if (format == 16) {
-      evcalls_short_msg(win, prop, xev.xclient.data.s);
-    } else if (format == 32) {
-      evcalls_long_msg(win, prop, xev.xclient.data.l);
-    }
+  if (xclient->format == 8) {
+    evcalls_byte_msg(xclient->window, xclient->message_type,
+      xclient->data.b);
+  } else if (xclient->format == 16) {
+    evcalls_short_msg(xclient->window, xclient->message_type,
+      xclient->data.s);
+  } else if (xclient->format == 32) {
+    evcalls_long_msg(xclient->window, xclient->message_type,
+      xclient->data.l);
   }
 }
 
 static void
 ev_configure_notify(void) {
-  Window const win = xev.xconfigure.window;
-  int const x = xev.xconfigure.x;
-  int const y = xev.xconfigure.y;
-  int const w = xev.xconfigure.width;
-  int const h = xev.xconfigure.height;
-  evcalls_configure_notify(win, x, y, w, h);
+  if (xconfigure->window == DefaultRootWindow(dpy)) {
+    evcalls_configure_root(xconfigure->x, xconfigure->y, 
+      xconfigure->width, xconfigure->height);
+  }
 }
 
 static void
 ev_map_request(void) {
-  Window const parwin = xev.xmaprequest.parent;
-  (void) parwin;
-  Window const win = xev.xmaprequest.window;
-  fprintf(stdout, "MapRequest Window 0x%lx\n", win);
+  fprintf(stdout, "MapRequest Window 0x%lx\n", 
+    xmaprequest->window);
   XWindowAttributes wa;
-  if (XGetWindowAttributes(dpy, win, &wa) == 0) {
+  if (XGetWindowAttributes(dpy, xmaprequest->window, 
+      &wa) == 0) {
     return;
   } else if (wa.override_redirect) {
-    evcalls_map_override_redirect(win, wa.x, wa.y,
-      wa.width, wa.height);
+    evcalls_map_override_redirect(
+      xmaprequest->window, wa.x, wa.y,
+        wa.width, wa.height);
   } else {
-    evcalls_map_request(win, wa.x, wa.y, wa.width, 
-      wa.height);
+    evcalls_map_request(xmaprequest->window, wa.x, wa.y, 
+      wa.width, wa.height);
   }
 }
 
 static void
 ev_destroy_notify(void) {
-  Window const win = xev.xdestroywindow.window;
-  fprintf(stdout, "EV: Destroy Notify window 0x%lx\n", win);
-  evcalls_destroy_notify(win);
+  fprintf(stdout, "EV: Destroy Notify window 0x%lx\n", 
+    xdestroywindow->window);
+  evcalls_destroy_notify(xdestroywindow->window);
 }
 
 static void
 ev_configure_request(void) {
-  XConfigureRequestEvent const* const conf =
-    &xev.xconfigurerequest;
-  
-  if (evcalls_configure_request(conf->window, conf->x, 
-      conf->y, conf->width, conf->height) == 0) {
-    XWindowChanges wc = {
-      .x = conf->x,
-      .y = conf->y,
-      .width = conf->width,
-      .height = conf->height,
-      .border_width = conf->border_width,
-      .sibling = conf->above,
-      .stack_mode = conf->detail
-    };
-
-    XConfigureWindow(dpy, conf->window, conf->value_mask, 
-      &wc);
-  }
+  evcalls_configure_request(xconfrequest->window, 
+    xconfrequest->x, xconfrequest->y, 
+    xconfrequest->width, xconfrequest->height, 
+    xconfrequest->border_width, xconfrequest->value_mask);
 }
 
 static void
 ev_motion_notify(void) {
-  Window const win = xev.xmotion.window;
-  int const x = xev.xmotion.x;
-  int const y = xev.xmotion.y;
-  int const x_root = xev.xmotion.x_root;
-  int const y_root = xev.xmotion.y_root;
-  evcalls_motion_notify(win, x, y, x_root, y_root);
+  evcalls_motion_notify(xmotion->window, 
+    xmotion->x, xmotion->y, xmotion->x_root, 
+      xmotion->y_root);
 }
 
 static void
 ev_mapping_notify(void) {
-  XMappingEvent* ev = &xev.xmapping;
-  Window const win = xev.xmapping.window;
-  XRefreshKeyboardMapping(ev);
-  if (ev->request == MappingKeyboard) {
-    input_keys_grab(win);
+  XRefreshKeyboardMapping(xmapping);
+  if (xmapping->request == MappingKeyboard) {
+    input_keys_grab(xmapping->window);
   }
 }
 
 static void
 ev_key_press(void) {
   fprintf(stdout, "EV: Key Press\n");
-  Window const win = xev.xkey.window;
-  (void) win;
-  unsigned const state = xev.xkey.state;
-  unsigned const keycode = xev.xkey.keycode;
-  evcalls_key_press(state, keycode);
+  evcalls_key_press(xkey->state, xkey->keycode);
 }
 
 static void
 ev_btn_press(void) {
-  Window const win = xev.xbutton.window;
-  unsigned const state = xev.xbutton.state;
-  unsigned const button = xev.xbutton.button;
-  int const x = xev.xbutton.x;
-  int const y = xev.xbutton.y;
-  int const x_root = xev.xbutton.x_root;
-  int const y_root = xev.xbutton.y_root;
-  evcalls_btn_press(win, state, button, x, y, 
-    x_root, y_root);
+  evcalls_btn_press(xbutton->window, 
+    xbutton->state, xbutton->button, xbutton->x, xbutton->y, 
+      xbutton->x_root, xbutton->y_root);
 }
 
 static void
 ev_enter_notify(void) {
-  Window const win = xev.xcrossing.window;
-  int const mode = xev.xcrossing.mode;
-  int const detail = xev.xcrossing.detail; 
-  if (mode == NotifyNormal && detail != NotifyInferior && 
-      win != DefaultRootWindow(dpy)) {
-    evcalls_enter_notify(win);
+  if (xcrossing->mode == NotifyNormal && 
+      xcrossing->detail != NotifyInferior && 
+      xcrossing->window != DefaultRootWindow(dpy)) {
+    evcalls_enter_notify(xcrossing->window);
   }
 }
 
 static void
 ev_leave_notify(void) {
-  Window const win = xev.xcrossing.window;
-  int const mode = xev.xcrossing.mode;
-  int const detail = xev.xcrossing.detail; 
-  if (mode == NotifyNormal && detail != NotifyInferior && 
-      win != DefaultRootWindow(dpy)) {
-    evcalls_leave_notify(win);
+  if (xcrossing->mode == NotifyNormal && 
+      xcrossing->detail != NotifyInferior && 
+      xcrossing->window != DefaultRootWindow(dpy)) {
+    evcalls_leave_notify(xcrossing->window);
   }
 }
 
 static void
 ev_focus_change(void) {
-  XFocusChangeEvent const* xfocus = &xev.xfocus;
-  Window const win = xfocus->window;
-  int const mode = xfocus->mode;
-  (void) mode;
-  int const detail = xfocus->detail;
-  (void) detail;
-  evcalls_focus_change(win);
+  evcalls_focus_change(xfocus->window);
 }
 
 static void
 ev_property_notify(void) {
-  Window const win = xev.xproperty.window;
-  fprintf(stdout, "EV: Prop Notify Window %ld\n", win);
-  evcalls_property_notify(win);
+  fprintf(stdout, "EV: Prop Notify Window 0x%lx\n", 
+    xproperty->window);
+  evcalls_property_notify(xproperty->window, 
+    xproperty->atom);
 }
 
 static void
 ev_expose(void) {
-  Window const win = xev.xexpose.window;
-  fprintf(stdout, "EV: Expose Window 0x%lx\n", win);
-  evcalls_expose(win);
+  fprintf(stdout, "EV: Expose Window 0x%lx\n", 
+    xexpose->window);
+  evcalls_expose(xexpose->window);
 }
 
 void

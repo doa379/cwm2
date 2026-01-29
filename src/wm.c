@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <X11/Xlib.h>
 
 #include "wm.h"
@@ -271,7 +272,6 @@ wm_cli_translate(cli_t* const c, int const x_root,
         Window const win = xev.xexpose.window;
         evcalls_expose(win);
     }
-          
   } while (xev.type != ButtonRelease);
   XUngrabPointer(dpy, CurrentTime);
   XUnmapWindow(dpy, c->hd1.win);
@@ -326,7 +326,6 @@ wm_cli_resize(cli_t* const c) {
       wg_str_set(&c->hd1, str);
       unsigned hdr0 = 2 * c->par.bdrw;
       wg_str_draw(&c->hd1, wg_SEL, hdr0);
-      
     } else if (xev.type == Expose) {
         Window const win = xev.xexpose.window;
         evcalls_expose(win);
@@ -345,7 +344,7 @@ wm_cli_del(cli_t* const c) {
   cli_t* const prevc = cblk_prev(&wk->clis, c);
   if (prevc != c) {
     wk->currc = prevc;
-    /* wm_cli_focus(wk->currc); */
+    wm_cli_focus(wk->currc);
   } else {
     wk->prevc = wk->currc = NULL;
   }
@@ -356,9 +355,6 @@ wm_cli_del(cli_t* const c) {
 
   cli_del_anim(c, 100);
   wm_cli_unmap(c);
-  if (wk->currc) {
-    wm_cli_focus(wk->currc);
-  }
 }
 
 void
@@ -388,7 +384,7 @@ wm_cli_switch(cli_t* const c) {
   }
 
   wm_cli_focus(c);
-  cli_switch_anim(c, 3);
+  cli_switch_anim(c, 20);
   c->wk->currc = c;
 }
 
@@ -429,6 +425,15 @@ wm_wk_switch(wk_t* const wk) {
   wm_wk_unfocus(currwk);
   prevwk = currwk;
   wm_wk_focus(wk);
+  for (unsigned i = 0; i < 20; i++) {
+    usleep(10000);
+    wk_wg_focus(wk, wg_SEL);
+    XFlush(dpy);
+    usleep(10000);
+    wk_wg_focus(wk, wg_ACT);
+    XFlush(dpy);
+  }
+
   currwk = wk;
 }
 
@@ -471,29 +476,15 @@ void wm_cli_currmon_move(void) {
 void
 wm_cli_min(cli_t* const c) {
   wm_cli_unfocus(c);
-  cli_anim(c, c->x0, c->y0, c->par.w, c->par.h, 
-    0, currmon->h, 0, 0, 100);
-  XUnmapWindow(dpy, c->par.win);
-  c->mode = cli_MIN;
+  cli_min(c, 0, currmon->h);
 }
 
 void
 wm_cli_max(cli_t* const c) {
-  int const bdrw = 0;
-  XSetWindowBorderWidth(dpy, c->par.win, bdrw);
-  int const w_org = c->w;
-  int const h_org = c->h;
-  c->mode = cli_MAX;
   wm_cli_unfocus(c);
-  XRaiseWindow(dpy, c->par.win);
-  cli_anim(c, c->x0, c->y0, c->par.w, c->par.h, 
-    currmon->x, currmon->y, currmon->w, currmon->h, 100);
+  cli_max(c, currmon->x, currmon->y, currmon->w, 
+    currmon->h);
   wm_cli_focus(c);
-  cli_resize(c, currmon->w, currmon->h,
-    currmon->w, currmon->h, bdrw);
-  c->w = w_org;
-  c->h = h_org;
-  XMoveWindow(dpy, c->par.win, currmon->x, currmon->y);
 }
 
 void
@@ -503,25 +494,16 @@ wm_cli_fs(cli_t* const c) {
 
 void
 wm_cli_res(cli_t* const c) {
-  XSetWindowBorderWidth(dpy, c->par.win, c->par.bdrw);
-  c->mode = cli_RES;
   wm_cli_unfocus(c);
-  cli_anim(c, currmon->x, currmon->y, currmon->w,
-    currmon->h, c->x0, c->y0, c->w, c->h, 100);
+  cli_res(c, currmon->x, currmon->y, 
+    currmon->w, currmon->h);
   wm_cli_focus(c);
-  cli_conf(c, c->w, c->h);
-  cli_move(c, c->x0, c->y0, currmon->w, currmon->h);
 }
 
 void
 wm_cli_raise(cli_t* const c) {
-  XSetWindowBorderWidth(dpy, c->par.win, c->par.bdrw);
-  c->mode = cli_RES;
-  cli_anim(c, 0, currmon->h, 0, 0, c->x0, c->y0, c->w, c->h, 
-    100);
+  cli_raise(c, 0, currmon->h, currmon->w, currmon->h);
   wm_cli_focus(c);
-  cli_conf(c, c->w, c->h);
-  cli_move(c, c->x0, c->y0, currmon->w, currmon->h);
 }
 
 void

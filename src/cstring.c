@@ -26,6 +26,6 @@ char* cstring_end(cstring_t const* cstring) {
   return (char*) cstring->blk + cstring->length;
 }
 
-size_t cblk_len(cstring_t const* cstring) {
+size_t cstring_len(cstring_t const* cstring) {
   return cstring->length;
 }

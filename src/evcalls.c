@@ -1,3 +1,4 @@
+#include <X11/Xatom.h>
 #include <unistd.h>
 
 #include "input.h"
@@ -11,6 +12,7 @@
 #include "root.h"
 
 extern Display* dpy;
+extern prop_t prop;
 
 extern wk_t* prevwk;
 extern wk_t* currwk;
@@ -20,43 +22,58 @@ extern cblk_t mons;
 extern wg_t status;
 extern tray_t tray;
 
-int
+void
 evcalls_configure_request(Window const win, int const x,
-  int const y, int const w, int const h) {
-  fprintf(stdout, "Client Config Window 0x%lx\n", win);
+  int const y, int const w, int const h, int const bw, 
+  long const mask) {
+  fprintf(stdout, "Config Request 0x%lx\n", win);
   cli_t* const c = wm_cli(win);
-  if (c && c->win == win) {
-    wm_cli_conf(c, w, h);
-    wm_cli_arrange(c, x, y);
-    return -1;
+  if (c) {
+    fprintf(stdout, "Client Config 0x%lx\n", win);
+    if (c->fs) {
+        prop_win_config(c->win, x, y, w, h, bw);
+    } else {
+      int const nx = mask & CWX ? x : c->x0;
+      int const ny = mask & CWY ? y : c->y0;
+      int const nw = mask & CWWidth  ? w : c->w;
+      int const nh = mask & CWHeight ? h : c->h;
+      wm_cli_conf(c, nw, nh);
+      wm_cli_arrange(c, nx, ny);
+      prop_win_config(c->win, nx, ny, nw, nh, 0);
+    }
   } else {
-  }
+    XWindowChanges wc = {
+      .x = x,
+      .y = y,
+      .width = w,
+      .height = h,
+      .border_width = bw,
+      .sibling = DefaultRootWindow(dpy),
+      .stack_mode = Above
+    };
 
-  return 0;
+    XConfigureWindow(dpy, win, mask, &wc);
+  }
 }
 
 void
-evcalls_configure_notify(Window const win, int const x,
-int const y, int const w,
-int const h) {
-  if (win == DefaultRootWindow(dpy)) {
-    fprintf(stdout, "Reconfig root window\n");
-    mon_mons_clear();
-    mon_conf();
-    panel_conf();
-    tray_conf();
-    /* Set currmon */ 
-    int x_root;
-    int y_root;
-    root_ptr_query(&x_root, &y_root);
-    mon_t* const mon = mon_currmon(x_root, y_root);
-    if (mon) {
-      currmon = mon;
-    }
-
-    wm_cli_currmon_move();
-  } else {
+evcalls_configure_root(int const x, int const y, 
+  int const w, int const h) {
+  fprintf(stdout, "Reconfig root window\n");
+  mon_mons_clear();
+  mon_conf();
+  panel_conf();
+  tray_conf();
+  /* Set currmon */ 
+  int x_root;
+  int y_root;
+  root_ptr_query(&x_root, &y_root);
+  mon_t* const mon = mon_currmon(x_root, y_root);
+  if (mon) {
+    currmon = mon;
   }
+
+  wm_cli_currmon_move();
 }
 
 void
@@ -83,11 +100,14 @@ int const y, int const w, int const h) {
 
   cli_t* const c = wm_cli_map(currwk, win);
   if (c) {
-    wm_cli_switch(c);
-    strncpy(c->strico, prop_ico(win), sizeof c->strico - 1);
-    wg_str_set(&c->hd0, prop_name(win));
     wm_cli_conf(c, w, h);
     wm_cli_arrange(c, x, y);
+    prop_win_config(c->win, x, y, w, h, 0);
+    XMapWindow(dpy, win);
+    prop_state_set(win, NormalState);
+    wg_str_set(&c->hd0, prop_name(win));
+    strncpy(c->strico, prop_ico(win), sizeof c->strico - 1);
+    wm_cli_switch(c);
     wm_ico_enum(c->wk);
     panel_icos_arrange(c->wk);
     panel_arrange(c->wk);
@@ -100,6 +120,7 @@ evcalls_destroy_notify(Window const win) {
   if (c && c->win == win) {
     wk_t* const wk = c->wk;
     wm_cli_del(c);
+    prop_state_set(win, WithdrawnState);
     wm_ico_enum(wk);
     panel_icos_arrange(wk);
     panel_arrange(wk);
@@ -296,32 +317,24 @@ evcalls_leave_notify(Window const win) {
 void
 evcalls_focus_change(Window const win) {
   fprintf(stdout, "EV: Focus Change Window 0x%lx\n", win);
-  /*
-  cli_t* const c = wm_cli(win);
-  if (c && c != currwk->currc) {
-    if (c->wk == currwk) {
-      wg_win_bgclr(c->ico.win, wg_SEL);
-      wg_win_bdrclr(c->ico.win, wg_SEL);
-      cli_wg_focus(c, wg_SEL);
-    } else {
-      wk_wg_focus(c->wk, wg_SEL);
-    }
-
-    wg_str_draw(&c->ico, wg_SEL, 0);
-  }
-  */
 }
 
 void
-evcalls_property_notify(Window const win) {
+evcalls_property_notify(Window const win, Atom const atom) {
+  fprintf(stdout, "Recv prop %s on Window 0x%lx\n", 
+    prop_atom_name(atom), win);
+
   if (win == DefaultRootWindow(dpy)) {
-    /* Changes to root name propagate to status */
-    status_str_set(prop_root());
+    if (atom == XA_WM_NAME || atom == prop.net_name) {
+      status_str_set(prop_root());
+    }
   } else {
     cli_t* const c = wm_cli(win);
-    if (c && c->win == win) {
-      wg_str_set(&c->hd0, prop_name(win));
-      cli_wg_focus(c, c == c->wk->currc ? wg_ACT : wg_BG);
+    if (c) {
+      if (atom == XA_WM_NAME || atom == prop.net_name) {
+        wg_str_set(&c->hd0, prop_name(win));
+        cli_wg_focus(c, c == c->wk->currc ? wg_ACT : wg_BG);
+      }
     }
   }
 }
@@ -342,38 +355,48 @@ evcalls_expose(Window const win) {
 }
 
 void
-evcalls_byte_msg(Window const win, Atom const prop,
-long const b[]) {
-
+evcalls_byte_msg(Window const win, Atom const atom,
+char const b[]) {
+  fprintf(stdout, "Recv prop %s on Window 0x%lx\n", 
+    prop_atom_name(atom), win);
 }
 
 void
-evcalls_short_msg(Window const win, Atom const prop,
-long const s[]) {
-
+evcalls_short_msg(Window const win, Atom const atom,
+short const s[]) {
+  fprintf(stdout, "Recv prop %s on Window 0x%lx\n", 
+    prop_atom_name(atom), win);
 }
 
 void
-evcalls_long_msg(Window const win, Atom const prop,
+evcalls_long_msg(Window const win, Atom const atom,
 long const l[]) {
+  fprintf(stdout, "Recv msg %s on Window 0x%lx\n", 
+    prop_atom_name(atom), win);
   cli_t* const c = wm_cli(win);
   if (c) {
-    Atom const wm_state = 
-      XInternAtom(dpy, "_NET_WM_STATE", False);
-    Atom const act_win = 
-      XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False);
-    if (prop == wm_state) {
-      Atom const wm_fs = 
-        XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
-      if (l[1] == wm_fs || l[2] == wm_fs) {
-        if (c->mode != cli_FSC) {
+    if (atom == prop.net_state) {
+      if (l[1] == prop.net_fs || l[2] == prop.net_fs) {
+        if (l[0] == _NET_WM_STATE_ADD ||
+            (l[0] == _NET_WM_STATE_TOGGLE && c->fs == 0)) {
           wm_cli_fs(c);
-        } else {
-          wm_cli_res(c);
+          XChangeProperty(dpy, c->win, prop.net_state, 
+            XA_ATOM, 32, PropModeReplace, 
+              (unsigned char*) &prop.net_fs, 1);
+          c->fs = 1;
+        } else if (l[0] == _NET_WM_STATE_REMOVE ||
+            (l[0] == _NET_WM_STATE_TOGGLE && c->fs == 1)) {
+          XChangeProperty(dpy, c->win, prop.net_state, 
+            XA_ATOM, 32, PropModeReplace, NULL, 0);
+          c->fs = 0;
+          if (c->mode == cli_MAX) {
+            wm_cli_max(c);
+          } else {
+            wm_cli_res(c);
+          }
         }
       }
-
-    } else if (prop == act_win) {
+    } else if (atom == prop.net_actwin) {
       /* Show urgency */
       cli_wg_focus(c, wg_SEL);
     }

@@ -26,6 +26,7 @@ typedef struct cli_s {
   wg_t ico;
   char strico[4];
   int mode;
+  int fs;
   int sel;
 } cli_t;
 
@@ -34,8 +35,7 @@ enum cli_mode {
   cli_MAX, 
   cli_RES, 
   cli_CLS, 
-  cli_SIZ, 
-  cli_FSC
+  cli_SIZ,
 };
 
 void cli_wg_init(void);
@@ -49,11 +49,18 @@ void cli_move(cli_t* const, int const, int const, int const,
 int const);
 void cli_resize(cli_t* const, int const, int const, 
 int const, int const, int const);
+void cli_min(cli_t* const, int const, int const);
+void cli_res(cli_t* const, int const, int const, 
+int const, int const);
+void cli_raise(cli_t* const, int const, int const,
+int const, int const);
+void cli_max(cli_t* const, int const, int const,
+int const, int const);
 void cli_fs(cli_t* const, int const, int const, int const, 
 int const);
 void cli_anim(cli_t* const, int const, int const, int const, 
-  int const, int const, int const, int const, int const, 
-  int const);
+int const, int const, int const, int const, int const, 
+int const);
 void cli_switch_anim(cli_t* const, int const);
 void cli_del_anim(cli_t* const, int const);
 void cli_ord_init(Window const);

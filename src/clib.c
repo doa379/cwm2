@@ -16,6 +16,5 @@ int clib_rng(const unsigned N0, const unsigned N1) {
   struct timeval tv;
   gettimeofday(&tv, NULL);
   srand(tv.tv_usec);
-  // srand(time(NULL));
   return N0 + rand() % (N1 - N0 + 1);
 }

@@ -23,3 +23,5 @@ SRC0=main.c
 BIN0=main.bin
 SRC1=../src/cblk.c cblk.c
 BIN1=cblk.bin
+SRC1=atom_name.c
+BIN1=atom_name.bin

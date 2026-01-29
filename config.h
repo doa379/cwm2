@@ -109,7 +109,7 @@ int const COLORS[] = {
 /* Color Scheme { BG, ACT, SEL } */
   palette_cyan10,
   palette_cyan50,
-  palette_gray50
+  palette_gray60
 };
 
 input_t const KBD[] = {
@@ -147,6 +147,7 @@ input_t const KBD[] = {
   { Mod4Mask, XK_equal, .call = calls_cli_next },
   { Mod4Mask, XK_r, .call = calls_cli_raise_toggle },
   { Mod4Mask, XK_a, .call = calls_arrange_toggle },
+  { Mod4Mask, XK_f, .call = calls_cli_fs_toggle },
   { Mod4Mask, XK_m, .call = calls_cli_mode_toggle },
   { Mod4Mask, XK_space, .call = calls_sel_toggle },
   { Mod4Mask, XK_c, .call = calls_sel_clear },

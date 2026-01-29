@@ -69,7 +69,8 @@ int main(int const ARGC, char const* ARGV[]) {
     XCloseDisplay(dpy);
     return -1;
   }
-
+  
+  prop_init();
   root_init();
   cli_wg_init();
   panel_init();

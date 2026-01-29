@@ -32,7 +32,6 @@ static unsigned char const stipple_8x8[] = {
 };
 
 static long const KMASK =
-  /*FocusChangeMask | */
   PropertyChangeMask;
 static long const CLIMASK = 
   EnterWindowMask |
@@ -59,17 +58,17 @@ static unsigned char* BTN[5];
 void
 cli_wg_init(void) {
   bdrw_twice = 2 * bdrw;
-  BTN[cli_MIN] = font.ch < 24 ? 
+  BTN[cli_MIN] = font.ch < 32 ? 
     cbox_16x16_bits : cbox_24x24_bits;
-  BTN[cli_MAX] = font.ch < 24 ? 
+  BTN[cli_MAX] = font.ch < 32 ? 
     cboxf_16x16_bits : cboxf_24x24_bits;
-  BTN[cli_RES] = font.ch < 24 ? 
+  BTN[cli_RES] = font.ch < 32 ? 
     cboxff_16x16_bits : cboxff_24x24_bits;
-  BTN[cli_CLS] = font.ch < 24 ? 
+  BTN[cli_CLS] = font.ch < 32 ? 
     cx_16x16_bits : cx_24x24_bits;
-  BTN[cli_SIZ] = font.ch < 24 ? 
+  BTN[cli_SIZ] = font.ch < 32 ? 
     siz_16x16_bits : siz_24x24_bits;
-  btnh = btnw = font.ch < 24 ? 16 : 24;
+  btnh = btnw = font.ch < 32 ? 16 : 24;
   btnx = 0.5 * (font.cw - btnw);
   btny = 0.5 * (font.ch - btnh);
 }
@@ -78,12 +77,11 @@ cli_t
 cli_init(Window const win, wk_t* const wk) {
   /* Init parent */
   wg_t const par = wg_init(DefaultRootWindow(dpy), 
-      10, 10, bdrw);
+      1, 1, bdrw);
   wg_win_bgclr(par.win, wg_BG);
   XReparentWindow(dpy, win, par.win, 0, 0);
   XSelectInput(dpy, par.win, CLIMASK);
   XSetWindowBorderWidth(dpy, win, 0);
-  XMapWindow(dpy, win);
   XSelectInput(dpy, win, KMASK);
   /* Init general header */
   wg_t hd0 = wg_init(par.win, 1, 1, 0);
@@ -143,6 +141,7 @@ cli_init(Window const win, wk_t* const wk) {
     .siz = siz,
     .ico = ico,
     .mode = cli_RES,
+    .fs = 0,
     .sel = 0,
   };
 }
@@ -312,16 +311,58 @@ int const W, int const H, int const bdrw) {
 }
 
 void
+cli_min(cli_t* const c, int const x, int const y) {
+  cli_anim(c, c->x0, c->y0, c->par.w, c->par.h, 
+    x, y, 1, 1, 100);
+  XUnmapWindow(dpy, c->par.win);
+  c->mode = cli_MIN;
+}
+
+void
+cli_res(cli_t* const c, int const x, int const y, 
+  int const w, int const h) {
+  XSetWindowBorderWidth(dpy, c->par.win, c->par.bdrw);
+  cli_anim(c, x, y, w, h, c->x0, c->y0, c->w, c->h, 100);
+  c->mode = cli_RES;
+  cli_conf(c, c->w, c->h);
+  cli_move(c, c->x0, c->y0, w, h);
+}
+
+void
+cli_raise(cli_t* const c, int const x, int const y,
+int const W, int const H) {
+  /* Constraint (W, H) */
+  XSetWindowBorderWidth(dpy, c->par.win, c->par.bdrw);
+  cli_anim(c, x, y, 0, 0, c->x0, c->y0, c->w, c->h, 100);
+  c->mode = cli_RES;
+  cli_conf(c, c->w, c->h);
+  cli_move(c, c->x0, c->y0, W, H);
+}
+
+void
+cli_max(cli_t* const c, int const x, int const y,
+int const w, int const h) {
+  unsigned int bdrw = 0;
+  XSetWindowBorderWidth(dpy, c->par.win, bdrw);
+  cli_anim(c, c->x0, c->y0, c->par.w, c->par.h, 
+    x, y, w, h, 100);
+  int const w0 = c->w;
+  int const h0 = c->h;
+  c->mode = cli_MAX;
+  cli_resize(c, w, h, w, h, bdrw);
+  c->w = w0;
+  c->h = h0;
+  XMoveWindow(dpy, c->par.win, x, y);
+}
+
+void
 cli_fs(cli_t* const c, int const x, int const y, 
 int const w, int const h) {
-  c->mode = cli_FSC;
   XUnmapWindow(dpy, c->hd0.win);
   XSetWindowBorderWidth(dpy, c->par.win, 0);
   int const ch = h + font.ch + bdrw_twice;
-  XResizeWindow(dpy, c->par.win, w, ch);
-  XMoveWindow(dpy, c->par.win, x, y);
-  XResizeWindow(dpy, c->win, w, ch);
-  XMoveWindow(dpy, c->win, 0, 0);
+  XMoveResizeWindow(dpy, c->par.win, x, y, w, ch);
+  XMoveResizeWindow(dpy, c->win, 0, 0, w, ch);
 }
 
 void
@@ -352,10 +393,10 @@ int const W, int const H, int const d) {
 void
 cli_switch_anim(cli_t* const c, int const d) {
   for (unsigned i = 0; i < d; i++) {
-    usleep(100000);
+    usleep(10000);
     cli_wg_focus(c, wg_BG);
     XFlush(dpy);
-    usleep(100000);
+    usleep(10000);
     cli_wg_focus(c, wg_ACT);
     XFlush(dpy);
   }

@@ -21,6 +21,7 @@ extern wk_t* currwk;
 extern cblk_t mons;
 extern wg_t panel;
 extern tray_t tray;
+extern prop_t prop;
 
 void
 calls_wk0(void) {
@@ -258,8 +259,8 @@ calls_cli_wk12_move(void) {
 
 static void
 calls_cli_switch(cli_t* const c) {
-  wm_cli_switch(c);
   XRaiseWindow(dpy, c->par.win);
+  wm_cli_switch(c);
   panel_icos_arrange(c->wk);
 }
 
@@ -395,6 +396,14 @@ calls_arrange_toggle(void) {
   static int lt;
   calls_lt_arrange(lt++);
   lt %= 2;
+}
+
+void
+calls_cli_fs_toggle(void) {
+  cli_t* const c = currwk->currc;
+  if (c) {
+    prop_win_fs(c->win);
+  }
 }
 
 void

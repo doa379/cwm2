@@ -47,6 +47,7 @@ void calls_cli7(void);
 void calls_cli8(void);
 void calls_cli9(void);
 void calls_arrange_toggle(void);
+void calls_cli_fs_toggle(void);
 void calls_cli_mode_toggle(void);
 void calls_sel_clear(void);
 void calls_sel_toggle(void);

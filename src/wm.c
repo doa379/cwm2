@@ -404,6 +404,11 @@ wm_cli_del(cli_t* const c) {
 void
 wm_cli_unfocus(cli_t* const c) {
   input_btns_ungrab(c->ker.win);
+  /* Mapping/Unmapping windows must correspond with 
+      input foci, 
+      eg. unmapping window that currently holds focus
+      Discount out of bounds Map/Unmap w/o handling focus
+  */
   XSetInputFocus(dpy, DefaultRootWindow(dpy), 
     RevertToPointerRoot, CurrentTime);
   cli_clr(c, wg_BG);
@@ -413,6 +418,11 @@ wm_cli_unfocus(cli_t* const c) {
 void
 wm_cli_focus(cli_t* const c) {
   input_btns_grab(c->ker.win);
+  /* Mapping/Unmapping windows must correspond with 
+      input foci, 
+      eg. unmapping window that currently holds focus
+      Discount out of bounds Map/Unmap w/o handling focus
+  */
   XSetInputFocus(dpy, c->ker.win, RevertToPointerRoot,
     CurrentTime);
   cli_clr(c, wg_ACT);
@@ -446,7 +456,9 @@ wm_cli_ker_conf(cli_t* const c, int const w, int const h) {
 void
 wm_cli_arrange(cli_t* const c, int const x, int const y) {
   if (c->par.x != x || c->par.y != y) {
-    cli_move(c, x, y, currmon->w, currmon->h);
+    cli_move(c, x < currmon->x ? currmon->x : x, 
+      y < currmon->y ? currmon->y : y, 
+        currmon->w, currmon->h);
     c->fl.x = c->par.x;
     c->fl.y = c->par.y;
   }

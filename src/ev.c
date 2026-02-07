@@ -1,6 +1,5 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
-#include <stdio.h>
 
 #include "evcalls.h"
 #include "input.h"
@@ -66,8 +65,6 @@ ev_configure_notify(void) {
 
 static void
 ev_map_request(void) {
-  fprintf(stdout, "MapRequest Window 0x%lx\n", 
-    xmaprequest->window);
   XWindowAttributes wa;
   if (XGetWindowAttributes(dpy, xmaprequest->window, 
       &wa) == 0) {
@@ -84,8 +81,6 @@ ev_map_request(void) {
 
 static void
 ev_destroy_notify(void) {
-  fprintf(stdout, "EV: Destroy Notify window 0x%lx\n", 
-    xdestroywindow->window);
   evcalls_destroy_notify(xdestroywindow->window);
 }
 
@@ -114,7 +109,6 @@ ev_mapping_notify(void) {
 
 static void
 ev_key_press(void) {
-  fprintf(stdout, "EV: Key Press\n");
   evcalls_key_press(xkey->state, xkey->keycode);
 }
 
@@ -150,16 +144,12 @@ ev_focus_change(void) {
 
 static void
 ev_property_notify(void) {
-  fprintf(stdout, "EV: Prop Notify Window 0x%lx\n", 
-    xproperty->window);
   evcalls_property_notify(xproperty->window, 
     xproperty->atom);
 }
 
 static void
 ev_expose(void) {
-  fprintf(stdout, "EV: Expose Window 0x%lx\n", 
-    xexpose->window);
   evcalls_expose(xexpose->window);
 }
 

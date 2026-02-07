@@ -26,20 +26,18 @@ void
 evcalls_configure_request(Window const win, int const x,
   int const y, int const w, int const h, int const bw, 
   long const mask) {
-  fprintf(stdout, "Config Request 0x%lx\n", win);
   cli_t* const c = wm_cli(win);
   if (c) {
-    fprintf(stdout, "Client Config 0x%lx\n", win);
     if (c->fs) {
-        prop_win_config(c->win, x, y, w, h, bw);
+        prop_win_config(c->ker.win, x, y, w, h, bw);
     } else {
-      int const nx = mask & CWX ? x : c->x0;
-      int const ny = mask & CWY ? y : c->y0;
-      int const nw = mask & CWWidth  ? w : c->w;
-      int const nh = mask & CWHeight ? h : c->h;
-      wm_cli_conf(c, nw, nh);
+      int const nx = mask & CWX ? x : c->par.x;
+      int const ny = mask & CWY ? y : c->par.y;
+      int const nw = mask & CWWidth  ? w : c->ker.w;
+      int const nh = mask & CWHeight ? h : c->ker.h;
+      wm_cli_ker_conf(c, nw, nh);
       wm_cli_arrange(c, nx, ny);
-      prop_win_config(c->win, nx, ny, nw, nh, 0);
+      prop_win_config(c->ker.win, nx, ny, nw, nh, 0);
     }
   } else {
     XWindowChanges wc = {
@@ -59,12 +57,11 @@ evcalls_configure_request(Window const win, int const x,
 void
 evcalls_configure_root(int const x, int const y, 
   int const w, int const h) {
-  fprintf(stdout, "Reconfig root window\n");
+  /* Reset mons */ 
   mon_mons_clear();
   mon_conf();
   panel_conf();
   tray_conf();
-  /* Set currmon */ 
   int x_root;
   int y_root;
   root_ptr_query(&x_root, &y_root);
@@ -100,24 +97,25 @@ int const y, int const w, int const h) {
 
   cli_t* const c = wm_cli_map(currwk, win);
   if (c) {
-    wm_cli_conf(c, w, h);
+    wm_cli_ker_conf(c, w, h);
     wm_cli_arrange(c, x, y);
-    prop_win_config(c->win, x, y, w, h, 0);
+    /* Floats are not yet init'd */
+    prop_win_config(c->ker.win, x, y, w, h, 0);
     XMapWindow(dpy, win);
     prop_state_set(win, NormalState);
     wg_str_set(&c->hd0, prop_name(win));
     strncpy(c->strico, prop_ico(win), sizeof c->strico - 1);
-    wm_cli_switch(c);
     wm_ico_enum(c->wk);
     panel_icos_arrange(c->wk);
     panel_arrange(c->wk);
+    wm_cli_switch(c);
   }
 }
 
 void
 evcalls_destroy_notify(Window const win) {
   cli_t* c = wm_cli(win);
-  if (c && c->win == win) {
+  if (c && c->ker.win == win) {
     wk_t* const wk = c->wk;
     wm_cli_del(c);
     prop_state_set(win, WithdrawnState);
@@ -183,7 +181,6 @@ void
 evcalls_btn_press(Window const win, unsigned const state,
 unsigned const button, int const x, int const y,
 int const x_root, int const y_root) {
-  fprintf(stdout, "EV: Btn press Window 0x%lx\n", win);
   cli_t* const c = wm_cli(win);
   if (c) {
     if (c->mode == cli_RES && c->hd0.win == win) {
@@ -200,20 +197,20 @@ int const x_root, int const y_root) {
     } else if (c->mode == cli_MAX && c->res.win == win) {
       wm_cli_res(c);
     } else if (c->cls.win == win) {
-      prop_win_del(c->win);
+      prop_win_del(c->ker.win);
     } else if (c->wk != currwk && c->ico.win == win) {
       wm_wk_switch(c->wk);
-      wm_cli_switch(c);
       XRaiseWindow(dpy, c->par.win);
       panel_icos_arrange(c->wk);
       panel_arrange(c->wk);
-    } else if (c->win == win || c->ico.win == win) {
-        XMapRaised(dpy, c->par.win);
-        if (c != currwk->currc) {
-          wm_cli_switch(c);
-        } else if (c->mode == cli_MIN) {
-          wm_cli_raise(c);
-        }
+      wm_cli_switch(c);
+    } else if (c->ico.win == win) {
+      XMapRaised(dpy, c->par.win);
+      if (c->mode == cli_MIN) {
+        wm_cli_raise(c);
+      } else if (c != currwk->currc) {
+        wm_cli_switch(c);
+      }
     } else {
       input_t const* input = input_btn(state, button);
       if (input) {
@@ -251,10 +248,9 @@ evcalls_enter_notify(Window const win) {
       wg_pixmap_fill(&c->cls, wg_SEL);
     } else if (win == c->siz.win) {
       wg_pixmap_fill(&c->siz, wg_SEL);
-    } else if (win == c->ico.win && c != currwk->currc) {
-      wg_win_bgclr(c->ico.win, wg_SEL);
-      wg_win_bdrclr(c->ico.win, wg_SEL);
-      wg_str_draw(&c->ico, wg_SEL, 0);
+    } else if (win == c->ico.win && 
+      (c != currwk->currc || c->mode == cli_MIN)) {
+      cli_ico_clr(c, wg_SEL);
     } else if (c != c->wk->currc) {
       wm_cli_switch(c);
       panel_icos_arrange(c->wk);
@@ -281,8 +277,8 @@ void
 evcalls_leave_notify(Window const win) {
   cli_t* const c = wm_cli(win);
   if (c) {
-    unsigned const clr = c == currwk->currc ? wg_ACT : 
-      wg_BG;
+    unsigned const clr = 
+      c == currwk->currc ? wg_ACT : wg_BG;
     if (c->min.win == win) {
       wg_pixmap_fill(&c->min, clr);
     } else if (c->max.win == win) {
@@ -294,9 +290,7 @@ evcalls_leave_notify(Window const win) {
     } else if (c->siz.win == win) {
       wg_pixmap_fill(&c->siz, clr);
     } else if (c->ico.win == win) {
-      wg_win_bgclr(c->ico.win, clr);
-      wg_win_bdrclr(c->ico.win, clr);
-      wg_str_draw(&c->ico, clr, 0);
+      cli_ico_clr(c, clr);
     }
   } else {
     wk_t* const wk = wm_wk(win);
@@ -316,14 +310,10 @@ evcalls_leave_notify(Window const win) {
 
 void
 evcalls_focus_change(Window const win) {
-  fprintf(stdout, "EV: Focus Change Window 0x%lx\n", win);
 }
 
 void
 evcalls_property_notify(Window const win, Atom const atom) {
-  fprintf(stdout, "Recv prop %s on Window 0x%lx\n", 
-    prop_atom_name(atom), win);
-
   if (win == DefaultRootWindow(dpy)) {
     if (atom == XA_WM_NAME || atom == prop.net_name) {
       status_str_set(prop_root());
@@ -333,7 +323,10 @@ evcalls_property_notify(Window const win, Atom const atom) {
     if (c) {
       if (atom == XA_WM_NAME || atom == prop.net_name) {
         wg_str_set(&c->hd0, prop_name(win));
-        cli_wg_focus(c, c == c->wk->currc ? wg_ACT : wg_BG);
+        strncpy(c->strico, prop_ico(win), 
+          sizeof c->strico - 1);
+        wm_cli_ico_enum(c);
+        cli_ico_clr(c, wg_SEL);
       }
     }
   }
@@ -349,7 +342,9 @@ evcalls_expose(Window const win) {
   } else {
     cli_t* const c = wm_cli(win);
     if (c) {
-      cli_wg_focus(c, c == currwk->currc ? wg_ACT : wg_BG);
+      int const clr = c == currwk->currc ? wg_ACT : wg_BG;
+      cli_clr(c, clr);
+      cli_ico_clr(c, clr);
     }
   }
 }
@@ -357,22 +352,16 @@ evcalls_expose(Window const win) {
 void
 evcalls_byte_msg(Window const win, Atom const atom,
 char const b[]) {
-  fprintf(stdout, "Recv prop %s on Window 0x%lx\n", 
-    prop_atom_name(atom), win);
 }
 
 void
 evcalls_short_msg(Window const win, Atom const atom,
 short const s[]) {
-  fprintf(stdout, "Recv prop %s on Window 0x%lx\n", 
-    prop_atom_name(atom), win);
 }
 
 void
 evcalls_long_msg(Window const win, Atom const atom,
 long const l[]) {
-  fprintf(stdout, "Recv msg %s on Window 0x%lx\n", 
-    prop_atom_name(atom), win);
   cli_t* const c = wm_cli(win);
   if (c) {
     if (atom == prop.net_state) {
@@ -380,13 +369,13 @@ long const l[]) {
         if (l[0] == _NET_WM_STATE_ADD ||
             (l[0] == _NET_WM_STATE_TOGGLE && c->fs == 0)) {
           wm_cli_fs(c);
-          XChangeProperty(dpy, c->win, prop.net_state, 
+          XChangeProperty(dpy, c->ker.win, prop.net_state, 
             XA_ATOM, 32, PropModeReplace, 
               (unsigned char*) &prop.net_fs, 1);
           c->fs = 1;
         } else if (l[0] == _NET_WM_STATE_REMOVE ||
             (l[0] == _NET_WM_STATE_TOGGLE && c->fs == 1)) {
-          XChangeProperty(dpy, c->win, prop.net_state, 
+          XChangeProperty(dpy, c->ker.win, prop.net_state, 
             XA_ATOM, 32, PropModeReplace, NULL, 0);
           c->fs = 0;
           if (c->mode == cli_MAX) {
@@ -398,7 +387,7 @@ long const l[]) {
       }
     } else if (atom == prop.net_actwin) {
       /* Show urgency */
-      cli_wg_focus(c, wg_SEL);
+      cli_clr(c, wg_SEL);
     }
   }
 }

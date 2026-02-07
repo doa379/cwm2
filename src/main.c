@@ -10,6 +10,7 @@
 #include "root.h"
 #include "ev.h"
 #include "mon.h"
+#include "sel.h"
 #include "arrange.h"
 #include "prop.h"
 #include "tray.h"
@@ -62,6 +63,7 @@ int main(int const ARGC, char const* ARGV[]) {
   root_ev_enqueue();
   if (font_init()       != 0 ||
       clr_init()        != 0 ||
+      sel_init()        != 0 ||
       arrange_init()    != 0 ||
       mon_mons_init()   != 0 ||
       wm_init(num_wks)  != 0 ||
@@ -78,8 +80,9 @@ int main(int const ARGC, char const* ARGV[]) {
   tray_conf();
   ev_init();
   XSync(dpy, False);
-  while (sig_status == 0)
+  while (sig_status == 0) {
     ev_call();
+  }
 
   root_deinit();
   wm_deinit();

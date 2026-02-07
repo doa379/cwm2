@@ -2,16 +2,11 @@
 
 #include "wg.h"
 #include "wk.h"
+#include "arrange.h"
 
 typedef struct cli_s {
   wk_t* wk;
-  /* Kernel */
-  Window win;
-  int w;
-  int h;
-  /* Cli (par) org */
-  int x0;
-  int y0;
+  wg_t ker;
   /* Widgets */
   wg_t par;
   /* General */
@@ -28,6 +23,7 @@ typedef struct cli_s {
   int mode;
   int fs;
   int sel;
+  arrange_t fl;
 } cli_t;
 
 enum cli_mode { 
@@ -36,6 +32,8 @@ enum cli_mode {
   cli_RES, 
   cli_CLS, 
   cli_SIZ,
+  /* Placeholder */
+  cli_END
 };
 
 void cli_wg_init(void);
@@ -43,12 +41,16 @@ cli_t cli_init(Window const, wk_t* const);
 void cli_deinit(cli_t* const);
 cli_t* cli(Window const, wk_t* const);
 wg_t* cli_wg(cli_t* const, Window const);
-void cli_wg_focus(cli_t* const, unsigned const);
-void cli_conf(cli_t* const, int const, int const);
+void cli_clr(cli_t* const, unsigned const);
+void cli_ico_clr(cli_t* const, unsigned const);
+void cli_ker_conf(cli_t* const, int const, int const);
+void cli_par_conf(cli_t* const, int const, int const);
 void cli_move(cli_t* const, int const, int const, int const,
 int const);
-void cli_resize(cli_t* const, int const, int const, 
-int const, int const, int const);
+void cli_ker_resize(cli_t* const, int const, int const, 
+int const, int const);
+void cli_par_resize(cli_t* const, int const, int const,
+int const, int const);
 void cli_min(cli_t* const, int const, int const);
 void cli_res(cli_t* const, int const, int const, 
 int const, int const);

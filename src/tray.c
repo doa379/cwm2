@@ -6,7 +6,7 @@
 #include "mon.h"
 
 extern Display* dpy;
-extern int const bdrw;
+extern int const bw;
 extern cblk_t mons;
 extern wg_t panel;
 extern unsigned const trayw;
@@ -22,7 +22,7 @@ tray_init(void) {
     return -1;
   }
 
-  tray.wg = wg_init(DefaultRootWindow(dpy), 1, 1, bdrw);
+  tray.wg = wg_init(DefaultRootWindow(dpy), 1, 1, bw);
   long const TRAYMASK =
     ExposureMask;
   XSelectInput(dpy, tray.wg.win, TRAYMASK);
@@ -42,8 +42,8 @@ void
 tray_conf(void) {
   mon_t* const mon = mons.front;
   wg_win_resize(&tray.wg, trayw, 
-    mon->h - 2 * tray.wg.bdrw);
-  int const x = mon->w - tray.wg.w - 2 * tray.wg.bdrw;
+    mon->h - 2 * tray.wg.bw);
+  int const x = mon->w - tray.wg.w - 2 * tray.wg.bw;
   XMoveWindow(dpy, tray.wg.win, x, 0);
   tray_mascot_conf();
 }
@@ -90,7 +90,7 @@ tray_cli_map(wg_t* const wg) {
   wg_t* const nextwg = cblk_map(&tray.clis, wg);
   if (nextwg) {
     XReparentWindow(dpy, nextwg->win, tray.wg.win, 
-      -tray.wg.bdrw, vd);
+      -tray.wg.bw, vd);
     long const KMASK =
       ButtonPressMask |
       EnterWindowMask |
@@ -98,7 +98,7 @@ tray_cli_map(wg_t* const wg) {
       SubstructureNotifyMask |
       SubstructureRedirectMask;
     XSelectInput(dpy, nextwg->win, KMASK);
-    XSetWindowBorderWidth(dpy, nextwg->win, tray.wg.bdrw);
+    XSetWindowBorderWidth(dpy, nextwg->win, tray.wg.bw);
     wg_win_bdrclr(nextwg->win, wg_BG);
     wg_win_resize(nextwg, tray.wg.w, 
       tray.wg.w * (float) wg->h / wg->w);
@@ -113,7 +113,7 @@ tray_cli_unmap(wg_t* const wg) {
   if (tray.clis.size) {
     wg_t* wg = tray.clis.front;
     do {
-      XMoveWindow(dpy, wg->win, -tray.wg.bdrw, d);
+      XMoveWindow(dpy, wg->win, -tray.wg.bw, d);
       d += wg->h;
       wg = cblk_next(&tray.clis, wg);
     } while (wg != tray.clis.front);

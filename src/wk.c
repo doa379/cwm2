@@ -7,14 +7,14 @@
 
 extern Display* dpy;
 extern font_t font;
-extern unsigned const bdrw;
+extern unsigned const bw;
 
 static size_t const NRES = 100;
 
 wk_t
 wk_init(void) {
   wg_t const wg = wg_init(DefaultRootWindow(dpy), 
-    font.cw, font.ch, bdrw);
+    font.cw, font.ch, bw);
   long const BTNMASK = 
     EnterWindowMask |
     LeaveWindowMask |
@@ -38,6 +38,6 @@ wk_deinit(wk_t* const wk) {
 }
 
 void
-wk_wg_focus(wk_t* const wk, unsigned const clr) {
+wk_clr(wk_t* const wk, unsigned const clr) {
   wg_win_bgclr(wk->wg.win, clr);
 }

@@ -18,7 +18,8 @@ REL_CFLAGS=-O3
 REL_LFLAGS=-s
 REL_BIN=cwm2.bin
 
-DBG_CFLAGS=-O1 -g -fno-omit-frame-pointer
+DBG_CFLAGS=-O1 -g \
+	-fno-omit-frame-pointer
 DBG_LFLAGS=
 DBG_BIN=cwm2~dbg.bin
 
@@ -44,10 +45,12 @@ SRC=src/main.c \
   src/panel.c \
   src/status.c \
   src/tray.c \
+  src/sel.c \
   src/arrange.c \
+  src/lt.c \
   src/prop.c \
   src/mascot.c \
   src/clib.c \
   src/cvec.c \
   src/cblk.c \
-  src/cstring.c
+  src/cstr.c

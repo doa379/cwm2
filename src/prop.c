@@ -85,9 +85,8 @@ prop_name(Window const win) {
 char const*
 prop_ico(Window const win) {
   if (prop_text(win, prop.net_iconame) != 0 &&
-    prop_text(win, prop.wm_iconame) != 0 &&
-    prop_text(win, prop.net_name) != 0) {
- 	  prop_text(win, XA_WM_NAME);
+    prop_text(win, prop.wm_iconame) != 0) {
+      return prop_name(win);
   }
 
   return BUF;
@@ -161,7 +160,7 @@ prop_atom_name(Atom const atom) {
 
 void
 prop_state_set(Window const win, long const state) {
-  long data[2] = { state, None };
+  long const data[2] = { state, None };
   XChangeProperty(dpy, win, prop.wm_state, prop.wm_state,
     32, PropModeReplace, (unsigned char*) data, 2);
 }

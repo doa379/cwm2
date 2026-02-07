@@ -17,7 +17,7 @@ extern cblk_t mons;
 
 extern wg_t status;
 extern font_t font;
-extern unsigned const bdrw;
+extern unsigned const bw;
 
 static unsigned wkw;
 
@@ -26,7 +26,7 @@ wg_t panel;
 void
 panel_init(void) {
   panel = wg_init(DefaultRootWindow(dpy), 1, 
-    font.ch + 2 * bdrw, 0);
+    font.ch + 2 * bw, 0);
   wg_win_bgclr(panel.win, wg_BG);
 
   wk_t* wk = wks.front;
@@ -113,9 +113,9 @@ panel_icos_arrange_(wk_t* const wk) {
 
 void
 panel_icos_arrange(wk_t* const wk) {
-  /* Update wk */
-  if (wk->clis.size == 0)
+  if (wk->clis.size == 0) {
     return;
+  }
 
   cli_t* c = wk->clis.front;
   do {
@@ -153,6 +153,6 @@ void
 panel_conf(void) {
   mon_t* const mon = mons.front;
   wg_win_resize(&panel, mon->w, panel.h);
-  mon->h -= panel.h + 2 * panel.bdrw;
+  mon->h -= panel.h + 2 * panel.bw;
   XMoveWindow(dpy, panel.win, 0, mon->h);
 }

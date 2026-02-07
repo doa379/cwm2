@@ -7,13 +7,13 @@
 extern Display* dpy;
 
 extern font_t font;
-extern unsigned const bdrw;
+extern unsigned const bw;
 
 wg_t status;
 
 void
 status_init(Window const win) {
-  status = wg_init(win, 1, font.ch + 2 * bdrw, 0);
+  status = wg_init(win, 1, font.ch + 2 * bw, 0);
   static long const STATUSMASK = 
     PropertyChangeMask |
     ExposureMask;

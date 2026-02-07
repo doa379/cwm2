@@ -1,6 +1,5 @@
 #include <X11/Xlib.h>
 #include <signal.h>
-#include <stdio.h>
 
 #include "root.h"
 #include "wm.h"
@@ -9,16 +8,20 @@
 #include "cli.h"
 #include "tray.h"
 #include "panel.h"
+#include "sel.h"
 #include "arrange.h"
 #include "prop.h"
+#include "lt.h"
+
+#include "calls.h"
 
 extern Display* dpy;
 
 extern cblk_t wks;
 extern wk_t* prevwk;
 extern wk_t* currwk;
+extern mon_t* currmon;
 
-extern cblk_t mons;
 extern wg_t panel;
 extern tray_t tray;
 extern prop_t prop;
@@ -40,15 +43,17 @@ calls_wk_switch(wk_t* const wk) {
 void
 calls_wk_prev(void) {
   wk_t* const wk = cblk_prev(&wks, currwk);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk_next(void) {
   wk_t* const wk = cblk_next(&wks, currwk);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
@@ -63,85 +68,97 @@ calls_wk_last(void) {
 void
 calls_wk1(void) {
   wk_t* const wk = cblk_itr(&wks, 0);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk2(void) {
   wk_t* const wk = cblk_itr(&wks, 1);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk3(void) {
   wk_t* const wk = cblk_itr(&wks, 2);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk4(void) {
   wk_t* const wk = cblk_itr(&wks, 3);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk5(void) {
   wk_t* const wk = cblk_itr(&wks, 4);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk6(void) {
   wk_t* const wk = cblk_itr(&wks, 5);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk7(void) {
   wk_t* const wk = cblk_itr(&wks, 6);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk8(void) {
   wk_t* const wk = cblk_itr(&wks, 7);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk9(void) {
   wk_t* const wk = cblk_itr(&wks, 8);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk10(void) {
   wk_t* const wk = cblk_itr(&wks, 9);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk11(void) {
   wk_t* const wk = cblk_itr(&wks, 10);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
 calls_wk12(void) {
   wk_t* const wk = cblk_itr(&wks, 12);
-  if (wk)
+  if (wk) {
     calls_wk_switch(wk);
+  }
 }
 
 void
@@ -366,43 +383,16 @@ calls_cli9(void) {
   }
 }
 
-enum calls_lt { lt_grid, lt_casc };
-
-static void
-calls_lt_arrange(int const lt) {
-  if (currwk->clis.size < 2)
-    return;
-
-  cli_t* c = currwk->clis.front;
-  do {
-    arrange_sel_map(&c->par);
-    c = cblk_next(&currwk->clis, c);
-  } while (c != currwk->clis.front);
-
-  mon_t const* mon = mons.front;
-  if (lt == lt_grid)
-    arrange_sel_tile(mon->w, mon->h);
-  else if (lt == lt_casc)
-    arrange_sel_casc(mon->w, mon->h);
-  unsigned const bdrw_twice = 2 * c->par.bdrw;
-  do {
-    wm_cli_conf(c, c->par.w, c->par.h);
-    c = cblk_next(&currwk->clis, c);
-  } while (c != currwk->clis.front);
-}
-
 void
 calls_arrange_toggle(void) {
-  static int lt;
-  calls_lt_arrange(lt++);
-  lt %= 2;
+  lt_arrange(currwk, currmon);
 }
 
 void
 calls_cli_fs_toggle(void) {
   cli_t* const c = currwk->currc;
   if (c) {
-    prop_win_fs(c->win);
+    prop_win_fs(c->ker.win);
   }
 }
 
@@ -434,22 +424,28 @@ calls_cli_raise_toggle(void) {
 
 void
 calls_sel_toggle(void) {
-  if (currwk->clis.size == 0)
+  if (currwk->clis.size == 0) {
     return;
+  }
 
-  cli_t* c = currwk->clis.front;
-  do {
-    c->sel = !c->sel;
-    wg_win_bdrclr(c->par.win, c->sel ? wg_SEL :
-      c == c->wk->currc ? wg_ACT : wg_BG);
-    c = cblk_next(&currwk->clis, c);
-  } while (c != currwk->clis.front);
+  cli_t* c = currwk->currc;
+  wg_t* const sel_wg = sel_find(&c->par);
+  if (sel_wg == NULL) {
+    sel_map(&c->par);
+  } else {
+    sel_unmap(&c->par);
+  }
+
+  c->sel = !c->sel;
+  wg_win_bdrclr(c->par.win, c->sel ? wg_SEL :
+    c == c->wk->currc ? wg_ACT : wg_BG);
 }
 
 void
 calls_sel_clear(void) {
-  if (currwk->clis.size == 0)
+  if (currwk->clis.size == 0) {
     return;
+  }
 
   cli_t* c = currwk->clis.front;
   do {
@@ -458,6 +454,8 @@ calls_sel_clear(void) {
       c == c->wk->currc ? wg_ACT : wg_BG);
     c = cblk_next(&currwk->clis, c);
   } while (c != currwk->clis.front);
+
+  sel_clear();
 }
 
 void
@@ -469,18 +467,17 @@ void
 calls_kill(void) {
   cli_t* const c = currwk->currc;
   if (c) {
-    prop_win_del(c->win);
+    prop_win_del(c->ker.win);
   }
 }
 
 void
 calls_cli_move(void) {
-  fprintf(stdout, "calls_cli_move()\n");
   int x_root;
   int y_root;
   Window const win = root_ptr_query(&x_root, &y_root);
-  cli_t* const c = cli(win, currwk);
-  if (c) {
+  cli_t* const c = wm_cli(win);
+  if (c && c->mode == cli_RES) {
     wm_cli_switch(c);
     XRaiseWindow(dpy, c->par.win);
     wm_cli_translate(c, x_root, y_root);
@@ -489,8 +486,18 @@ calls_cli_move(void) {
 
 void
 calls_cli_resize(void) {
-  fprintf(stdout, "calls_cli_resize()\n");
-  wm_cli_resize(currwk->currc);
+  /*
+  int x_root;
+  int y_root;
+  Window const win = root_ptr_query(&x_root, &y_root);
+  cli_t* const c = wm_cli(win);
+  */
+  cli_t* const c = currwk->currc;
+  if (c && c->mode == cli_RES) {
+    wm_cli_switch(c);
+    XRaiseWindow(dpy, c->par.win);
+    wm_cli_resize(c);
+  }
 }
 
 void

@@ -10,20 +10,47 @@ extern Display* dpy;
 extern font_t font;
 extern clr_pair_t clr_pair[];
 
+static XVisualInfo vinfo;
+/*
+void
+wg_init(void) {
+  XMatchVisualInfo(dpy, DefaultScreen(dpy), 32, TrueColor, 
+    &vinfo);
+}
+
+static XSetWindowAttributes
+wg_attr_init(Window const win, int const bw) {
+  Arg is parent
+  XSetWindowAttributes attrs;
+  attrs.colormap = XCreateColormap(dpy, win, vinfo.visual, 
+    AllocNone);
+  Transparent
+  attrs.background_pixel = 0;
+  attrs.border_pixel = bw;
+  return attrs;
+}
+
+static void
+wg_attr_deinit() {
+  XFreeColormap(dpy, Colormap colormap);
+}
+*/
 wg_t
 wg_init(Window const parwin, int const w, int const h, 
-  int const bdrw) {
+  int const bw) {
   Window const win = XCreateSimpleWindow(dpy, parwin, 
-      0, 0, w, h, bdrw, 0, 0);
+      0, 0, w, h, bw, 0, 0);
   XMapRaised(dpy, win);
   XftDraw* const xft = XftDrawCreate(dpy, win, 
     DefaultVisual(dpy, DefaultScreen(dpy)),
       DefaultColormap(dpy, DefaultScreen(dpy)));
   wg_t wg = {
     .win = win,
+    .x = 0,
+    .y = 0,
     .w = w,
     .h = h,
-    .bdrw = bdrw,
+    .bw = bw,
     .pixmap = 0,
     .gc = XCreateGC(dpy, win, 0, NULL),
     .xft = xft,
@@ -63,7 +90,7 @@ wg_str_draw(wg_t* const wg, unsigned const clr,
   if (wg->str.len) {
     wg_win_bgclr(wg->win, clr);
     int const ty = 0.5 * 
-      (wg->h - 2 * wg->bdrw + font.scent);
+      (wg->h - 2 * wg->bw + font.scent);
     XftDrawStringUtf8(wg->xft, &clr_pair[clr].fg.xft, 
       font.xft, tx, ty, (XftChar8*) wg->str.data, 
         wg->str.len);
@@ -82,9 +109,9 @@ wg_win_bdrclr(Window const win, unsigned const clr) {
 }
   
 void
-wg_bdrw(wg_t* const wg, int const w) {
+wg_bw(wg_t* const wg, int const w) {
   if (XSetWindowBorderWidth(dpy, wg->win, w)) {
-    wg->bdrw = w;
+    wg->bw = w;
   }
 }
 
@@ -114,8 +141,27 @@ wg_pixmap_fill(wg_t const* wg, unsigned const clr) {
 }
 
 void
+wg_win_move(wg_t* const wg, int const x, int const y) {
+  if (XMoveWindow(dpy, wg->win, x, y)) {
+    wg->x = x;
+    wg->y = y;
+  }
+}
+
+void
 wg_win_resize(wg_t* const wg, int const w, int const h) {
   if (XResizeWindow(dpy, wg->win, w, h)) {
+    wg->w = w;
+    wg->h = h;
+  }
+}
+
+void
+wg_win_moveresize(wg_t* const wg, int const x, int const y,
+  int const w, int const h) {
+  if (XMoveResizeWindow(dpy, wg->win, x, y, w, h)) {
+    wg->x = x;
+    wg->y = y;
     wg->w = w;
     wg->h = h;
   }

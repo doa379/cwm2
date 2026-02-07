@@ -4,7 +4,7 @@
 #include <X11/Xft/Xft.h>
 
 typedef struct {
-  char data[90];
+  char data[122];
   unsigned len;
   short ext;
 } wg_str_t;
@@ -12,9 +12,11 @@ typedef struct {
 typedef struct {
 /* Widget type */
   Window win;
+  int x;
+  int y;
   int w;
   int h;
-  int bdrw;
+  int bw;
   Pixmap pixmap;
   GC gc;
   XftDraw* xft;
@@ -29,7 +31,7 @@ void wg_deinit(wg_t* const);
 
 void wg_str_set(wg_t* const, char const*);
 void wg_str_draw(wg_t* const, unsigned const, 
-    unsigned const);
+  unsigned const);
 
 void wg_win_bgclr(Window const, unsigned const);
 void wg_win_bdrclr(Window const, unsigned const);
@@ -38,4 +40,7 @@ void wg_gc_bgfgclr(GC const, unsigned const);
 void wg_gc_bgclr(GC const, unsigned const);
 void wg_gc_fgclr(GC const, unsigned const);
 void wg_pixmap_fill(wg_t const*, unsigned const);
+void wg_win_move(wg_t* const, int const, int const);
 void wg_win_resize(wg_t* const, int const, int const);
+void wg_win_moveresize(wg_t* const, int const, int const,
+  int const, int const);

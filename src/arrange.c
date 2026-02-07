@@ -1,11 +1,9 @@
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
 #include <math.h>
+
+#include "arrange.h"
 
 #include "cblk.h"
 #include "wg.h"
-
-extern Display* dpy;
 
 static size_t const NRES = 100;
 static cblk_t sel;
@@ -37,63 +35,50 @@ arrange_sel_clear(void) {
 }
 
 void
-arrange_sel_adj(int const gap) {
+arrange_sel_adj(int const dx) {
   int x = 0;
-  wg_t** wg = sel.front; 
+  wg_t** wg = sel.front;
   do {
     int const X = x;
-    if (XMoveWindow(dpy, (*wg)->win, X, 0)) {
-      x += (*wg)->w + 2 * (*wg)->bdrw + gap;
-    }
-
-    wg = cblk_next(&sel, wg);
-  } while (wg != sel.front); 
-  cblk_clear(&sel);
-}
-
-void
-arrange_sel_tile(unsigned const W, unsigned const H) {
-  /* Constraint (W, H) */
-  size_t const n = sel.size;
-  unsigned const nc = ceil(sqrt(n));
-  unsigned const nr = (n + nc - 1) / nc;
-  unsigned const cellw = W / nc;
-  unsigned const cellh = H / nr;
-  unsigned i = 0;
-  wg_t** wg = sel.front;
-  do {
-    unsigned const col = i % nc;
-    unsigned const row = i / nc;
-    unsigned const x = col * cellw;
-    unsigned const y = row * cellh;
-    wg_win_resize(*wg, cellw, cellh);
-    XMoveWindow(dpy, (*wg)->win, x, y);
-    i++;
+    wg_win_move(*wg, X, 0);
+    x += (*wg)->w + 2 * (*wg)->bw + dx;
     wg = cblk_next(&sel, wg);
   } while (wg != sel.front);
   cblk_clear(&sel);
 }
 
-void
-arrange_sel_casc(unsigned const W, unsigned const H) {
+arrange_t
+arrange_tile(size_t const n, size_t const N, 
+  unsigned const dx, unsigned const dy, unsigned const W, 
+  unsigned const H) {
   /* Constraint (W, H) */
-  size_t const n = sel.size;
-  unsigned const m = 16;
-  /*
-  unsigned const cellw = W - m * n;
-  unsigned const cellh = H - m * n;
-  */
-  wg_t** wg = sel.front;
-  int x = 0;
-  int y = 0;
-  do {
-    /*
-    wg_win_resize(*wg, cellw, cellh);
-    */
-    XMoveWindow(dpy, (*wg)->win, x, y);
-    x += m;
-    y += m;
-    wg = cblk_next(&sel, wg);
-  } while (wg != sel.front);
-  cblk_clear(&sel);
+  unsigned const nc = ceil(sqrt(N));
+  unsigned const nr = (N + nc - 1) / nc;
+  unsigned const w = (W - nc * dx) / nc;
+  unsigned const h = (H - nr * dy) / nr;
+  unsigned const col = n % nc;
+  unsigned const row = n / nc;
+  unsigned const x = col * w + dx;
+  unsigned const y = row * h + dy;
+  return (arrange_t) { .x = x, .y = y, .w = w, .h = h };
+}
+
+arrange_t
+arrange_casc(size_t const n, unsigned const dx, 
+unsigned const dy) {
+  unsigned const x = n * dx;
+  unsigned const y = n * dy;
+  return (arrange_t) { .x = x, .y = y, .w = 0, .h = 0 };
+}
+
+arrange_t
+arrange_mono(size_t const n, size_t const N,
+  unsigned const dx, unsigned const dy, unsigned const W, 
+  unsigned const H) {
+  /* Constraint (W, H) */
+  unsigned const w = W - N * dx;
+  unsigned const h = H - N * dy;
+  unsigned const x = n * dx;
+  unsigned const y = n * dy;
+  return (arrange_t) { .x = x, .y = y, .w = w, .h = h };
 }

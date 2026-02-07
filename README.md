@@ -71,6 +71,8 @@ shared/dynamic libs required apart from the pre-installed system libs above).
 
 ## Target(s): Any UNIX w/ X-Window System Ver. 11.
 
+![Image Description](ss.png)
+
 ## User's Guide:
 
 This overarching philosophy is this Wm works on the principle of selections. You 

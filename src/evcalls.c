@@ -188,29 +188,32 @@ int const x_root, int const y_root) {
       /* Just in case pinned to tray */
       panel_icos_arrange(c->wk);
       panel_arrange(c->wk);
-    } else if (c->mode == cli_RES && c->siz.win == win) {
+    } else if (c->siz.win == win) {
       wm_cli_resize(c);
     } else if (c->min.win == win) {
       wm_cli_min(c);
-    } else if (c->mode == cli_RES && c->max.win == win) {
+    } else if (c->max.win == win) {
       wm_cli_max(c);
-    } else if (c->mode == cli_MAX && c->res.win == win) {
+    } else if (c->res.win == win) {
       wm_cli_res(c);
     } else if (c->cls.win == win) {
       prop_win_del(c->ker.win);
     } else if (c->wk != currwk && c->ico.win == win) {
       wm_wk_switch(c->wk);
-      XRaiseWindow(dpy, c->par.win);
       panel_icos_arrange(c->wk);
       panel_arrange(c->wk);
-      wm_cli_switch(c);
-    } else if (c->ico.win == win) {
-      XMapRaised(dpy, c->par.win);
       if (c->mode == cli_MIN) {
         wm_cli_raise(c);
-      } else if (c != currwk->currc) {
-        wm_cli_switch(c);
       }
+      
+      wm_cli_switch(c);
+    } else if (c->ico.win == win) {
+      if (c->mode == cli_MIN) {
+        wm_cli_raise(c);
+      }
+      
+      wm_cli_switch(c);
+      XMapRaised(dpy, c->par.win);
     } else {
       input_t const* input = input_btn(state, button);
       if (input) {
@@ -323,6 +326,7 @@ evcalls_property_notify(Window const win, Atom const atom) {
     if (c) {
       if (atom == XA_WM_NAME || atom == prop.net_name) {
         wg_str_set(&c->hd0, prop_name(win));
+        cli_clr(c, c == c->wk->currc ? wg_ACT : wg_BG);
         strncpy(c->strico, prop_ico(win), 
           sizeof c->strico - 1);
         wm_cli_ico_enum(c);

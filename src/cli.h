@@ -37,6 +37,7 @@ enum cli_mode {
 };
 
 void cli_wg_init(void);
+void cli_wg_deinit(void);
 cli_t cli_init(Window const, wk_t* const);
 void cli_deinit(cli_t* const);
 cli_t* cli(Window const, wk_t* const);
@@ -59,9 +60,6 @@ int const, int const);
 void cli_max(cli_t* const, int const, int const,
 int const, int const);
 void cli_fs(cli_t* const, int const, int const, int const, 
-int const);
-void cli_anim(cli_t* const, int const, int const, int const, 
-int const, int const, int const, int const, int const, 
 int const);
 void cli_switch_anim(cli_t* const, int const);
 void cli_del_anim(cli_t* const, int const);

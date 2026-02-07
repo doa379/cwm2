@@ -404,7 +404,6 @@ calls_cli_mode_toggle(void) {
       wm_cli_max(c);
     } else if (c->mode == cli_MAX) {
       wm_cli_res(c);
-      XRaiseWindow(dpy, c->par.win);
     }
   }
 }

@@ -135,7 +135,7 @@ wm_wk_unfocus(wk_t* const wk) {
       if (c == wk->currc) {
         wm_cli_unfocus(c);
       }
-
+      
       XUnmapWindow(dpy, c->par.win);
       c = cblk_next(&wk->clis, c);
     } while (c != wk->clis.front); 
@@ -149,7 +149,10 @@ wm_wk_focus(wk_t* const wk) {
   if (wk->clis.size) {
     cli_t* c = wk->clis.front; 
     do {
-      XMapWindow(dpy, c->par.win);
+      if (c->mode != cli_MIN) {
+        XMapWindow(dpy, c->par.win);
+      }
+
       c = cblk_next(&wk->clis, c);
     } while (c != wk->clis.front);
   }
@@ -252,8 +255,7 @@ wm_cli_translate(cli_t* const c, int const x_root,
   XEvent xev;
   int nextx = c->par.x;
   int nexty = c->par.y;
-  XUnmapWindow(dpy, c->hd0.win);
-  XMapWindow(dpy, c->hd1.win);
+  XRaiseWindow(dpy, c->hd1.win);
   void (*tray_map_cb)(cli_t* const) = NULL;
   root_query();
   int const par_d = root_stack_dist(c->par.win);
@@ -319,9 +321,8 @@ wm_cli_translate(cli_t* const c, int const x_root,
     }
   } while (xev.type != ButtonRelease);
   XUngrabPointer(dpy, CurrentTime);
-  XUnmapWindow(dpy, c->hd1.win);
-  XMapWindow(dpy, c->hd0.win);
   wm_cli_arrange(c, nextx, nexty);
+  XLowerWindow(dpy, c->hd1.win);
   cli_clr(c, wg_ACT);
   wg_win_bdrclr(tray.wg.win, wg_BG);
   if (tray_map_cb) {
@@ -345,8 +346,7 @@ wm_cli_resize(cli_t* const c) {
   XEvent xev;
   int nextw = c->par.w;
   int nexth = c->par.h;
-  XUnmapWindow(dpy, c->hd0.win);
-  XMapWindow(dpy, c->hd1.win);
+  XRaiseWindow(dpy, c->hd1.win);
   long const mask = ExposureMask | MOUSEMASK;
   do {
     XMaskEvent(dpy, mask, &xev);
@@ -375,8 +375,7 @@ wm_cli_resize(cli_t* const c) {
     }
   } while (xev.type != ButtonRelease);
   XUngrabPointer(dpy, CurrentTime);
-  XUnmapWindow(dpy, c->hd1.win);
-  XMapWindow(dpy, c->hd0.win);
+  XLowerWindow(dpy, c->hd1.win);
   wm_cli_ker_conf(c, nextw, nexth - c->hd1.h);
   cli_clr(c, wg_ACT);
 }
@@ -490,10 +489,8 @@ wm_cli_min(cli_t* const c) {
 
 void
 wm_cli_max(cli_t* const c) {
-  /*wm_cli_unfocus(c);*/
   cli_max(c, currmon->x, currmon->y, currmon->w, 
     currmon->h);
-  /*wm_cli_focus(c);*/
 }
 
 void
@@ -503,21 +500,12 @@ wm_cli_fs(cli_t* const c) {
 
 void
 wm_cli_res(cli_t* const c) {
-  /*wm_cli_unfocus(c);*/
-  cli_res(c, currmon->x, currmon->y, 
-    currmon->w, currmon->h);
-  /*wm_cli_focus(c);*/
+  cli_res(c, currmon->x, currmon->y, currmon->w, currmon->h);
 }
 
 void
 wm_cli_raise(cli_t* const c) {
   cli_raise(c, 0, currmon->h, currmon->w, currmon->h);
-  wm_cli_switch(c);
-  /*
-  cli_clr(c, wg_ACT);
-  cli_ico_clr(c, wg_ACT);
-  XRaiseWindow(dpy, c->ico.win);
-  */
 }
 
 void

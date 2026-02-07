@@ -84,6 +84,7 @@ int main(int const ARGC, char const* ARGV[]) {
     ev_call();
   }
 
+  cli_wg_deinit();
   root_deinit();
   wm_deinit();
   panel_deinit();

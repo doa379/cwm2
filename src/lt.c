@@ -91,6 +91,7 @@ lt_arrange(wk_t* const wk, mon_t* const mon) {
     } while (c != wk->clis.front);
     
     lt_scheme_arrange(wk, mon);
+    sel_clear();
   } else if (sel.size > 1) {
     lt_scheme_arrange(wk, mon);
   }

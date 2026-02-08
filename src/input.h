@@ -6,7 +6,7 @@ typedef struct {
   int mod;
   int sym;
   void (*call)(void);
-  char const* cmd;
+  char* cmd;
 } input_t;
 
 void input_keys_grab(Window const);

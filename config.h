@@ -102,8 +102,8 @@ unsigned const num_wks = 4;
 char const* font_name = "Sans:size=10";
 /* Values in px */
 unsigned const bw = 2;
-unsigned const vgap = 0;
-unsigned const hgap = 0;
+unsigned const vgap = 10;
+unsigned const hgap = 10;
 unsigned const trayw = 100;
 int const rootbg = palette_gray10;
 int const COLORS[] = { 

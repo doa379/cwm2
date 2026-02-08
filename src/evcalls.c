@@ -168,7 +168,7 @@ unsigned const keycode) {
     if (input->cmd) {
       if (fork() == 0) {
         close(ConnectionNumber(dpy));
-        char* const args[] = { NULL };
+        char* const args[] = { input->cmd, NULL };    
         execvp(input->cmd, args);
       }
     } else if (input->call) {
@@ -326,7 +326,8 @@ evcalls_property_notify(Window const win, Atom const atom) {
     if (c) {
       if (atom == XA_WM_NAME || atom == prop.net_name) {
         wg_str_set(&c->hd0, prop_name(win));
-        int const clr = c == c->wk->currc ? wg_ACT : wg_BG;
+        int const clr = c->wk != currwk ? wg_SEL : 
+          c == c->wk->currc ? wg_ACT : wg_BG;
         cli_clr(c, clr);
         strncpy(c->strico, prop_ico(win), 
           sizeof c->strico - 1);

@@ -24,9 +24,16 @@ debug: ${OBJ}
     -o ${DBG_BIN}
 	@echo ${DBG_BIN}
 
+install: all
+	cp -f ${REL_BIN} /usr/local/bin
+	chmod 755 /usr/local/bin/${REL_BIN}
+
+uninstall:
+	rm -f /usr/local/bin/${REL_BIN}
+
 clean:
 	@echo Cleaning...
-	rm -rf ${OBJ} ${REL_BIN} ${DBG_BIN}
+	rm -f ${OBJ} ${REL_BIN} ${DBG_BIN}
 
 .SUFFIXES: .c .o
-.PHONY: all clean
+.PHONY: all clean install uninstall

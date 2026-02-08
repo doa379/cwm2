@@ -207,7 +207,7 @@ int const x_root, int const y_root) {
       }
       
       wm_cli_switch(c);
-    } else if (c->ico.win == win) {
+    } else if (c->ico.win == win && c != c->wk->currc) {
       if (c->mode == cli_MIN) {
         wm_cli_raise(c);
       }
@@ -326,11 +326,12 @@ evcalls_property_notify(Window const win, Atom const atom) {
     if (c) {
       if (atom == XA_WM_NAME || atom == prop.net_name) {
         wg_str_set(&c->hd0, prop_name(win));
-        cli_clr(c, c == c->wk->currc ? wg_ACT : wg_BG);
+        int const clr = c == c->wk->currc ? wg_ACT : wg_BG;
+        cli_clr(c, clr);
         strncpy(c->strico, prop_ico(win), 
           sizeof c->strico - 1);
         wm_cli_ico_enum(c);
-        cli_ico_clr(c, wg_SEL);
+        cli_ico_clr(c, clr);
       }
     }
   }

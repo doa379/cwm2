@@ -276,9 +276,11 @@ calls_cli_wk12_move(void) {
 
 static void
 calls_cli_switch(cli_t* const c) {
-  XRaiseWindow(dpy, c->par.win);
-  wm_cli_switch(c);
-  panel_icos_arrange(c->wk);
+  if (c != c->wk->currc) {
+    XRaiseWindow(dpy, c->par.win);
+    wm_cli_switch(c);
+    panel_icos_arrange(c->wk);
+  }
 }
 
 void
@@ -476,8 +478,7 @@ calls_cli_move(void) {
   int y_root;
   Window const win = root_ptr_query(&x_root, &y_root);
   cli_t* const c = wm_cli(win);
-  if (c && c->mode == cli_RES) {
-    wm_cli_switch(c);
+  if (c && (c->mode == cli_RES && c->fs == 0)) {
     XRaiseWindow(dpy, c->par.win);
     wm_cli_translate(c, x_root, y_root);
   }
@@ -492,8 +493,7 @@ calls_cli_resize(void) {
   cli_t* const c = wm_cli(win);
   */
   cli_t* const c = currwk->currc;
-  if (c && c->mode == cli_RES) {
-    wm_cli_switch(c);
+  if (c && (c->mode == cli_RES && c->fs == 0)) {
     XRaiseWindow(dpy, c->par.win);
     wm_cli_resize(c);
   }

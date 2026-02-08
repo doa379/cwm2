@@ -82,16 +82,16 @@ lt_scheme_arrange(wk_t* const wk, mon_t const* mon) {
 
 void
 lt_arrange(wk_t* const wk, mon_t* const mon) {
-  if (sel.size == 1) {
-    return;
-  } else if (sel.size == 0 && wk->clis.size > 1) {
+  if (sel.size == 0 && wk->clis.size > 1) {
     /* All */
     cli_t* c = wk->clis.front;
     do {
       sel_map(&c->par);
       c = cblk_next(&wk->clis, c);
     } while (c != wk->clis.front);
+    
+    lt_scheme_arrange(wk, mon);
+  } else if (sel.size > 1) {
+    lt_scheme_arrange(wk, mon);
   }
-
-  lt_scheme_arrange(wk, mon);
 }

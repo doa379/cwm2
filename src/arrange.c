@@ -52,14 +52,19 @@ arrange_tile(size_t const n, size_t const N,
   unsigned const dx, unsigned const dy, unsigned const W, 
   unsigned const H) {
   /* Constraint (W, H) */
-  unsigned const nc = ceil(sqrt(N));
+  unsigned const nc = ceil(sqrt((float) N));
   unsigned const nr = (N + nc - 1) / nc;
-  unsigned const w = (W - nc * dx) / nc;
-  unsigned const h = (H - nr * dy) / nr;
+
+  unsigned const total_dx = (nc + 1) * dx;
+  unsigned const total_dy = (nr + 1) * dy;
+  unsigned const w = (W - total_dx) / nc;
+  unsigned const h = (H - total_dy) / nr;
+
   unsigned const col = n % nc;
   unsigned const row = n / nc;
-  unsigned const x = col * w + dx;
-  unsigned const y = row * h + dy;
+
+  unsigned const x = dx + col * (w + dx);
+  unsigned const y = dy + row * (h + dy);
   return (arrange_t) { .x = x, .y = y, .w = w, .h = h };
 }
 

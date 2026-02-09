@@ -67,9 +67,15 @@ Distribution: Run ```make``` in the project's root directory. This produces the
 executable ```cwm2.bin``` which is all you need to run the program (no 
 shared/dynamic libs required apart from the pre-installed system libs above).
 
-## Release: rc3 (2026-02-07).
+Run ```make install``` with elevated privileges to install to the system path.
 
-## Target(s): Any UNIX w/ X-Window System Ver. 11.
+Add ```cwm2.bin``` to your user's ```.xinitrc``` and restart the X system.
+
+## Release: rc4 (2026-02-10).
+
+## Target(s): Any UNIX w/ X-Window System Ver. 11. 
+
+This programs runs on (tested) FreeBSD 14.0/.3, Linux (glibc, musl).
 
 ![Image Description](ss.png)
 

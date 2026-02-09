@@ -29,6 +29,7 @@ CFLAGS=${REL_CFLAGS}
 
 HDR_CONFIG=config.h
 SRC=src/main.c \
+  src/xerror.c \
   src/clr.c \
   src/font.c \
   src/root.c \

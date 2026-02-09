@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <X11/Xlib.h>
 
+#include "xerror.h"
 #include "wm.h"
 #include "cli.h"
 #include "clr.h"
@@ -17,15 +18,8 @@
 #include "panel.h"
 #include "../config.h"
 
-static int xerror;
 volatile sig_atomic_t sig_status;
 Display* dpy;
-
-static int XError_handler(Display* dpy, XErrorEvent* xev) {
-  xerror = (xev->error_code == BadAccess ||
-    xev->error_code == BadWindow);
-  return 0;
-}
 
 static void sig_handler(int sig) {
   sig_status = 1;
@@ -42,14 +36,9 @@ int main(int const ARGC, char const* ARGV[]) {
   if (dpy == NULL) {
     fprintf(stderr, "Failed to open display\n");
     return -1;
-  } 
+  }
 
-  XSelectInput(dpy, DefaultRootWindow(dpy), 
-      SubstructureRedirectMask);
-  XSetErrorHandler(XError_handler);
-  if (xerror) {
-    fprintf(stderr, 
-        "Init. error (another wm running?)\n");
+  if (xerror_wmcheck() != 0) {
     XCloseDisplay(dpy);
     return -1;
   }

@@ -168,7 +168,7 @@ unsigned const keycode) {
     if (input->cmd) {
       if (fork() == 0) {
         close(ConnectionNumber(dpy));
-        char* const args[] = { input->cmd, NULL };    
+        char* const args[] = { input->cmd, NULL };
         execvp(input->cmd, args);
       }
     } else if (input->call) {

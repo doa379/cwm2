@@ -456,9 +456,11 @@ wm_cli_ker_conf(cli_t* const c, int const w, int const h) {
 void
 wm_cli_arrange(cli_t* const c, int const x, int const y) {
   if (c->par.x != x || c->par.y != y) {
-    cli_move(c, x < currmon->x ? currmon->x : x, 
-      y < currmon->y ? currmon->y : y, 
-        currmon->w, currmon->h);
+    cli_move(c, x + currmon->x < currmon->x ? currmon->x : 
+      x + currmon->x, 
+      y + currmon->y < currmon->y ? currmon->y : 
+      y + currmon->y, 
+        currmon->x + currmon->w, currmon->y + currmon->h);
     c->fl.x = c->par.x;
     c->fl.y = c->par.y;
   }
@@ -487,15 +489,6 @@ void wm_cli_currmon_move(void) {
 
 void
 wm_cli_min(cli_t* const c) {
-  wm_cli_unfocus(c);
-  cli_t* const nextc = cblk_prev(&c->wk->clis, c);
-  if (nextc != c && nextc->mode != cli_MIN) {
-    wm_cli_focus(nextc);
-    c->wk->currc = nextc;
-  } else {
-    c->wk->currc = NULL;
-  }
-
   cli_min(c, 0, currmon->h);
 }
 
@@ -518,6 +511,7 @@ wm_cli_res(cli_t* const c) {
 void
 wm_cli_raise(cli_t* const c) {
   cli_raise(c, 0, currmon->h, currmon->w, currmon->h);
+  XRaiseWindow(dpy, c->par.win);
 }
 
 void

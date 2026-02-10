@@ -19,8 +19,8 @@ extern wk_t* currwk;
 extern mon_t* currmon;
 
 extern cblk_t mons;
-extern wg_t status;
 extern tray_t tray;
+extern wg_t panel;
 
 void
 evcalls_configure_request(Window const win, int const x,
@@ -151,10 +151,12 @@ int const y, int const x_root, int const y_root) {
       mon_t* const mon = mon_currmon(x_root, y_root);
       if (mon) {
         char str[16];
-        sprintf(str, "Mon %lu", cblk_dist(&mons, mon));
+        sprintf(str, "Mon %lu/%lu", 
+          cblk_dist(&mons, mon) + 1, mons.size);
         currmon = mon;
-        status_str_set(str);
-        status_focus(wg_ACT);
+        status_mon_str_set(str);
+        status_mon_draw(wg_BG);
+        panel_arrange(currwk);
       }
     }
   }
@@ -207,13 +209,15 @@ int const x_root, int const y_root) {
       }
       
       wm_cli_switch(c);
-    } else if (c->ico.win == win && c != c->wk->currc) {
+    } else if (c->ico.win == win) {
       if (c->mode == cli_MIN) {
         wm_cli_raise(c);
       }
       
-      wm_cli_switch(c);
-      XMapRaised(dpy, c->par.win);
+      if (c != c->wk->currc) {
+        wm_cli_switch(c);
+        XRaiseWindow(dpy, c->par.win);
+      }
     } else {
       input_t const* input = input_btn(state, button);
       if (input) {
@@ -320,6 +324,8 @@ evcalls_property_notify(Window const win, Atom const atom) {
   if (win == DefaultRootWindow(dpy)) {
     if (atom == XA_WM_NAME || atom == prop.net_name) {
       status_str_set(prop_root());
+      status_draw(wg_BG);
+      panel_arrange(currwk);
     }
   } else {
     cli_t* const c = wm_cli(win);
@@ -341,8 +347,9 @@ evcalls_property_notify(Window const win, Atom const atom) {
 void
 evcalls_expose(Window const win) {
   if (win == DefaultRootWindow(dpy)) {
-  } else if (win == status.win) {
-    status_focus(wg_ACT);
+  } else if (win == panel.win) {
+    status_draw(wg_BG);
+    status_mon_draw(wg_BG);
   } else if (win == tray.wg.win) {
     tray_mascot_conf();
   } else {

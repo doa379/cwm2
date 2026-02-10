@@ -28,11 +28,9 @@ enum wg_colors { wg_BG, wg_ACT, wg_SEL };
 wg_t wg_init(Window const parwin, int const, int const, 
   int const);
 void wg_deinit(wg_t* const);
-
 void wg_str_set(wg_t* const, char const*);
 void wg_str_draw(wg_t* const, unsigned const, 
   unsigned const);
-
 void wg_win_bgclr(Window const, unsigned const);
 void wg_win_bdrclr(Window const, unsigned const);
 void wg_bdrw(wg_t* const, int const);

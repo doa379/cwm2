@@ -75,7 +75,7 @@ Add ```cwm2.bin``` to your user's ```.xinitrc``` and restart the X system.
 
 ## Target(s): Any UNIX w/ X-Window System Ver. 11. 
 
-This programs runs on (tested) FreeBSD 14.0/.3, Linux (glibc, musl).
+This program runs on (tested) FreeBSD 14.0/.3, Linux (glibc, musl).
 
 ![Image Description](ss.png)
 
@@ -105,6 +105,17 @@ The Wm can be entirely keyboard driven.
 You can print a status string to the Wm's name using the shell command:
 
 ```$ xsetroot -name "..."```
+
+### Basic Key Bindings:
+
+```Windows + Escape``` Run launcher (```dmenu``` by default)
+
+```Windows + Enter``` Run XTerm
+
+```Windows + Shift + q``` Exit the Wm
+
+You can change these settings as desired. The program needs should be rebuilt 
+after making changes to ```config.h```.
 
 ### The default Call options:
 

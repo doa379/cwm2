@@ -292,11 +292,14 @@ void
 cli_move(cli_t* const c, int const x, int const y, 
 int const W, int const H) {
   /* Constraint (W, H) */
+  /*
   int const cw = c->par.w + bw2;
   int const nextx = x + cw > W ? W - cw : x;
   int const ch = c->par.h + bw2;
   int const nexty = y + ch > H ? H - ch : y;
   wg_win_move(&c->par, nextx, nexty);
+  */
+  wg_win_move(&c->par, x, y);
 }
 
 void

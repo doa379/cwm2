@@ -16,6 +16,7 @@ extern cblk_t wks;
 extern cblk_t mons;
 
 extern wg_t status;
+extern wg_t mon;
 extern font_t font;
 extern unsigned const bw;
 
@@ -28,6 +29,9 @@ panel_init(void) {
   panel = wg_init(DefaultRootWindow(dpy), 1, 
     font.ch + 2 * bw, 0);
   wg_win_bgclr(panel.win, wg_BG);
+  static long const MASK = 
+    ExposureMask;
+  XSelectInput(dpy, panel.win, MASK);
 
   wk_t* wk = wks.front;
   do {
@@ -37,8 +41,6 @@ panel_init(void) {
 
   wkw = 1.25 * font.cw;
   status_init(panel.win);
-  panel_icos_arrange(wks.front);
-  panel_arrange(wks.front);
 }
 
 void
@@ -127,26 +129,17 @@ panel_icos_arrange(wk_t* const wk) {
 }
 
 void
-panel_arrange(wk_t* const currwk) {
-  panel_wk_conf(currwk);
-  wk_t* wk = wks.front; 
+panel_arrange(wk_t* const wk) {
+  panel_wk_conf(wk);
+  arrange_sel_map(&mon);
+  wk_t* wk_ = wks.front; 
   do {
-    arrange_sel_map(&wk->wg);
-    wk = cblk_next(&wks, wk);
-  } while (wk != wks.front);
+    arrange_sel_map(&wk_->wg);
+    wk_ = cblk_next(&wks, wk_);
+  } while (wk_ != wks.front);
 
   arrange_sel_map(&status);
   arrange_sel_adj(4);
-}
-
-void
-panel_icos_arrange_all(void) {
-
-}
-
-void
-panel_arrange_all(void) {
-
 }
 
 void
@@ -155,4 +148,7 @@ panel_conf(void) {
   wg_win_resize(&panel, mon->w, panel.h);
   mon->h -= panel.h + 2 * panel.bw;
   XMoveWindow(dpy, panel.win, 0, mon->h);
+  status_mon_draw(wg_BG);
+  panel_icos_arrange(wks.front);
+  panel_arrange(wks.front);
 }

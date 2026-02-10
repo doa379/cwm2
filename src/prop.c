@@ -66,11 +66,7 @@ prop_text(Window const win, Atom const atom) {
 
 char const*
 prop_root(void) {
-  if (prop_text(DefaultRootWindow(dpy), XA_WM_NAME) != 0) {
- 	  strcpy(BUF, "status");
-  }
-
-  return BUF;
+  return prop_name(DefaultRootWindow(dpy));
 }
  
 char const*

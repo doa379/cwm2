@@ -402,10 +402,10 @@ void
 calls_cli_mode_toggle(void) {
   cli_t* const c = currwk->currc;
   if (c) {
-    if (c->mode == cli_RES) {
-      wm_cli_max(c);
-    } else if (c->mode == cli_MAX) {
+    if (c->mode == cli_MAX) {
       wm_cli_res(c);
+    } else if (c->mode == cli_RES) {
+      wm_cli_max(c);
     }
   }
 }
@@ -414,11 +414,10 @@ void
 calls_cli_raise_toggle(void) {
   cli_t* const c = currwk->currc;
   if (c) {
-    if (c->mode == cli_RES) {
+    if (c->mode == cli_MIN) {
+      wm_cli_raise(c);
+    } else {
       wm_cli_min(c);
-    } else if (c->mode == cli_MIN) {
-      wm_cli_res(c);
-      XRaiseWindow(dpy, c->par.win);
     }
   }
 }

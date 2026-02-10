@@ -17,6 +17,7 @@ static cblk_t cblk;
 static size_t const NRES = 100;
 
 static Window wmcheckwin;
+static char const ROOTNAME[] = "cwm2";
 
 int
 root_init(void) {
@@ -44,7 +45,7 @@ root_init(void) {
       (unsigned char*) &wmcheckwin, 1);
   XChangeProperty(dpy, wmcheckwin, prop.net_name, 
     prop.utf8string, 8, PropModeReplace, 
-      (unsigned char*) "cwm2", 4);
+      (unsigned char*) ROOTNAME, sizeof ROOTNAME);
   XChangeProperty(dpy, DefaultRootWindow(dpy), 
     prop.net_check, XA_WINDOW, 32, PropModeReplace, 
       (unsigned char*) &wmcheckwin, 1);
@@ -59,6 +60,9 @@ root_init(void) {
     prop.net_fs
   };
 
+  XChangeProperty(dpy, DefaultRootWindow(dpy), XA_WM_NAME, 
+    prop.utf8string, 8, PropModeReplace, 
+      (unsigned char*) ROOTNAME, sizeof ROOTNAME);
   XChangeProperty(dpy, DefaultRootWindow(dpy),
     prop.net_supported, XA_ATOM, 32, PropModeReplace,
       (unsigned char*) supported,

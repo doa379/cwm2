@@ -1,5 +1,17 @@
 #pragma once
 
+void calls_mon1(void);
+void calls_mon2(void);
+void calls_mon3(void);
+void calls_mon4(void);
+void calls_mon5(void);
+void calls_mon6(void);
+void calls_mon7(void);
+void calls_mon8(void);
+void calls_mon9(void);
+void calls_mon10(void);
+void calls_mon11(void);
+void calls_mon12(void);
 void calls_wk_prev(void);
 void calls_wk_next(void);
 void calls_wk_last(void);

@@ -25,3 +25,5 @@ SRC1=../src/cblk.c cblk.c
 BIN1=cblk.bin
 SRC1=atom_name.c
 BIN1=atom_name.bin
+SRC2=query0.c
+BIN2=query0.bin

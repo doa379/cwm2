@@ -181,3 +181,10 @@ ev_call(void) {
   if (XNextEvent(dpy, &xev) == 0)
     EV[xev.type]();
 }
+
+void
+ev_motion_drain(void) {
+  XSync(dpy, False);
+  while (XCheckTypedEvent(dpy, MotionNotify, &xev)) {
+  }
+}

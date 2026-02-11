@@ -240,6 +240,40 @@ wm_cli_move(cli_t* const c, wk_t* const wk) {
   return nextc;
 }
 
+typedef struct {
+  int x;
+  int y;
+} wm_pair_t;
+
+static wm_pair_t
+wm_xform_snap(int const x, int const y, int const w,
+  int const h) {
+  int X = x;
+  int Y = y;
+  int const snap = 16;
+  if (x > currmon->x - snap && x < currmon->x + snap) {
+    X = currmon->x;
+  } else {
+    int const x0 = x + w;
+    int const x1 = currmon->x + currmon->w;
+    if (x0 > x1 - snap && x0 < x1 + snap) {
+      X = x1 - w;
+    }
+  }
+
+  if (y > currmon->y - snap && y < currmon->y + snap) {
+    Y = currmon->y;
+  } else {
+    int const y0 = y + h;
+    int const y1 = currmon->y + currmon->h;
+    if (y0 > y1 - snap && y0 < y1 + snap) {
+      Y = y1 - h;
+    }
+  }
+
+  return (wm_pair_t) { .x = X, .y = Y };
+}
+
 void
 wm_cli_translate(cli_t* const c, int const x_root, 
   int const y_root) {
@@ -266,43 +300,25 @@ wm_cli_translate(cli_t* const c, int const x_root,
     if (xev.type == MotionNotify) {
       nextx = c->par.x + xev.xmotion.x_root - x_root;
       nexty = c->par.y + xev.xmotion.y_root - y_root;
+      
+      mon_t* const mon = mon_currmon(nextx, nexty);
+      if (mon && mon != currmon) {
+        currmon = mon;
+      }
+
       unsigned const dh = c->par.h + 2 * c->par.bw;
       if (nexty + dh > currmon->h) {
         nexty = currmon->h - dh;
       } else {
-        int const snap = 16;
-        if (nextx > currmon->x - snap && 
-            nextx < currmon->x + snap) {
-          nextx = currmon->x;
-        } else {
-          int const x0 = nextx + c->par.w + 
-            2 * c->par.bw;
-          int const x1 = currmon->x + currmon->w;
-          if (x0 > x1 - snap && x0 < x1 + snap) {
-            nextx = x1 - c->par.w - 2 * c->par.bw;
-          }
-        }
-
-        if (nexty > currmon->y - snap&& 
-            nexty < currmon->y + snap) {
-          nexty = currmon->y;
-        } else {
-          int const y0 = nexty + c->par.h + 
-            2 * c->par.bw;
-          int const y1 = currmon->y + currmon->h;
-          if (y0 > y1 - snap && y0 < y1 + snap) {
-            nexty = currmon->y + currmon->h - c->par.h -
-              2 * c->par.bw;
-          }
-        }
+        wm_pair_t const xy = wm_xform_snap(nextx, nexty, 
+          c->par.w + 2 * c->par.bw, 
+          c->par.h + 2 * c->par.bw);
+        nextx = xy.x;
+        nexty = xy.y;
       }
       
       XMoveWindow(dpy, c->par.win, nextx, nexty);
-      char str[16];
-      snprintf(str, sizeof str, "(%d, %d)", nextx, nexty);
-      wg_str_set(&c->hd1, str);
-      unsigned hdr0 = 2 * c->par.bw;
-      wg_str_draw(&c->hd1, wg_SEL, hdr0);
+      cli_hd1_draw(c, nextx, nexty);
     
       if (tray_d < par_d && currmon == mons.front && 
           xev.xmotion.x_root > currmon->w - tray.wg.w &&
@@ -321,7 +337,10 @@ wm_cli_translate(cli_t* const c, int const x_root,
     }
   } while (xev.type != ButtonRelease);
   XUngrabPointer(dpy, CurrentTime);
-  wm_cli_arrange(c, nextx, nexty);
+  /*wm_cli_arrange(c, nextx, nexty);*/
+  cli_move(c, nextx, nexty, 
+    currmon->x + currmon->w, currmon->y + currmon->h);
+
   XLowerWindow(dpy, c->hd1.win);
   cli_clr(c, wg_ACT);
   wg_win_bdrclr(tray.wg.win, wg_BG);
@@ -351,24 +370,26 @@ wm_cli_resize(cli_t* const c) {
   do {
     XMaskEvent(dpy, mask, &xev);
     if (xev.type == MotionNotify) {
-      int w = xev.xmotion.x;
+      /*
+      int w = xev.xmotion.x_root;
       nextw = w < 1 ? 1 : w;
-      int h = xev.xmotion.y;
+      int h = xev.xmotion.y_root;
       nexth = h < 1 ? 1 : h;
-      if (currmon->x + nextw > currmon->w ||
-          currmon->y + nexth > currmon->h) {
+      if (currmon->x + nextw > currmon->x + currmon->w ||
+          currmon->y + nexth > currmon->y + currmon->h) {
         nextw = currmon->w;
         nexth = currmon->h;
       }
+      */
+      int w = xev.xmotion.x_root;
+      nextw = w - c->par.x - c->par.bw;
+      int h = xev.xmotion.y_root;
+      nexth = h - c->par.y - c->par.bw;
 
       XResizeWindow(dpy, c->ker.win, nextw, nexth - c->hd1.h);
       XResizeWindow(dpy, c->hd1.win, nextw, c->hd1.h);
       XResizeWindow(dpy, c->par.win, nextw, nexth);
-      char str[16];
-      snprintf(str, sizeof str, "(%d, %d)", nextw, nexth);
-      wg_str_set(&c->hd1, str);
-      unsigned hdr0 = 2 * c->par.bw;
-      wg_str_draw(&c->hd1, wg_SEL, hdr0);
+      cli_hd1_draw(c, nextw, nexth);
     } else if (xev.type == Expose) {
         Window const win = xev.xexpose.window;
         evcalls_expose(win);
@@ -455,11 +476,22 @@ wm_cli_ker_conf(cli_t* const c, int const w, int const h) {
 
 void
 wm_cli_arrange(cli_t* const c, int const x, int const y) {
-  if (c->par.x != x || c->par.y != y) {
-    cli_move(c, x + currmon->x < currmon->x ? currmon->x : 
-      x + currmon->x, 
-      y + currmon->y < currmon->y ? currmon->y : 
-      y + currmon->y, 
+  /*
+  int const X = currmon->x + x;
+  int const Y = currmon->y + y;
+  if (c->par.x != X || c->par.y != Y) {
+    cli_move(c, X < currmon->x ? currmon->x : X, 
+      Y < currmon->y ? currmon->y : Y, 
+        currmon->x + currmon->w, currmon->y + currmon->h);
+    c->fl.x = c->par.x;
+    c->fl.y = c->par.y;
+  }
+  */
+  int const X = currmon->x + x;
+  int const Y = currmon->y + y;
+  if (c->par.x != X || c->par.y != Y) {
+    cli_move(c, X < currmon->x ? currmon->x : X, 
+      Y < currmon->y ? currmon->y : Y, 
         currmon->x + currmon->w, currmon->y + currmon->h);
     c->fl.x = c->par.x;
     c->fl.y = c->par.y;
@@ -489,7 +521,8 @@ void wm_cli_currmon_move(void) {
 
 void
 wm_cli_min(cli_t* const c) {
-  cli_min(c, 0, currmon->h);
+  /* Avoid unnecessary expose */
+  cli_min(c, 0, currmon->h - 1);
 }
 
 void

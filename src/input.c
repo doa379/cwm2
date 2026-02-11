@@ -89,7 +89,7 @@ input_btns_grab(Window const win) {
     for (int j = 0; j < nmods; j++) {
       XGrabButton(dpy, BTN[i].sym, BTN[i].mod | mods[j],
           win, False, ButtonPressMask | ButtonReleaseMask, 
-            GrabModeAsync, GrabModeSync, None, None);
+            GrabModeAsync, GrabModeAsync, None, None);
     }
   }
 }

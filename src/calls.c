@@ -1,4 +1,5 @@
 #include <X11/Xlib.h>
+#include <X11/extensions/XTest.h>
 #include <signal.h>
 
 #include "root.h"
@@ -8,10 +9,12 @@
 #include "cli.h"
 #include "tray.h"
 #include "panel.h"
+#include "status.h"
 #include "sel.h"
 #include "arrange.h"
 #include "prop.h"
 #include "lt.h"
+#include "ev.h"
 
 #include "calls.h"
 
@@ -20,11 +23,118 @@ extern Display* dpy;
 extern cblk_t wks;
 extern wk_t* prevwk;
 extern wk_t* currwk;
+
+extern cblk_t mons;
 extern mon_t* currmon;
 
 extern wg_t panel;
 extern tray_t tray;
 extern prop_t prop;
+
+static void
+calls_mon_switch(mon_t* const mon) {
+  if (mon != currmon) {
+    char str[16];
+    sprintf(str, "Mon %lu/%lu", 
+      cblk_dist(&mons, mon) + 1, mons.size);
+    currmon = mon;
+    status_mon_str_set(str);
+    status_mon_draw(wg_BG);
+    panel_arrange(currwk);
+ 
+    XWarpPointer(dpy, None, DefaultRootWindow(dpy), 
+      0, 0, 0, 0,
+        mon->x + 0.5 * mon->w, mon->y + 0.5 * mon->h);
+    XFlush(dpy);
+    /*XTestFakeButtonEvent(dpy, 1, False, CurrentTime);*/
+    XTestFakeButtonEvent(dpy, 1, False, 0);
+    XFlush(dpy);
+  }
+}
+
+void calls_mon1(void) {
+  mon_t* const mon = cblk_itr(&mons, 0);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
+
+void calls_mon2(void) {
+  mon_t* const mon = cblk_itr(&mons, 1);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
+
+void calls_mon3(void) {
+  mon_t* const mon = cblk_itr(&mons, 2);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
+
+void calls_mon4(void) {
+  mon_t* const mon = cblk_itr(&mons, 3);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
+
+void calls_mon5(void) {
+  mon_t* const mon = cblk_itr(&mons, 4);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
+
+void calls_mon6(void) {
+  mon_t* const mon = cblk_itr(&mons, 5);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
+
+void calls_mon7(void) {
+  mon_t* const mon = cblk_itr(&mons, 6);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
+
+void calls_mon8(void) {
+  mon_t* const mon = cblk_itr(&mons, 7);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
+
+void calls_mon9(void) {
+  mon_t* const mon = cblk_itr(&mons, 8);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
+
+void calls_mon10(void) {
+  mon_t* const mon = cblk_itr(&mons, 9);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
+
+void calls_mon11(void) {
+  mon_t* const mon = cblk_itr(&mons, 10);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
+
+void calls_mon12(void) {
+  mon_t* const mon = cblk_itr(&mons, 11);
+  if (mon) {
+    calls_mon_switch(mon);
+  }
+}
 
 void
 calls_wk0(void) {

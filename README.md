@@ -73,7 +73,7 @@ Add ```cwm2.bin``` to your user's ```.xinitrc``` and restart the X system.
 
 ## Release: rc4 (2026-02-10).
 
-## Target(s): Any UNIX w/ X-Window System Ver. 11. 
+## Target(s): Any UNIX w/ X-Window System Ver. 11.
 
 This program runs on (tested) FreeBSD 14.0/.3, Linux (glibc, musl).
 
@@ -114,12 +114,12 @@ You can print a status string to the Wm's name using the shell command:
 
 ```Windows + Shift + q``` Exit the Wm
 
-You can change these settings as desired. The program needs should be rebuilt 
-after making changes to ```config.h```.
+You can change these settings as desired. The program should be rebuilt after 
+making changes to ```config.h```.
 
 ### The default Call options:
 
-  ```.cmd = "<...>"``` Fork a command
+  ```.cmd = "<...>"``` Run a command
   
   ```.call = calls_wk<...>``` Switch to a wk (between 1, 12)
   

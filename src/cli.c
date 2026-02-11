@@ -292,14 +292,12 @@ void
 cli_move(cli_t* const c, int const x, int const y, 
 int const W, int const H) {
   /* Constraint (W, H) */
-  /*
   int const cw = c->par.w + bw2;
   int const nextx = x + cw > W ? W - cw : x;
   int const ch = c->par.h + bw2;
   int const nexty = y + ch > H ? H - ch : y;
   wg_win_move(&c->par, nextx, nexty);
-  */
-  wg_win_move(&c->par, x, y);
+  /* TODO want to maintain rel. coords */
 }
 
 void
@@ -355,12 +353,14 @@ void
 cli_res(cli_t* const c, int const x, int const y, 
   int const W, int const H) {
   /* Constraint (W, H) */
+  XUnmapWindow(dpy, c->par.win);
   XSetWindowBorderWidth(dpy, c->par.win, c->par.bw);
   cli_anim(x, y, W, H, 
     c->par.x, c->par.y, c->ker.w, c->ker.h, 100);
   c->mode = cli_RES;
   cli_ker_conf(c, c->ker.w, c->ker.h);
   XMoveWindow(dpy, c->par.win, c->par.x, c->par.y);
+  XMapWindow(dpy, c->par.win);
 }
 
 void
@@ -376,6 +376,7 @@ int const W, int const H) {
 void
 cli_max(cli_t* const c, int const x, int const y,
 int const w, int const h) {
+  XUnmapWindow(dpy, c->par.win);
   unsigned int bw = 0;
   XSetWindowBorderWidth(dpy, c->par.win, bw);
   cli_anim(c->par.x, c->par.y, c->par.w, c->par.h, 
@@ -387,15 +388,19 @@ int const w, int const h) {
   cli_ker_conf(c, w, h - hdrh);
   c->ker.w = w0;
   c->ker.h = h0;
+  XMapWindow(dpy, c->par.win);
 }
 
 void
 cli_fs(cli_t* const c, int const x, int const y, 
 int const w, int const h) {
+  XUnmapWindow(dpy, c->par.win);
   XSetWindowBorderWidth(dpy, c->par.win, 0);
+  /* TODO Configs according to first mon */
   int const ch = h + pardh;
   cli_anim(c->ker.x, c->ker.y, c->ker.w, c->ker.h, 
     x, y, w, ch, 100);
+  XMapWindow(dpy, c->par.win);
   XMoveResizeWindow(dpy, c->par.win, x, y, w, ch);
   XMoveResizeWindow(dpy, c->ker.win, 0, 0, w, ch);
   XRaiseWindow(dpy, c->ker.win);
@@ -421,6 +426,15 @@ cli_del_anim(cli_t* const c, int const d) {
   cli_anim(c->par.x, c->par.y, c->par.w, c->par.h,
     c->par.x + 0.5 * c->par.w, c->par.y + 0.5 * c->par.h,
       1, 1, d);
+}
+
+void
+cli_hd1_draw(cli_t* const c, int const x, int const y) {
+  char str[16];
+  snprintf(str, sizeof str, "(%d, %d)", x, y);
+  wg_str_set(&c->hd1, str);
+  unsigned hdx0 = 2 * c->par.bw;
+  wg_str_draw(&c->hd1, wg_SEL, hdx0);
 }
 
 void

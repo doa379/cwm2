@@ -63,4 +63,5 @@ void cli_fs(cli_t* const, int const, int const, int const,
 int const);
 void cli_switch_anim(cli_t* const, int const);
 void cli_del_anim(cli_t* const, int const);
+void cli_hd1_draw(cli_t* const, int const, int const);
 void cli_ord_init(Window const);

@@ -9,7 +9,7 @@ LIBSPATH= -L . -Wl,-R . '-Wl,-R$$ORIGIN' \
   -L /usr/lib64 \
   -L /usr/local/lib
 
-LIBS=-l X11 -l Xinerama -l Xft -l m
+LIBS=-l X11 -l Xinerama -l Xft -l m -l Xtst
 
 CC=cc
 FLAGS=-Wall -fPIE -fPIC -pedantic

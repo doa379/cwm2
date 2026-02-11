@@ -29,14 +29,14 @@ evcalls_configure_request(Window const win, int const x,
   cli_t* const c = wm_cli(win);
   if (c) {
     if (c->fs) {
-        prop_win_config(c->ker.win, x, y, w, h, bw);
+      prop_win_config(c->ker.win, x, y, w, h, bw);
     } else {
       int const nx = mask & CWX ? x : c->par.x;
       int const ny = mask & CWY ? y : c->par.y;
       int const nw = mask & CWWidth  ? w : c->ker.w;
       int const nh = mask & CWHeight ? h : c->ker.h;
-      wm_cli_ker_conf(c, nw, nh);
       wm_cli_arrange(c, nx, ny);
+      wm_cli_ker_conf(c, nw, nh);
       prop_win_config(c->ker.win, nx, ny, nw, nh, 0);
     }
   } else {
@@ -141,14 +141,12 @@ evcalls_destroy_notify(Window const win) {
 void
 evcalls_motion_notify(Window const win, int const x, 
 int const y, int const x_root, int const y_root) {
-  static int prev_x_root;
-  static int prev_y_root;
+  /* Prev */
+  static int x0;
+  static int y0;
   if (win == DefaultRootWindow(dpy)) {
-    if (abs(x_root - prev_x_root) > 100 ||
-      abs(y_root - prev_y_root) > 100) {
-      prev_x_root = x_root;
-      prev_y_root = y_root;
-      mon_t* const mon = mon_currmon(x_root, y_root);
+    if (abs(x - x0) > 100 || abs(y - y0) > 100) {
+      mon_t* const mon = mon_currmon(x, y);
       if (mon) {
         char str[16];
         sprintf(str, "Mon %lu/%lu", 
@@ -158,6 +156,9 @@ int const y, int const x_root, int const y_root) {
         status_mon_draw(wg_BG);
         panel_arrange(currwk);
       }
+
+      x0 = x;
+      y0 = y;
     }
   }
 }

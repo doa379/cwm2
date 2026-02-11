@@ -29,7 +29,7 @@ panel_init(void) {
   panel = wg_init(DefaultRootWindow(dpy), 1, 
     font.ch + 2 * bw, 0);
   wg_win_bgclr(panel.win, wg_BG);
-  static long const MASK = 
+  long const MASK = 
     ExposureMask;
   XSelectInput(dpy, panel.win, MASK);
 
@@ -149,6 +149,7 @@ panel_conf(void) {
   mon->h -= panel.h + 2 * panel.bw;
   XMoveWindow(dpy, panel.win, 0, mon->h);
   status_mon_draw(wg_BG);
+  status_draw(wg_BG);
   panel_icos_arrange(wks.front);
   panel_arrange(wks.front);
 }

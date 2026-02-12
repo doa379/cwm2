@@ -14,7 +14,6 @@
 #include "arrange.h"
 #include "prop.h"
 #include "lt.h"
-#include "ev.h"
 
 #include "calls.h"
 
@@ -46,7 +45,6 @@ calls_mon_switch(mon_t* const mon) {
       0, 0, 0, 0,
         mon->x + 0.5 * mon->w, mon->y + 0.5 * mon->h);
     XFlush(dpy);
-    /*XTestFakeButtonEvent(dpy, 1, False, CurrentTime);*/
     XTestFakeButtonEvent(dpy, 1, False, 0);
     XFlush(dpy);
   }

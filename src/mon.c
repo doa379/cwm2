@@ -60,11 +60,17 @@ mon_conf(void) {
     if (inf) {
       cblk_clear(&mons);
       for (int i = 0; i < n; i++) {
+        int const x = inf[i].x_org;
+        int const y = inf[i].y_org;
+        int const w = inf[i].width;
+        int const h = inf[i].height;
         mon_t const mon = {
-          .x = inf[i].x_org,
-          .y = inf[i].y_org,
-          .w = inf[i].width,
-          .h = inf[i].height
+          .x = x,
+          .y = y,
+          .w = w,
+          .h = h,
+          .x1 = x + w,
+          .y1 = y + h
         };
         
         cblk_map(&mons, &mon);
@@ -74,11 +80,15 @@ mon_conf(void) {
     }
   } else {
     /* Mandatory at least 1x mon */
+      int const w = DisplayWidth(dpy, DefaultScreen(dpy));
+      int const h = DisplayHeight(dpy, DefaultScreen(dpy));
       mon_t const mon = {
         .x = 0,
         .y = 0,
-        .w = DisplayWidth(dpy, DefaultScreen(dpy)),
-        .h = DisplayHeight(dpy, DefaultScreen(dpy))
+        .w = w,
+        .h = h,
+        .x1 = w,
+        .y1 = h
       };
       
       cblk_map(&mons, &mon);

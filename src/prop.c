@@ -19,6 +19,8 @@ prop_init(void) {
     .wm_delwin = 
       XInternAtom(dpy, "WM_DELETE_WINDOW", False),
     .wm_iconame = XInternAtom(dpy, "WM_ICON_NAME", False),
+    .wm_takefocus = 
+      XInternAtom(dpy, "WM_TAKE_FOCUS", False),
     .net_supported = 
       XInternAtom(dpy, "_NET_SUPPORTED", False),
     .net_check = 
@@ -159,4 +161,9 @@ prop_state_set(Window const win, long const state) {
   long const data[2] = { state, None };
   XChangeProperty(dpy, win, prop.wm_state, prop.wm_state,
     32, PropModeReplace, (unsigned char*) data, 2);
+}
+
+void
+prop_win_focus(Window const win) {
+  prop_win_msg(win, prop.wm_proto, prop.wm_takefocus);
 }

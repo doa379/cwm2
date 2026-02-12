@@ -10,6 +10,7 @@ typedef struct {
   Atom wm_state;
   Atom wm_delwin;
   Atom wm_iconame;
+  Atom wm_takefocus;
   Atom net_supported;
   Atom net_check;
   Atom net_name;
@@ -31,3 +32,4 @@ void prop_win_config(Window const, int const, int const,
 int const, int const, int const);
 char const* prop_atom_name(Atom const);
 void prop_state_set(Window const, long const);
+void prop_win_focus(Window const);

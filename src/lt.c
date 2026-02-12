@@ -32,7 +32,7 @@ lt_scheme_arrange(wk_t* const wk, mon_t const* mon) {
         mon->w, mon->h);
       cli_t* const c = cli((*wg)->win, wk);
       wg_win_move(&c->par, a.x, a.y);
-      cli_par_conf(c, a.w, a.h);
+      cli_par_conf(c, a.w, a.h, c->par.bw);
       n++;
       wg = cblk_next(&sel, wg);
     } while (wg != sel.front);

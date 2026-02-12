@@ -35,6 +35,8 @@ static long const KMASK =
   PropertyChangeMask;
 static long const CLIMASK = 
   EnterWindowMask |
+  LeaveWindowMask |
+  FocusChangeMask |
   SubstructureNotifyMask |
   SubstructureRedirectMask;
 static long const HDRMASK =
@@ -55,7 +57,6 @@ static unsigned hdrh;
 static unsigned btnx;
 static unsigned btny;
 static unsigned btndx;
-static unsigned pardh;
 static unsigned char* BTN[cli_END];
 static wg_t anim;
 
@@ -67,7 +68,6 @@ cli_wg_init(void) {
   btnx = 0.5 * (font.cw - btnw);
   btny = 0.5 * (hdrh - btnh);
   btndx = btnw + bw2;
-  pardh = hdrh + bw2;
   
   BTN[cli_MIN] = hdrh < 24 ? 
     cbox_16x16_bits : cbox_24x24_bits;
@@ -160,6 +160,7 @@ cli_init(Window const win, wk_t* const wk) {
     .mode = cli_RES,
     .fs = 0,
     .sel = 0,
+    .stk = 0,
   };
 }
 
@@ -283,9 +284,10 @@ cli_ker_conf(cli_t* const c, int const w, int const h) {
 }
 
 void
-cli_par_conf(cli_t* const c, int const w, int const h) {
+cli_par_conf(cli_t* const c, int const w, int const h, 
+  int const bw) {
   /* Config client given parent dims */
-  cli_ker_conf(c, w - bw2, h - pardh);
+  cli_ker_conf(c, w - 2 * bw, h - c->hd0.h - 2 * bw);
 }
 
 void
@@ -297,7 +299,7 @@ int const W, int const H) {
   int const ch = c->par.h + bw2;
   int const nexty = y + ch > H ? H - ch : y;
   wg_win_move(&c->par, nextx, nexty);
-  /* TODO want to maintain rel. coords */
+  /* TODO want to store rel. coords */
 }
 
 void
@@ -305,7 +307,8 @@ cli_ker_resize(cli_t* const c, int const w, int const h,
 int const W, int const H) {
   /* Constraint (W, H) */
   int const cw = w + bw2 > W ? W - bw2 : w;
-  int const ch = h + pardh > H ? H - pardh : h;
+  int const dh = hdrh + bw2;
+  int const ch = h + dh > H ? H - dh : h;
   cli_ker_conf(c, cw, ch);
 }
 
@@ -315,10 +318,10 @@ int const W, int const H) {
   /* Constraint (W, H) */
   int const cw = w > W ? W - bw2 : w;
   int const ch = h > H ? H - bw2 : h;
-  cli_par_conf(c, cw, ch);
+  cli_par_conf(c, cw, ch, c->par.bw);
 }
 
-static void
+void
 cli_anim(int const x, int const y, 
 int const w, int const h, int const X, int const Y, 
 int const W, int const H, int const d) {
@@ -335,85 +338,20 @@ int const W, int const H, int const d) {
     XMoveResizeWindow(dpy, anim.win, nextX, nextY, 
       nextW, nextH);
     XFlush(dpy);
-    usleep(1500);
+    usleep(1200);
   }
 
   XUnmapWindow(dpy, anim.win);
 }
 
 void
-cli_min(cli_t* const c, int const x, int const y) {
-  XUnmapWindow(dpy, c->par.win);
-  cli_anim(c->par.x, c->par.y, c->par.w, c->par.h, 
-    x, y, 1, 1, 100);
-  c->mode = cli_MIN;
-}
-
-void
-cli_res(cli_t* const c, int const x, int const y, 
-  int const W, int const H) {
-  /* Constraint (W, H) */
-  XUnmapWindow(dpy, c->par.win);
-  XSetWindowBorderWidth(dpy, c->par.win, c->par.bw);
-  cli_anim(x, y, W, H, 
-    c->par.x, c->par.y, c->ker.w, c->ker.h, 100);
-  c->mode = cli_RES;
-  cli_ker_conf(c, c->ker.w, c->ker.h);
-  XMoveWindow(dpy, c->par.win, c->par.x, c->par.y);
-  XMapWindow(dpy, c->par.win);
-}
-
-void
-cli_raise(cli_t* const c, int const x, int const y,
-int const W, int const H) {
-  /* Constraint (W, H) */
-  cli_anim(x, y, 0, 0, 
-    c->par.x, c->par.y, c->ker.w, c->ker.h, 100);
-  c->mode = cli_RES;
-  XMapWindow(dpy, c->par.win);
-}
-
-void
-cli_max(cli_t* const c, int const x, int const y,
-int const w, int const h) {
-  XUnmapWindow(dpy, c->par.win);
-  unsigned int bw = 0;
-  XSetWindowBorderWidth(dpy, c->par.win, bw);
-  cli_anim(c->par.x, c->par.y, c->par.w, c->par.h, 
-    x, y, w, h, 100);
-  c->mode = cli_MAX;
-  XMoveResizeWindow(dpy, c->par.win, x, y, w, h);
-  int const w0 = c->ker.w;
-  int const h0 = c->ker.h;
-  cli_ker_conf(c, w, h - hdrh);
-  c->ker.w = w0;
-  c->ker.h = h0;
-  XMapWindow(dpy, c->par.win);
-}
-
-void
-cli_fs(cli_t* const c, int const x, int const y, 
-int const w, int const h) {
-  XUnmapWindow(dpy, c->par.win);
-  XSetWindowBorderWidth(dpy, c->par.win, 0);
-  /* TODO Configs according to first mon */
-  int const ch = h + pardh;
-  cli_anim(c->ker.x, c->ker.y, c->ker.w, c->ker.h, 
-    x, y, w, ch, 100);
-  XMapWindow(dpy, c->par.win);
-  XMoveResizeWindow(dpy, c->par.win, x, y, w, ch);
-  XMoveResizeWindow(dpy, c->ker.win, 0, 0, w, ch);
-  XRaiseWindow(dpy, c->ker.win);
-}
-
-void
 cli_switch_anim(cli_t* const c, int const d) {
   for (unsigned i = 0; i < d; i++) {
-    usleep(10000);
+    usleep(5000);
     cli_clr(c, wg_BG);
     cli_ico_clr(c, wg_BG);
     XFlush(dpy);
-    usleep(10000);
+    usleep(5000);
     cli_clr(c, wg_ACT);
     cli_ico_clr(c, wg_ACT);
     XFlush(dpy);
@@ -422,7 +360,6 @@ cli_switch_anim(cli_t* const c, int const d) {
 
 void
 cli_del_anim(cli_t* const c, int const d) {
-  XUnmapWindow(dpy, c->par.win);
   cli_anim(c->par.x, c->par.y, c->par.w, c->par.h,
     c->par.x + 0.5 * c->par.w, c->par.y + 0.5 * c->par.h,
       1, 1, d);

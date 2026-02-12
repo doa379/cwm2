@@ -5,6 +5,9 @@ typedef struct {
   int y;
   int w;
   int h;
+  /* BB */
+  int x1;
+  int y1;
 } mon_t;
 
 int mon_mons_init(void);

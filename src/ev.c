@@ -33,12 +33,20 @@ ev_noop(void) {
 
 static void
 ev_map_notify(void) {
-  (void) xmap;
+  /*
+  if (xmap->override_redirect) {
+    evcalls_map_notify_override_redirect(xmap->window);
+  } else {
+    evcalls_map_notify(xmap->window);
+  }
+  */
 }
 
 static void
 ev_unmap_notify(void) {
-  (void) xunmap;
+  /*
+  evcalls_unmap_notify(xunmap->window);
+  */
 }
 
 static void
@@ -138,8 +146,17 @@ ev_leave_notify(void) {
 }
 
 static void
-ev_focus_change(void) {
-  evcalls_focus_change(xfocus->window);
+ev_focus_in(void) {
+  /*
+  evcalls_focus_in(xfocus->window);
+  */
+}
+
+static void
+ev_focus_out(void) {
+  /*
+  evcalls_focus_out(xfocus->window);
+  */
 }
 
 static void
@@ -171,7 +188,8 @@ ev_init(void) {
   EV[ButtonPress] = ev_btn_press;
   EV[EnterNotify] = ev_enter_notify;
   EV[LeaveNotify] = ev_leave_notify;
-  EV[FocusIn] = ev_focus_change;
+  EV[FocusIn] = ev_focus_in;
+  EV[FocusOut] = ev_focus_out;
   EV[PropertyNotify] = ev_property_notify;
   EV[Expose] = ev_expose;
 }

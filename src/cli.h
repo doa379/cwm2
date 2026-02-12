@@ -23,6 +23,7 @@ typedef struct cli_s {
   int mode;
   int fs;
   int sel;
+  int stk;
   arrange_t fl;
 } cli_t;
 
@@ -45,22 +46,16 @@ wg_t* cli_wg(cli_t* const, Window const);
 void cli_clr(cli_t* const, unsigned const);
 void cli_ico_clr(cli_t* const, unsigned const);
 void cli_ker_conf(cli_t* const, int const, int const);
-void cli_par_conf(cli_t* const, int const, int const);
+void cli_par_conf(cli_t* const, int const, int const,
+int const);
 void cli_move(cli_t* const, int const, int const, int const,
 int const);
 void cli_ker_resize(cli_t* const, int const, int const, 
 int const, int const);
 void cli_par_resize(cli_t* const, int const, int const,
 int const, int const);
-void cli_min(cli_t* const, int const, int const);
-void cli_res(cli_t* const, int const, int const, 
-int const, int const);
-void cli_raise(cli_t* const, int const, int const,
-int const, int const);
-void cli_max(cli_t* const, int const, int const,
-int const, int const);
-void cli_fs(cli_t* const, int const, int const, int const, 
-int const);
+void cli_anim(int const, int const, int const, int const, 
+int const, int const, int const, int const, int const);
 void cli_switch_anim(cli_t* const, int const);
 void cli_del_anim(cli_t* const, int const);
 void cli_hd1_draw(cli_t* const, int const, int const);

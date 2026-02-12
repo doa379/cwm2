@@ -15,6 +15,7 @@ void wm_cli_unmap(cli_t* const);
 cli_t* wm_cli(Window const);
 void wm_cli_unfocus(cli_t* const);
 void wm_cli_focus(cli_t* const);
+void wm_cli_sel(cli_t* const);
 cli_t* wm_cli_move(cli_t* const, wk_t* const);
 void wm_cli_del(cli_t* const);
 void wm_cli_translate(cli_t* const, int const, int const);

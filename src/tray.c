@@ -44,6 +44,7 @@ tray_conf(void) {
   wg_win_resize(&tray.wg, trayw, 
     mon->h - 2 * tray.wg.bw);
   int const x = mon->w - tray.wg.w - 2 * tray.wg.bw;
+  mon->w = x;
   XMoveWindow(dpy, tray.wg.win, x, 0);
   tray_mascot_conf();
 }

@@ -29,9 +29,6 @@ panel_init(void) {
   panel = wg_init(DefaultRootWindow(dpy), 1, 
     font.ch + 2 * bw, 0);
   wg_win_bgclr(panel.win, wg_BG);
-  long const MASK = 
-    ExposureMask;
-  XSelectInput(dpy, panel.win, MASK);
 
   wk_t* wk = wks.front;
   do {

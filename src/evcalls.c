@@ -20,7 +20,8 @@ extern mon_t* currmon;
 
 extern cblk_t mons;
 extern tray_t tray;
-extern wg_t panel;
+extern wg_t status;
+extern wg_t mon;
 
 void
 evcalls_configure_request(Window const win, int const x,
@@ -88,6 +89,11 @@ int const y, int const w, int const h) {
 }
 
 void
+evcalls_map_notify_override_redirect(Window const win) {
+
+}
+
+void
 evcalls_map_request(Window const win, int const x,
 int const y, int const w, int const h) {
   if (wm_cli(win)) {
@@ -113,8 +119,28 @@ int const y, int const w, int const h) {
 }
 
 void
+evcalls_map_notify(Window const win) {
+  cli_t* const c = wm_cli(win);
+  if (c && win == c->par.win) {
+    input_btns_grab(c->ker.win);
+    XSetInputFocus(dpy, c->ker.win, RevertToPointerRoot,
+      CurrentTime);
+  }
+}
+
+void
+evcalls_unmap_notify(Window const win) {
+  cli_t* const c = wm_cli(win);
+  if (c && win == c->par.win) {
+    input_btns_ungrab(c->ker.win);
+    XSetInputFocus(dpy, DefaultRootWindow(dpy), 
+      RevertToPointerRoot, CurrentTime);
+  }
+}
+
+void
 evcalls_destroy_notify(Window const win) {
-  cli_t* c = wm_cli(win);
+  cli_t* const c = wm_cli(win);
   if (c && c->ker.win == win) {
     wk_t* const wk = c->wk;
     wm_cli_del(c);
@@ -215,10 +241,8 @@ int const x_root, int const y_root) {
         wm_cli_raise(c);
       }
       
-      if (c != c->wk->currc) {
-        wm_cli_switch(c);
-        XRaiseWindow(dpy, c->par.win);
-      }
+      wm_cli_switch(c);
+      XRaiseWindow(dpy, c->par.win);
     } else {
       input_t const* input = input_btn(state, button);
       if (input) {
@@ -256,14 +280,13 @@ evcalls_enter_notify(Window const win) {
       wg_pixmap_fill(&c->cls, wg_SEL);
     } else if (win == c->siz.win) {
       wg_pixmap_fill(&c->siz, wg_SEL);
-    } else if (win == c->ico.win && 
-      (c != currwk->currc || c->mode == cli_MIN)) {
+    } else if (win == c->ico.win) {
       cli_ico_clr(c, wg_SEL);
-    } else if (c != c->wk->currc) {
-      wm_cli_switch(c);
-      panel_icos_arrange(c->wk);
     } else if (c->hd0.win == win) {
       XRaiseWindow(dpy, c->par.win);
+    } else {
+      wm_cli_switch(c);
+      panel_icos_arrange(c->wk);
     }
   } else {
     wk_t* const wk = wm_wk(win);
@@ -299,6 +322,9 @@ evcalls_leave_notify(Window const win) {
       wg_pixmap_fill(&c->siz, clr);
     } else if (c->ico.win == win) {
       cli_ico_clr(c, clr);
+    } else {
+      wm_cli_unfocus(c);
+      panel_icos_arrange(c->wk);
     }
   } else {
     wk_t* const wk = wm_wk(win);
@@ -317,7 +343,23 @@ evcalls_leave_notify(Window const win) {
 }
 
 void
-evcalls_focus_change(Window const win) {
+evcalls_focus_in(Window const win) {
+  cli_t* const c = wm_cli(win);
+  if (c && win == c->par.win) {
+    input_btns_grab(c->ker.win);
+    XSetInputFocus(dpy, c->ker.win, RevertToPointerRoot,
+      CurrentTime);
+  }
+}
+
+void
+evcalls_focus_out(Window const win) {
+  cli_t* const c = wm_cli(win);
+  if (c && win == c->par.win) {
+    input_btns_ungrab(c->ker.win);
+    XSetInputFocus(dpy, DefaultRootWindow(dpy), 
+      RevertToPointerRoot, CurrentTime);
+  }
 }
 
 void
@@ -348,18 +390,21 @@ evcalls_property_notify(Window const win, Atom const atom) {
 void
 evcalls_expose(Window const win) {
   if (win == DefaultRootWindow(dpy)) {
-  } else if (win == panel.win) {
+  } else if (win == status.win) {
     status_draw(wg_BG);
+  } else if (win == mon.win) {
     status_mon_draw(wg_BG);
   } else if (win == tray.wg.win) {
     tray_mascot_conf();
   } else {
+    /*
     cli_t* const c = wm_cli(win);
     if (c) {
       int const clr = c == currwk->currc ? wg_ACT : wg_BG;
       cli_clr(c, clr);
       cli_ico_clr(c, clr);
     }
+    */
   }
 }
 

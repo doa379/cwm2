@@ -8,8 +8,11 @@ void evcalls_configure_root(int const, int const,
 int const, int const);
 void evcalls_map_override_redirect(Window const, int const,
 int const, int const, int const);
+void evcalls_map_notify_override_redirect(Window const);
 void evcalls_map_request(Window const, int const, int const,
 int const, int const);
+void evcalls_map_notify(Window const);
+void evcalls_unmap_notify(Window const);
 void evcalls_destroy_notify(Window const);
 void evcalls_motion_notify(Window const, int const, 
 int const, int const, int const);
@@ -18,7 +21,8 @@ void evcalls_btn_press(Window const, unsigned const,
 unsigned const, int const, int const, int const, int const);
 void evcalls_enter_notify(Window const);
 void evcalls_leave_notify(Window const);
-void evcalls_focus_change(Window const);
+void evcalls_focus_in(Window const);
+void evcalls_focus_out(Window const);
 void evcalls_property_notify(Window const, Atom const);
 void evcalls_expose(Window const);
 void evcalls_byte_msg(Window const, Atom const, 

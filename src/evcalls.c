@@ -32,12 +32,12 @@ evcalls_configure_request(Window const win, int const x,
     if (c->fs) {
       prop_win_config(c->ker.win, x, y, w, h, bw);
     } else {
-      int const nx = mask & CWX ? x : c->par.x;
-      int const ny = mask & CWY ? y : c->par.y;
+      int const nx = mask & CWX ? x : c->ker.x;
+      int const ny = mask & CWY ? y : c->ker.y;
       int const nw = mask & CWWidth  ? w : c->ker.w;
       int const nh = mask & CWHeight ? h : c->ker.h;
-      wm_cli_arrange(c, nx, ny);
       wm_cli_ker_conf(c, nw, nh);
+      wm_cli_arrange(c, nx, ny);
       prop_win_config(c->ker.win, nx, ny, nw, nh, 0);
     }
   } else {
@@ -329,8 +329,7 @@ evcalls_leave_notify(Window const win) {
   } else {
     wk_t* const wk = wm_wk(win);
     if (wk) {
-      wg_win_bgclr(wk->wg.win, 
-        wk == currwk ? wg_ACT : wg_BG);
+      wg_win_bgclr(wk->wg.win, wg_BG);
       return;
     }
     
@@ -397,14 +396,12 @@ evcalls_expose(Window const win) {
   } else if (win == tray.wg.win) {
     tray_mascot_conf();
   } else {
-    /*
     cli_t* const c = wm_cli(win);
     if (c) {
       int const clr = c == currwk->currc ? wg_ACT : wg_BG;
       cli_clr(c, clr);
       cli_ico_clr(c, clr);
     }
-    */
   }
 }
 

@@ -54,6 +54,6 @@ status_mon_str_set(char const* str) {
 void
 status_mon_draw(unsigned const clr) {
   wg_win_bgclr(mon.win, clr);
-  wg_str_draw(&mon, clr, bw);
+  wg_str_draw(&mon, clr, 0);
   wg_win_resize(&mon, mon.str.ext, mon.h);
 }

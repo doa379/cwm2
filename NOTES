@@ -1,0 +1,22 @@
+TODO
+====
+
+
+(rc5-2026-02-16)
+================
+
+* re/config clients
+
+* arrange on currmon
+
+* impl stickies
+
+* panel (scrolling)
+
+* decide storing prev coords in widgets
+  how does it clarify client manipl'n?
+
+* calc tray lengths
+  cf. prev
+
+* integrate root-handshake into panel

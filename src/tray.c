@@ -101,8 +101,12 @@ tray_cli_map(wg_t* const wg) {
     XSelectInput(dpy, nextwg->win, KMASK);
     XSetWindowBorderWidth(dpy, nextwg->win, tray.wg.bw);
     wg_win_bdrclr(nextwg->win, wg_BG);
+    XResizeWindow(dpy, nextwg->win, tray.wg.w, 
+      tray.wg.w * (float) wg->h / wg->w);
+    /*
     wg_win_resize(nextwg, tray.wg.w, 
       tray.wg.w * (float) wg->h / wg->w);
+    */
   }
 }
   

@@ -12,7 +12,6 @@
 #include "ev.h"
 #include "mon.h"
 #include "sel.h"
-#include "arrange.h"
 #include "prop.h"
 #include "tray.h"
 #include "panel.h"
@@ -53,7 +52,6 @@ int main(int const ARGC, char const* ARGV[]) {
   if (font_init()       != 0 ||
       clr_init()        != 0 ||
       sel_init()        != 0 ||
-      arrange_init()    != 0 ||
       mon_mons_init()   != 0 ||
       wm_init(num_wks)  != 0 ||
       tray_init()       != 0) {

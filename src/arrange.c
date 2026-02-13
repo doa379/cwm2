@@ -2,51 +2,6 @@
 
 #include "arrange.h"
 
-#include "cblk.h"
-#include "wg.h"
-
-static size_t const NRES = 100;
-static cblk_t sel;
-
-int
-arrange_init(void) {
-  sel = cblk_init(sizeof(wg_t*), NRES);
-  if (sel.blk == NULL) {
-    fprintf(stderr, "Failed to alloc arrangements\n");
-    return -1;
-  }
-
-  return 0;
-}
-
-void
-arrange_deinit(void) {
-  cblk_deinit(&sel); 
-}
-
-void
-arrange_sel_map(wg_t const* wg) {
-  cblk_map(&sel, &wg);
-}
-
-void
-arrange_sel_clear(void) {
-  cblk_clear(&sel);
-}
-
-void
-arrange_sel_adj(int const dx) {
-  int x = 0;
-  wg_t** wg = sel.front;
-  do {
-    int const X = x;
-    wg_win_move(*wg, X, 0);
-    x += (*wg)->w + 2 * (*wg)->bw + dx;
-    wg = cblk_next(&sel, wg);
-  } while (wg != sel.front);
-  cblk_clear(&sel);
-}
-
 arrange_t
 arrange_tile(size_t const n, size_t const N, 
   unsigned const dx, unsigned const dy, unsigned const W, 

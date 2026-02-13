@@ -41,3 +41,8 @@ void
 wk_clr(wk_t* const wk, unsigned const clr) {
   wg_win_bgclr(wk->wg.win, clr);
 }
+
+void
+wk_bdrclr(wk_t* const wk, unsigned const clr) {
+  wg_win_bdrclr(wk->wg.win, clr);
+}

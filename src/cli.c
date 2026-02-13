@@ -257,7 +257,7 @@ cli_ker_conf(cli_t* const c, int const w, int const h) {
   /* Config elements given kernel dims */
   wg_win_resize(&c->par, w, h + hdrh);
   wg_win_resize(&c->hd0, c->par.w, hdrh);
-  wg_win_resize(&c->hd1, c->hd0.w, c->hd0.h);
+  wg_win_resize(&c->hd1, c->hd0.w, hdrh);
   /* Max btn */
   XUnmapWindow(dpy, c->max.win);
   /* Res btn */
@@ -269,7 +269,6 @@ cli_ker_conf(cli_t* const c, int const w, int const h) {
     XMoveWindow(dpy, c->res.win, c->par.w - 1 * btndx, btny);
     /* Min btn */
     XMoveWindow(dpy, c->min.win, c->par.w - 2 * btndx, btny);
-
   } else {
     XMapWindow(dpy, c->max.win);
     XMoveWindow(dpy, c->max.win, c->par.w - 2 * btndx, btny);
@@ -280,7 +279,7 @@ cli_ker_conf(cli_t* const c, int const w, int const h) {
   /* Resize btn */
   XMoveWindow(dpy, c->siz.win, c->par.w - 1 * btndx, btny);
   /* Kernel */
-  wg_win_moveresize(&c->ker, 0, c->hd0.h, w, h);
+  wg_win_moveresize(&c->ker, 0, hdrh, w, h);
 }
 
 void
@@ -299,7 +298,6 @@ int const W, int const H) {
   int const ch = c->par.h + bw2;
   int const nexty = y + ch > H ? H - ch : y;
   wg_win_move(&c->par, nextx, nexty);
-  /* TODO want to store rel. coords */
 }
 
 void

@@ -13,3 +13,4 @@ typedef struct {
 wk_t wk_init(void);
 void wk_deinit(wk_t* const);
 void wk_clr(wk_t* const, unsigned const);
+void wk_bdrclr(wk_t* const, unsigned const);

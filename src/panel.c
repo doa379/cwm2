@@ -70,8 +70,23 @@ panel_wk_conf(wk_t* const wk_) {
   } while (wk != wks.front);
 }
 
+/*
+void
+arrange_sel_adj(int const dx) {
+  int x = 0;
+  wg_t** wg = sel.front;
+  do {
+    int const X = x;
+    wg_win_move(*wg, X, 0);
+    x += (*wg)->w + 2 * (*wg)->bw + dx;
+    wg = cblk_next(&sel, wg);
+  } while (wg != sel.front);
+  cblk_clear(&sel);
+}
+*/
 static void
 panel_icos_arrange_(wk_t* const wk) {
+  /*
   wk_t* wk_ = wks.front;
   do {
     wg_win_resize(&wk_->wg, wkw, wk_->wg.h);
@@ -108,6 +123,7 @@ panel_icos_arrange_(wk_t* const wk) {
     arrange_sel_map(&c->ico);
 
   arrange_sel_adj(0);
+  */
 }
 
 void
@@ -115,28 +131,32 @@ panel_icos_arrange(wk_t* const wk) {
   if (wk->clis.size == 0) {
     return;
   }
-
+  
+  int const hgap = 0;
+  int x = 0;
   cli_t* c = wk->clis.front;
   do {
-    arrange_sel_map(&c->ico);
+    wg_win_move(&c->ico, x, 0);
+    x += c->ico.w + 2 * c->ico.bw + hgap;
     c = cblk_next(&wk->clis, c);
   } while (c != wk->clis.front);
-  
-  arrange_sel_adj(0);
 }
 
 void
 panel_arrange(wk_t* const wk) {
+  int const hgap = 4;
+  int x = bw;
   panel_wk_conf(wk);
-  arrange_sel_map(&mon);
+  wg_win_move(&mon, x, 0);
+  x += mon.w + 2 * mon.bw + hgap;
   wk_t* wk_ = wks.front; 
   do {
-    arrange_sel_map(&wk_->wg);
+    wg_win_move(&wk_->wg, x, 0);
+    x += wk_->wg.w + 2 * wk_->wg.bw + hgap;
     wk_ = cblk_next(&wks, wk_);
   } while (wk_ != wks.front);
 
-  arrange_sel_map(&status);
-  arrange_sel_adj(4);
+  wg_win_move(&status, x, 0);
 }
 
 void
